@@ -3,6 +3,10 @@ import React from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { VotingArrows } from "./VotingArrows";
+import { Star } from "lucide-react";
+import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 interface PokemonSuggestionCardProps {
   pokemon: RankedPokemon;
@@ -17,16 +21,162 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
   onSuggestRanking,
   onRemoveSuggestion
 }) => {
-  // If no suggestion handlers provided, just render the children
+  const [isHovered, setIsHovered] = React.useState(false);
+  
+  // Use cloud pending battles and Zustand store for queue operations
+  const { isPokemonPending, addPendingPokemon, removePendingPokemon } = useCloudPendingBattles();
+  const { queueBattlesForReorder } = useTrueSkillStore();
+  const { allPokemon } = usePokemonContext();
+  
+  const isPendingRefinement = isPokemonPending(pokemon.id);
+
+  const handlePrioritizeClick = (e: React.MouseEvent) => {
+    // CRITICAL: This MUST be the first line to prevent event bubbling
+    e.stopPropagation();
+    e.preventDefault();
+
+    console.log(`⭐ [MANUAL_MODE_STAR_TOGGLE] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
+
+    if (!isPendingRefinement) {
+      console.log(`⭐ [MANUAL_MODE_STAR_TOGGLE] Adding ${pokemon.name} to CLOUD pending state`);
+      addPendingPokemon(pokemon.id);
+
+      if (allPokemon.length > 1) {
+        const pool = allPokemon.filter(p => p.id !== pokemon.id);
+        const opponents: number[] = [];
+        const copy = [...pool];
+        while (opponents.length < 3 && copy.length > 0) {
+          const rand = Math.floor(Math.random() * copy.length);
+          opponents.push(copy.splice(rand, 1)[0].id);
+        }
+        try {
+          queueBattlesForReorder(pokemon.id, opponents, -1);
+        } catch (error) {
+          console.error('Failed to queue refinement battles from manual mode card', error);
+        }
+      }
+    } else {
+      console.log(`⭐ [MANUAL_MODE_STAR_TOGGLE] Removing ${pokemon.name} from CLOUD pending state`);
+      removePendingPokemon(pokemon.id);
+    }
+  };
+
+  // If no suggestion handlers provided, just render the children with star functionality
   if (!onSuggestRanking || !onRemoveSuggestion) {
-    return <>{children}</>;
+    return (
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {children}
+        
+        {/* Prioritize button - only visible on card hover */}
+        <button
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+          }}
+          onClick={handlePrioritizeClick}
+          className={`absolute top-1/2 right-1 -translate-y-1/2 z-30 p-1 rounded-full transition-all duration-300 ${
+            isPendingRefinement
+              ? 'opacity-100'
+              : isHovered
+                ? 'opacity-100'
+                : 'opacity-0 pointer-events-none'
+          }`}
+          title={isPendingRefinement ? "Remove from refinement queue" : "Prioritize for refinement battle"}
+          type="button"
+        >
+          <Star
+            className={`w-6 h-6 transition-all duration-300 ${
+              isPendingRefinement 
+                ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] filter brightness-125' 
+                : 'text-gray-500 hover:text-yellow-500'
+            }`}
+            fill={isPendingRefinement ? "url(#manualStarGradient)" : "none"}
+          />
+          {/* SVG gradient definition for shiny star effect */}
+          {isPendingRefinement && (
+            <svg width="0" height="0" className="absolute">
+              <defs>
+                <linearGradient id="manualStarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="25%" stopColor="#f59e0b" />
+                  <stop offset="50%" stopColor="#fbbf24" />
+                  <stop offset="75%" stopColor="#eab308" />
+                  <stop offset="100%" stopColor="#ca8a04" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+        </button>
+      </div>
+    );
   }
 
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <div className="relative cursor-pointer">
+        <div 
+          className="relative cursor-pointer"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
           {children}
+          
+          {/* Prioritize button - only visible on card hover */}
+          <button
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onPointerUp={(e) => {
+              e.stopPropagation();
+            }}
+            onMouseUp={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={handlePrioritizeClick}
+            className={`absolute top-1/2 right-1 -translate-y-1/2 z-30 p-1 rounded-full transition-all duration-300 ${
+              isPendingRefinement
+                ? 'opacity-100'
+                : isHovered
+                  ? 'opacity-100'
+                  : 'opacity-0 pointer-events-none'
+            }`}
+            title={isPendingRefinement ? "Remove from refinement queue" : "Prioritize for refinement battle"}
+            type="button"
+          >
+            <Star
+              className={`w-6 h-6 transition-all duration-300 ${
+                isPendingRefinement 
+                  ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] filter brightness-125' 
+                  : 'text-gray-500 hover:text-yellow-500'
+              }`}
+              fill={isPendingRefinement ? "url(#manualStarGradient)" : "none"}
+            />
+            {/* SVG gradient definition for shiny star effect */}
+            {isPendingRefinement && (
+              <svg width="0" height="0" className="absolute">
+                <defs>
+                  <linearGradient id="manualStarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="25%" stopColor="#f59e0b" />
+                    <stop offset="50%" stopColor="#fbbf24" />
+                    <stop offset="75%" stopColor="#eab308" />
+                    <stop offset="100%" stopColor="#ca8a04" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            )}
+          </button>
         </div>
       </HoverCardTrigger>
       <HoverCardContent className="w-64 p-4">
