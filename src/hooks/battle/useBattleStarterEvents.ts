@@ -1,154 +1,208 @@
-import { useEffect, useRef, useCallback } from "react";
+
+import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
-import { BattleType } from "./types";
-import { useCloudPendingBattles } from "./useCloudPendingBattles";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
 export const useBattleStarterEvents = (
-  filteredPokemon: Pokemon[],
+  allPokemon: Pokemon[],
   currentBattle: Pokemon[],
   initialBattleStartedRef: React.MutableRefObject<boolean>,
   autoTriggerDisabledRef: React.MutableRefObject<boolean>,
-  startNewBattleCallbackRef: React.MutableRefObject<((battleType: BattleType) => Pokemon[]) | null>,
+  startNewBattleCallbackRef: React.MutableRefObject<(() => Pokemon[]) | null>,
   initializationTimerRef: React.MutableRefObject<NodeJS.Timeout | null>,
   initializationCompleteRef: React.MutableRefObject<boolean>,
-  stableSetCurrentBattle: (battle: Pokemon[]) => void,
-  stableSetSelectedPokemon: (pokemon: number[]) => void
+  setCurrentBattle: (battle: Pokemon[]) => void,
+  setSelectedPokemon: (pokemon: number[]) => void
 ) => {
-  const { getAllPendingIds, isHydrated } = useCloudPendingBattles();
+  const eventHandledRef = useRef(false);
+  const masterBattleProcessingRef = useRef(false);
+  
   const { initiatePendingBattle, setInitiatePendingBattle } = useTrueSkillStore();
-  
-  console.log(`🔍 [DEBUG_EVENTS] useBattleStarterEvents hook initialized - hydrated: ${isHydrated}`);
-  
-  const filteredPokemonCountRef = useRef(filteredPokemon.length);
-  const currentBattleLengthRef = useRef(currentBattle.length);
-  const isHydratedRef = useRef(isHydrated);
-  const componentMountedRef = useRef(true);
-  
-  // Update refs when values change
-  filteredPokemonCountRef.current = filteredPokemon.length;
-  currentBattleLengthRef.current = currentBattle.length;
-  isHydratedRef.current = isHydrated;
+  const { getAllPendingIds, removePendingPokemon } = useCloudPendingBattles();
 
-  const checkForPendingPokemon = useCallback(() => {
-    console.log(`🔍 [DEBUG_EVENTS] ===== checkForPendingPokemon CALLED =====`);
-    
-    if (!componentMountedRef.current) {
-      console.log(`🔍 [DEBUG_EVENTS] ❌ Component unmounted`);
-      return;
-    }
-    
-    if (filteredPokemonCountRef.current === 0 || !isHydratedRef.current) {
-      console.log(`🔍 [DEBUG_EVENTS] ❌ No Pokemon or not hydrated`);
-      return;
-    }
-    
-    if (currentBattleLengthRef.current > 0) {
-      console.log(`🔍 [DEBUG_EVENTS] ❌ Current battle exists`);
+  // MASTER_BATTLE_START: The single authoritative battle coordinator
+  useEffect(() => {
+    if (masterBattleProcessingRef.current) {
       return;
     }
 
+    // Only proceed if we have Pokemon data and a pending battle is flagged
+    if (!allPokemon.length || !initiatePendingBattle) {
+      return;
+    }
+
+    masterBattleProcessingRef.current = true;
+    
+    console.log(`🏁 [MASTER_BATTLE_START] Gate locked. Deciding which battle to create.`);
+    
+    // Get pending Pokemon IDs
     const pendingIds = getAllPendingIds();
-    console.log(`🔍 [DEBUG_EVENTS] Pending IDs check:`, pendingIds);
+    console.log(`🚦 [MASTER_BATTLE_START] Pending IDs available: ${pendingIds}`);
     
     if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
-      console.log(`🔍 [DEBUG_EVENTS] ✅ Found ${pendingIds.length} pending Pokemon`);
+      console.log(`🚦 [MASTER_BATTLE_START] Path chosen: PENDING BATTLE.`);
       
-      setTimeout(() => {
-        if (componentMountedRef.current && startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
-          console.log(`🔍 [DEBUG_EVENTS] 🚀 CALLING startNewBattle for pending Pokemon`);
-          try {
-            const result = startNewBattleCallbackRef.current("pairs");
-            console.log(`🔍 [DEBUG_EVENTS] ✅ Battle result:`, result?.map(p => p.name) || 'null');
-          } catch (error) {
-            console.error(`🔍 [DEBUG_EVENTS] ❌ Error:`, error);
-          }
-        }
-      }, 100);
-    }
-  }, [getAllPendingIds, startNewBattleCallbackRef]);
-
-  // ====================================================================================
-  // MASTER BATTLE CREATION EFFECT - SINGLE SOURCE OF TRUTH
-  // This replaces both the FLAG_COORDINATION and INITIAL_BATTLE_DEBUG effects
-  // ====================================================================================
-  useEffect(() => {
-    // This is the master gatekeeper. It only runs when the app is ready for its
-    // VERY FIRST battle and has not started one yet.
-    if (
-      !initialBattleStartedRef.current &&
-      isHydrated &&
-      filteredPokemon.length > 0 &&
-      currentBattle.length === 0 &&
-      startNewBattleCallbackRef.current
-    ) {
-      // --- STEP 1: Lock the gate. ---
-      // We are now committed to starting a battle. Set the ref immediately
-      // to guarantee this entire block of code never runs again.
-      initialBattleStartedRef.current = true;
-      console.log('🏁 [MASTER_BATTLE_START] Gate locked. Deciding which battle to create.');
-
-      // --- STEP 2: Decide which path to take. ---
-      if (initiatePendingBattle) {
-        console.log('🚦 [MASTER_BATTLE_START] Path chosen: PENDING BATTLE.');
+      // Reset the flag first
+      setInitiatePendingBattle(false);
+      console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: false`);
+      
+      // CRITICAL FIX: Actually create the battle from pending IDs
+      console.log(`🎯 [MASTER_BATTLE_START] Creating battle from pending IDs: ${pendingIds}`);
+      
+      // Find pending Pokemon objects
+      const pendingPokemon = allPokemon.filter(p => pendingIds.includes(p.id));
+      console.log(`🎯 [MASTER_BATTLE_START] Found ${pendingPokemon.length} pending Pokemon objects`);
+      
+      if (pendingPokemon.length > 0) {
+        // Use the first pending Pokemon as primary
+        const primaryPokemon = pendingPokemon[0];
+        console.log(`🎯 [MASTER_BATTLE_START] Primary Pokemon: ${primaryPokemon.name}(${primaryPokemon.id})`);
         
-        // We are handling the pending battle, so reset the flag now.
-        setInitiatePendingBattle(false);
-
-        try {
-          // This function already knows to prioritize pending Pokemon.
-          startNewBattleCallbackRef.current("pairs");
-        } catch (error) {
-          console.error('❌ Error during master pending battle start:', error);
+        // Find an opponent from available Pokemon
+        const availableOpponents = allPokemon.filter(p => p.id !== primaryPokemon.id);
+        
+        if (availableOpponents.length > 0) {
+          const opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+          console.log(`🎯 [MASTER_BATTLE_START] Opponent: ${opponent.name}(${opponent.id})`);
+          
+          const pendingBattle = [primaryPokemon, opponent];
+          console.log(`✅ [MASTER_BATTLE_START] Creating pending battle: ${primaryPokemon.name} vs ${opponent.name}`);
+          
+          // Set the battle state
+          setCurrentBattle(pendingBattle);
+          setSelectedPokemon([]);
+          
+          // Remove the pending Pokemon after using it
+          console.log(`🗑️ [MASTER_BATTLE_START] Removing pending Pokemon: ${primaryPokemon.id}`);
+          removePendingPokemon(primaryPokemon.id);
+          
+          // Also remove opponent if it was pending
+          if (pendingIds.includes(opponent.id)) {
+            console.log(`🗑️ [MASTER_BATTLE_START] Also removing pending opponent: ${opponent.id}`);
+            removePendingPokemon(opponent.id);
+          }
+          
+          initialBattleStartedRef.current = true;
+          console.log(`✅ [MASTER_BATTLE_START] Pending battle creation complete!`);
+          
+        } else {
+          console.error(`❌ [MASTER_BATTLE_START] No opponents available for pending battle`);
         }
-
       } else {
-        console.log('🎲 [MASTER_BATTLE_START] Path chosen: RANDOM BATTLE.');
-        // If no pending battle is requested, start a normal random one.
-        try {
-          startNewBattleCallbackRef.current("pairs");
-        } catch (error) {
-          console.error('❌ Error during master random battle start:', error);
+        console.error(`❌ [MASTER_BATTLE_START] No pending Pokemon objects found for IDs: ${pendingIds}`);
+      }
+    } else {
+      console.log(`🚦 [MASTER_BATTLE_START] No pending IDs, falling back to normal battle creation`);
+      
+      // Reset the flag
+      setInitiatePendingBattle(false);
+      console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: false`);
+      
+      // Use the normal battle creation process
+      if (startNewBattleCallbackRef.current) {
+        const newBattle = startNewBattleCallbackRef.current();
+        if (newBattle && newBattle.length > 0) {
+          setCurrentBattle(newBattle);
+          setSelectedPokemon([]);
+          initialBattleStartedRef.current = true;
+          console.log(`✅ [MASTER_BATTLE_START] Normal battle creation complete!`);
+        }
+      }
+    }
+    
+    masterBattleProcessingRef.current = false;
+    
+  }, [
+    allPokemon.length, 
+    initiatePendingBattle, 
+    getAllPendingIds, 
+    removePendingPokemon, 
+    setInitiatePendingBattle, 
+    setCurrentBattle, 
+    setSelectedPokemon, 
+    startNewBattleCallbackRef, 
+    initialBattleStartedRef
+  ]);
+
+  // INITIAL_BATTLE_DEBUG: Secondary initialization for non-pending battles
+  useEffect(() => {
+    if (eventHandledRef.current || initializationCompleteRef.current) {
+      return;
+    }
+
+    console.log(`🚀 [INITIAL_BATTLE_DEBUG] Effect triggered - Pokemon: ${allPokemon.length}, Battle: ${currentBattle.length}, Started: ${initialBattleStartedRef.current}`);
+
+    // CRITICAL FIX: Check for pending battle flag and defer to Master Battle Starter
+    if (initiatePendingBattle) {
+      console.log(`🏁 [INITIAL_BATTLE_DEBUG] Deferring to Master Battle Starter for pending battle.`);
+      return;
+    }
+
+    const pokemonDataAvailable = allPokemon.length > 0;
+    const isBattleActive = currentBattle.length > 0;
+    const initialStarted = initialBattleStartedRef.current;
+
+    if (pokemonDataAvailable && !isBattleActive && !initialStarted) {
+      console.log(`🚀 [INITIAL_BATTLE_DEBUG] Starting initial RANDOM battle...`);
+      
+      if (startNewBattleCallbackRef.current) {
+        const newBattle = startNewBattleCallbackRef.current();
+        if (newBattle && newBattle.length > 0) {
+          setCurrentBattle(newBattle);
+          setSelectedPokemon([]);
+          initialBattleStartedRef.current = true;
+          eventHandledRef.current = true;
+          console.log(`✅ [INITIAL_BATTLE_DEBUG] Initial battle created successfully!`);
+        } else {
+          console.error(`❌ [INITIAL_BATTLE_DEBUG] Failed to create initial battle`);
         }
       }
     }
   }, [
-    // Dependencies that determine if we are ready for ANY battle
-    isHydrated,
-    filteredPokemon.length,
-    currentBattle.length,
-    initiatePendingBattle, // This is needed to re-evaluate if the flag changes
-    setInitiatePendingBattle
+    allPokemon.length, 
+    currentBattle.length, 
+    initialBattleStartedRef, 
+    startNewBattleCallbackRef, 
+    setCurrentBattle, 
+    setSelectedPokemon, 
+    initiatePendingBattle
   ]);
 
-  // Event listeners for manual starring (when already in battle mode)
+  // Mode switch event listener
   useEffect(() => {
-    console.log(`🔍 [DEBUG_EVENTS] Setting up event listeners`);
-    componentMountedRef.current = true;
-    
-    const handlePokemonStarred = (event: CustomEvent) => {
-      console.log(`🔍 [DEBUG_EVENTS] POKEMON STARRED EVENT`);
-      if (componentMountedRef.current) {
-        checkForPendingPokemon();
+    const handleModeSwitch = (event: any) => {
+      const { mode, timestamp } = event.detail;
+      console.log(`🔄 [MODE_SWITCH_HANDLER] Mode switched to: ${mode} at ${timestamp}`);
+      
+      if (mode === 'battle') {
+        console.log(`🚦 [MODE_COORDINATION] Entering battle mode, checking for pending battles`);
+        
+        const pendingIds = getAllPendingIds();
+        if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
+          console.log(`🚦 [MODE_COORDINATION] Found pending battles: ${pendingIds}`);
+          console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: true`);
+          setInitiatePendingBattle(true);
+        } else {
+          console.log(`🚦 [MODE_COORDINATION] No pending battles found`);
+        }
       }
     };
 
-    document.addEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
+    document.addEventListener('mode-switch', handleModeSwitch);
     
     return () => {
-      console.log(`🔍 [DEBUG_EVENTS] Removing event listeners`);
-      componentMountedRef.current = false;
-      document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
+      document.removeEventListener('mode-switch', handleModeSwitch);
     };
-  }, [checkForPendingPokemon]);
+  }, [getAllPendingIds, setInitiatePendingBattle]);
 
-  // Cleanup
+  // Reset refs when Pokemon data changes
   useEffect(() => {
-    return () => {
-      componentMountedRef.current = false;
-      if (initializationTimerRef.current) {
-        clearTimeout(initializationTimerRef.current);
-      }
-    };
-  }, []);
+    if (allPokemon.length === 0) {
+      eventHandledRef.current = false;
+      initialBattleStartedRef.current = false;
+      initializationCompleteRef.current = false;
+      masterBattleProcessingRef.current = false;
+    }
+  }, [allPokemon.length]);
 };
