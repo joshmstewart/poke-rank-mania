@@ -184,7 +184,7 @@ export const useBattleStarterEvents = (
     }
   }, [isHydrated, filteredPokemon.length, checkForPendingPokemon]);
 
-  // CRITICAL FIX: Auto-trigger first battle with stable dependencies
+  // CRITICAL FIX: Auto-trigger first battle ONLY if no pending Pokemon exist
   useEffect(() => {
     console.log(`🔍 [DEBUG_EVENTS] Auto-trigger effect checking conditions:`);
     console.log(`🔍 [DEBUG_EVENTS] - initialBattleStarted: ${initialBattleStartedRef.current}`);
@@ -202,10 +202,19 @@ export const useBattleStarterEvents = (
       startNewBattleCallbackRef.current &&
       isHydrated
     ) {
-      console.log(`🔍 [DEBUG_EVENTS] ✅ Auto-triggering first battle with ${filteredPokemon.length} Pokemon`);
-      
+      // CRITICAL FIX: Check for pending Pokemon before auto-triggering
       const pendingIds = getAllPendingIds();
       console.log(`🔍 [DEBUG_EVENTS] Pending check before auto-trigger: ${pendingIds}`);
+      console.log(`🔍 [DEBUG_EVENTS] Pending count: ${pendingIds?.length || 0}`);
+      
+      if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
+        console.log(`🔍 [DEBUG_EVENTS] ❌ PENDING POKEMON DETECTED - SKIPPING AUTO-TRIGGER`);
+        console.log(`🔍 [DEBUG_EVENTS] Let pending event handler create the battle instead`);
+        return;
+      }
+      
+      console.log(`🔍 [DEBUG_EVENTS] ✅ No pending Pokemon - proceeding with auto-trigger`);
+      console.log(`🔍 [DEBUG_EVENTS] ✅ Auto-triggering first battle with ${filteredPokemon.length} Pokemon`);
       
       const triggerTimer = setTimeout(() => {
         console.log(`🔍 [DEBUG_EVENTS] Auto-trigger setTimeout executing...`);
