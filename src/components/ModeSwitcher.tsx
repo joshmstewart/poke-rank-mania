@@ -52,6 +52,21 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     console.log(`🔥 [${debugId}] Calling onModeChange(${mode})`);
     onModeChange(mode);
     
+    // CRITICAL FIX: Dispatch the mode-switch event that the battle handlers are listening for
+    const event = new CustomEvent('mode-switch', { 
+      detail: { 
+        mode: mode, 
+        previousMode: currentMode,
+        timestamp: new Date().toISOString()
+      } 
+    });
+    
+    // Delay the dispatch to ensure state has updated
+    setTimeout(() => {
+      console.log(`🔥 [${debugId}] Dispatching mode-switch event for mode: ${mode}`);
+      document.dispatchEvent(event);
+    }, 50);
+    
     console.log(`🔥 [${debugId}] Mode switch completed`);
   };
 
