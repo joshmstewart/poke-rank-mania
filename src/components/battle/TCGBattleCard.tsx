@@ -206,12 +206,18 @@ const TCGBattleCard: React.FC<TCGBattleCardProps> = memo(({
             e.stopPropagation();
             e.preventDefault();
           }}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+          }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
-            isPendingRefinement 
-              ? 'opacity-100' 
-              : isHovered && !isProcessing 
-                ? 'opacity-100' 
+            isPendingRefinement
+              ? 'opacity-100'
+              : isHovered && !isProcessing
+                ? 'opacity-100'
                 : 'opacity-0 pointer-events-none'
           }`}
           title={isPendingRefinement ? "Remove from refinement queue" : "Prioritize for refinement battle"}
