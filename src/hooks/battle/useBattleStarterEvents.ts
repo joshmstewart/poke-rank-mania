@@ -202,13 +202,13 @@ export const useBattleStarterEvents = (
       startNewBattleCallbackRef.current &&
       isHydrated
     ) {
-      // CRITICAL FIX: Check for pending Pokemon before auto-triggering
+      // CRITICAL FIX: Check for pending Pokemon IMMEDIATELY before any setTimeout
       const pendingIds = getAllPendingIds();
-      console.log(`🔍 [DEBUG_EVENTS] Pending check before auto-trigger: ${pendingIds}`);
-      console.log(`🔍 [DEBUG_EVENTS] Pending count: ${pendingIds?.length || 0}`);
+      console.log(`🔍 [DEBUG_EVENTS] 🚨 IMMEDIATE pending check before auto-trigger: ${pendingIds}`);
+      console.log(`🔍 [DEBUG_EVENTS] 🚨 IMMEDIATE pending count: ${pendingIds?.length || 0}`);
       
       if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
-        console.log(`🔍 [DEBUG_EVENTS] ❌ PENDING POKEMON DETECTED - SKIPPING AUTO-TRIGGER`);
+        console.log(`🔍 [DEBUG_EVENTS] ❌ PENDING POKEMON DETECTED - COMPLETELY SKIPPING AUTO-TRIGGER`);
         console.log(`🔍 [DEBUG_EVENTS] Let pending event handler create the battle instead`);
         return;
       }
