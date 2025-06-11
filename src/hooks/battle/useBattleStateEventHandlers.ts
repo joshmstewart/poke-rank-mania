@@ -73,6 +73,33 @@ export const useBattleStateEventHandlers = (
     };
   }, [milestoneHandlers, stateData.battleHistory]);
 
+  // CRITICAL FIX: Context-aware pokemon-starred-for-battle event listener
+  useEffect(() => {
+    const handlePokemonStarred = (event: CustomEvent) => {
+      console.log(`⭐ [POKEMON_STARRED_EVENT] Received pokemon-starred-for-battle event:`, event.detail);
+      
+      // CRITICAL FIX: Check if we're in battle mode before starting a battle
+      const currentPath = window.location.pathname;
+      const isInBattleMode = currentPath === '/' || currentPath.includes('battle');
+      
+      console.log(`⭐ [POKEMON_STARRED_EVENT] Current mode check - inBattleMode: ${isInBattleMode}, path: ${currentPath}`);
+      
+      if (!isInBattleMode) {
+        console.log(`⭐ [POKEMON_STARRED_EVENT] Not in battle mode, deferring battle start until mode switch`);
+        return; // Do nothing when not in battle mode
+      }
+      
+      console.log(`⭐ [POKEMON_STARRED_EVENT] In battle mode, starting new battle...`);
+      startNewBattleWrapper();
+    };
+
+    document.addEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
+    
+    return () => {
+      document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
+    };
+  }, [startNewBattleWrapper]);
+
   // CRITICAL FIX: Add mode check to prevent infinite loop on non-battle pages
   useEffect(() => {
     // Check if we're in battle mode by looking at URL or a mode flag
