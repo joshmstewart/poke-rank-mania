@@ -1,4 +1,3 @@
-
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
@@ -105,55 +104,36 @@ export const useBattleStarterIntegration = (
     if (cloudPendingIds && Array.isArray(cloudPendingIds) && cloudPendingIds.length > 0) {
       console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== FOUND ${cloudPendingIds.length} CLOUD PENDING BATTLES =====`);
       
-      // Find all pending Pokemon in the filtered set
-      const pendingPokemon = filteredPokemon.filter(p => cloudPendingIds.includes(p.id));
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Found ${pendingPokemon.length} pending Pokemon in filtered set:`);
+      // CRITICAL FIX: Actually find the Pokemon objects for the pending IDs
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Looking for pending Pokemon in allPokemon (${allPokemon.length} total)`);
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] First few allPokemon IDs: ${allPokemon.slice(0, 10).map(p => p.id)}`);
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Pending IDs to find: ${cloudPendingIds.slice(0, 10)}`);
+      
+      const pendingPokemon = allPokemon.filter(p => cloudPendingIds.includes(p.id));
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Found ${pendingPokemon.length} pending Pokemon in allPokemon:`);
       pendingPokemon.forEach(p => console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] - ${p.name}(${p.id})`));
       
       if (pendingPokemon.length === 0) {
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ CRITICAL: No pending Pokemon found in filtered set!`);
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Pending IDs: ${cloudPendingIds}`);
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Available IDs: ${filteredPokemon.map(p => p.id).slice(0, 10)}`);
+        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ CRITICAL: No pending Pokemon found in allPokemon!`);
+        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] This means the pending IDs don't match any Pokemon in the dataset`);
         
-        // Check if pending Pokemon exist in original allPokemon
-        const pendingInOriginal = allPokemon.filter(p => cloudPendingIds.includes(p.id));
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Pending Pokemon in original set: ${pendingInOriginal.map(p => `${p.name}(${p.id})`).join(', ')}`);
+        // Check a sample of allPokemon IDs to see what range we have
+        const sampleIds = allPokemon.slice(0, 20).map(p => p.id);
+        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Sample allPokemon IDs: ${sampleIds}`);
+        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Pending IDs: ${cloudPendingIds.slice(0, 10)}`);
         
-        // Emergency fallback: use unfiltered pending Pokemon
-        if (pendingInOriginal.length > 0) {
-          console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🚨 EMERGENCY: Using unfiltered pending Pokemon`);
-          const primaryPokemon = pendingInOriginal[0];
-          const availableOpponents = filteredPokemon.filter(p => p.id !== primaryPokemon.id);
-          
-          if (availableOpponents.length > 0) {
-            const opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
-            const emergencyResult = [primaryPokemon, opponent];
-            
-            console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🚨 EMERGENCY BATTLE: ${primaryPokemon.name} vs ${opponent.name}`);
-            console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
-            setCurrentBattle(emergencyResult);
-            setSelectedPokemon([]);
-            
-            // CRITICAL FIX: Remove the pending Pokemon after using it
-            console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ REMOVING PENDING POKEMON: ${primaryPokemon.id}`);
-            removePendingPokemon(primaryPokemon.id);
-            
-            console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Emergency battle state set`);
-            return emergencyResult;
-          }
-        }
-        
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ⚠️ No emergency options available, falling back to normal battle`);
+        // Fall back to normal battle generation
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Falling back to normal battle generation`);
       } else {
-        // SUCCESS: We have pending Pokemon, create a battle with them
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ SUCCESS: Creating battle with pending Pokemon`);
+        // SUCCESS: We have actual pending Pokemon objects, create a battle with them
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ SUCCESS: Creating battle with ${pendingPokemon.length} actual pending Pokemon`);
         
         // Use the first pending Pokemon as primary
         const primaryPokemon = pendingPokemon[0];
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Primary Pokemon: ${primaryPokemon.name}(${primaryPokemon.id})`);
         
-        // Find opponents (prefer non-pending Pokemon, but allow pending if needed)
-        const nonPendingOpponents = filteredPokemon.filter(p => 
+        // Find an opponent (prefer non-pending Pokemon from allPokemon, but allow pending if needed)
+        const nonPendingOpponents = allPokemon.filter(p => 
           p.id !== primaryPokemon.id && !cloudPendingIds.includes(p.id)
         );
         
@@ -167,7 +147,7 @@ export const useBattleStarterIntegration = (
             opponent = otherPendingOpponents[Math.floor(Math.random() * otherPendingOpponents.length)];
             console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Using pending opponent: ${opponent.name}(${opponent.id})`);
           } else {
-            const anyOpponents = filteredPokemon.filter(p => p.id !== primaryPokemon.id);
+            const anyOpponents = allPokemon.filter(p => p.id !== primaryPokemon.id);
             if (anyOpponents.length > 0) {
               opponent = anyOpponents[Math.floor(Math.random() * anyOpponents.length)];
               console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Using any available opponent: ${opponent.name}(${opponent.id})`);
@@ -180,6 +160,7 @@ export const useBattleStarterIntegration = (
         
         const pendingResult = [primaryPokemon, opponent];
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ PENDING BATTLE CREATED: ${primaryPokemon.name} vs ${opponent.name}`);
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ PENDING BATTLE IDs: ${primaryPokemon.id} vs ${opponent.id}`);
         
         // Set the battle immediately
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
