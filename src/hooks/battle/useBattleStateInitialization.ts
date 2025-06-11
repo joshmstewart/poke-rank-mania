@@ -122,9 +122,9 @@ export const useBattleStateInitialization = (
     console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] Call ID: ${callId}`);
     console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] Battle type: ${battleType}`);
     
-    // CRITICAL FIX: Check for pending battle flag before proceeding
+    // CRITICAL FIX: Check for pending battle flag EARLY - this is the correct location
     if (initiatePendingBattle) {
-      console.log(`🏁 [ENHANCED_START_MEGA_DEBUG] Pending battle initiation in progress, skipping random battle generation.`);
+      console.log(`🏁 [ENHANCED_START_MEGA_DEBUG] Pending battle initiation in progress, deferring to Master Battle Starter.`);
       console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] ===== RETURNING EMPTY ARRAY FOR PENDING =====`);
       return [];
     }
@@ -175,16 +175,6 @@ export const useBattleStateInitialization = (
       return [];
     }
   }, [allPokemon, providersData, generateRandomBattle, initiatePendingBattle]);
-
-  // =======================================================
-  // CRITICAL FIX: COMPLETELY DISABLE INITIAL_BATTLE_DEBUG 
-  // LOGIC WHEN PENDING BATTLE IS FLAGGED
-  // 
-  // This was the source of the race condition. The entire
-  // INITIAL_BATTLE_DEBUG process must be prevented from
-  // running when initiatePendingBattle is true, not just
-  // the battle generation part.
-  // =======================================================
 
   return {
     stateManagerData,
