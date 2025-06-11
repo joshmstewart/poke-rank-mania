@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { generations } from "@/services/pokemon";
@@ -24,40 +23,6 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
   // Get Pokemon data from context
   const { allPokemon, pokemonLookupMap } = usePokemonContext();
   
-  // CRITICAL DEBUG: Log what's actually in the lookup map for Deoxys
-  useEffect(() => {
-    if (pokemonLookupMap.size > 0) {
-      console.log(`🔍 [LOOKUP_MAP_DEBUG] Total Pokemon in lookup map: ${pokemonLookupMap.size}`);
-      
-      // Find all Deoxys forms in the map
-      const deoxysIds = [386, 10001, 10002, 10003]; // Normal, Attack, Defense, Speed Deoxys IDs
-      deoxysIds.forEach(id => {
-        const pokemon = pokemonLookupMap.get(id);
-        if (pokemon) {
-          console.log(`🔍 [LOOKUP_MAP_DEBUG] Deoxys ID ${id}: name="${pokemon.name}"`);
-        } else {
-          console.log(`🔍 [LOOKUP_MAP_DEBUG] Deoxys ID ${id}: NOT FOUND`);
-        }
-      });
-      
-      // Also check a broader range for any Deoxys variants
-      for (let i = 380; i <= 390; i++) {
-        const pokemon = pokemonLookupMap.get(i);
-        if (pokemon && pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔍 [LOOKUP_MAP_DEBUG] Found Deoxys variant ID ${i}: name="${pokemon.name}"`);
-        }
-      }
-      
-      // Check high ID range for forms
-      for (let i = 10000; i <= 10010; i++) {
-        const pokemon = pokemonLookupMap.get(i);
-        if (pokemon && pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🔍 [LOOKUP_MAP_DEBUG] Found Deoxys form ID ${i}: name="${pokemon.name}"`);
-        }
-      }
-    }
-  }, [pokemonLookupMap]);
-  
   // Get current generation name
   const currentGeneration = generations.find(gen => gen.id === selectedGeneration);
   
@@ -79,34 +44,40 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
     return allPokemon.filter(p => p.id >= min && p.id <= max);
   }, [allPokemon, selectedGeneration]);
   
-  // Transform TrueSkill data to ranked Pokemon format - MATCH GLOBAL RANKINGS APPROACH
+  // Transform TrueSkill data to ranked Pokemon format with DETAILED AUDIT LOGGING
   const rankings = useMemo(() => {
+    const auditId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] ===== STARTING RANKING FILTER AUDIT =====`);
+    
     const ratings = getAllRatings();
+    const rawRatingIds = Object.keys(ratings);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 1 - Raw ratings from TrueSkill store: ${rawRatingIds.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Raw rating IDs sample:`, rawRatingIds.slice(0, 10).join(', '));
     
     if (!filteredPokemon || filteredPokemon.length === 0) {
+      console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] EARLY EXIT - No filtered Pokemon available`);
       return [];
     }
     
-    // Convert ratings to RankedPokemon format - USING GLOBAL RANKINGS PATTERN
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 2 - Pokemon lookup map size: ${pokemonLookupMap.size}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 3 - Selected generation: ${selectedGeneration} (${currentGeneration?.name || 'All Generations'})`);
+    
+    // Track lookup failures
+    const lookupFailures: string[] = [];
+    const generationFilteredOut: string[] = [];
+    const battleCountFilteredOut: string[] = [];
+    const successfullyProcessed: string[] = [];
+    
+    // Convert ratings to RankedPokemon format
     const rankedPokemon: RankedPokemon[] = Object.entries(ratings)
       .map(([pokemonId, rating]) => {
         const pokemon = pokemonLookupMap.get(parseInt(pokemonId));
-        if (!pokemon) return null; // Skip if Pokemon data not found
-        
-        // CRITICAL DEBUG: Log the raw Pokemon data and formatted result
-        if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Pokemon ID ${pokemonId}:`);
-          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Raw pokemon.name: "${pokemon.name}"`);
-          
-          const formattedName = formatPokemonName(pokemon.name);
-          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Formatted name: "${formattedName}"`);
-          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Should be "Defense Deoxys" or similar`);
+        if (!pokemon) {
+          lookupFailures.push(pokemonId);
+          return null; // Skip if Pokemon data not found
         }
         
-        // CRITICAL: Format the raw name for display
-        const formattedName = formatPokemonName(pokemon.name);
-        
-        // Filter by generation if needed
+        // Check generation filtering
         if (selectedGeneration > 0) {
           const genRanges: { [key: number]: [number, number] } = {
             1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493],
@@ -114,22 +85,34 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           };
           
           const range = genRanges[selectedGeneration];
-          if (!range) return null;
+          if (!range) {
+            generationFilteredOut.push(pokemonId);
+            return null;
+          }
           
           const [min, max] = range;
-          if (pokemon.id < min || pokemon.id > max) return null;
+          if (pokemon.id < min || pokemon.id > max) {
+            generationFilteredOut.push(pokemonId);
+            return null;
+          }
         }
         
-        const score = rating.mu - 2 * rating.sigma; // Conservative score estimate
+        // Check battle count (implicit filter for display)
         const battleCount = rating.battleCount || 0;
+        if (battleCount === 0) {
+          battleCountFilteredOut.push(pokemonId);
+          // Note: We're not filtering these out, just tracking them
+        }
+        
+        const formattedName = formatPokemonName(pokemon.name);
+        const score = rating.mu - 2 * rating.sigma; // Conservative score estimate
         const wins = Math.max(0, Math.floor(battleCount * 0.6)); // Estimate wins (60% win rate)
         const losses = battleCount - wins;
         const winRate = battleCount > 0 ? (wins / battleCount) * 100 : 0;
         
-        // CRITICAL: Use the formatted name, not the raw Pokemon name
         const result = {
           id: pokemon.id,
-          name: formattedName, // Use the properly formatted name
+          name: formattedName,
           image: pokemon.image,
           types: pokemon.types || [], // Ensure types is always an array
           score: score,
@@ -141,17 +124,45 @@ const PersonalRankingsView: React.FC<PersonalRankingsViewProps> = ({
           rating: rating
         } as RankedPokemon;
         
-        if (pokemon.name.toLowerCase().includes('deoxys')) {
-          console.log(`🐛 [DEOXYS_SPECIFIC_DEBUG] Final result name: "${result.name}"`);
-        }
-        
+        successfullyProcessed.push(pokemonId);
         return result;
       })
       .filter((pokemon): pokemon is RankedPokemon => pokemon !== null);
     
+    // DETAILED AUDIT REPORTING
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] ===== FILTER AUDIT RESULTS =====`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 4 - Lookup failures: ${lookupFailures.length}`);
+    if (lookupFailures.length > 0) {
+      console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Failed lookup IDs:`, lookupFailures.slice(0, 10).join(', '), lookupFailures.length > 10 ? `... and ${lookupFailures.length - 10} more` : '');
+    }
+    
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 5 - Generation filtered out: ${generationFilteredOut.length}`);
+    if (generationFilteredOut.length > 0) {
+      console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Generation filtered IDs:`, generationFilteredOut.slice(0, 10).join(', '), generationFilteredOut.length > 10 ? `... and ${generationFilteredOut.length - 10} more` : '');
+    }
+    
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 6 - Zero battle count: ${battleCountFilteredOut.length}`);
+    if (battleCountFilteredOut.length > 0) {
+      console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Zero battle IDs:`, battleCountFilteredOut.slice(0, 10).join(', '), battleCountFilteredOut.length > 10 ? `... and ${battleCountFilteredOut.length - 10} more` : '');
+    }
+    
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 7 - Successfully processed: ${successfullyProcessed.length}`);
+    
     // Sort by score descending
-    return rankedPokemon.sort((a, b) => b.score - a.score);
-  }, [getAllRatings, pokemonLookupMap, selectedGeneration, filteredPokemon]);
+    const sortedRankings = rankedPokemon.sort((a, b) => b.score - a.score);
+    
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] STEP 8 - Final sorted rankings: ${sortedRankings.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] ===== AUDIT SUMMARY =====`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Started with: ${rawRatingIds.length} raw ratings`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Lost to lookup failures: ${lookupFailures.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Lost to generation filter: ${generationFilteredOut.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Zero battle count (kept): ${battleCountFilteredOut.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Final display count: ${sortedRankings.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] Total lost: ${rawRatingIds.length - sortedRankings.length}`);
+    console.log(`🔍🔍🔍 [RANKING_FILTER_AUDIT_${auditId}] ===== END AUDIT =====`);
+    
+    return sortedRankings;
+  }, [getAllRatings, pokemonLookupMap, selectedGeneration, filteredPokemon, currentGeneration]);
 
   // Update local rankings when rankings change
   useEffect(() => {
