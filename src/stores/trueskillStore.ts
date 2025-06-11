@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -287,7 +288,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           set({ syncInProgress: true });
           
           try {
-            console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles, ${state.pendingBattles.length} pending battles, ${state.refinementQueue.length} refinement battles`);
+            // ===== TRACK RATINGS COUNT BEFORE SYNC =====
+            const ratingsBeforeSync = Object.keys(state.ratings).length;
+            console.log(`🆙🆙🆙 [REGULAR_SYNC_AUDIT] ===== REGULAR SYNC TO CLOUD START =====`);
+            console.log(`🆙🆙🆙 [REGULAR_SYNC_AUDIT] Ratings before sync: ${ratingsBeforeSync}`);
+            console.log(`🆙🆙🆙 [REGULAR_SYNC_AUDIT] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles, ${state.pendingBattles.length} pending battles, ${state.refinementQueue.length} refinement battles`);
             
             const response = await fetch('/api/trueskill/sync', {
               method: 'POST',
@@ -313,7 +318,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               result = JSON.parse(raw);
             } catch (jsonError) {
               console.error(
-                `[TRUESKILL_STORE] Failed to parse JSON: status ${response.status}, body: ${raw}`
+                `🆙🆙🆙 [REGULAR_SYNC_AUDIT] Failed to parse JSON: status ${response.status}, body: ${raw}`
               );
               toast({
                 title: 'Sync Error',
@@ -325,12 +330,21 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
             if (result.success) {
               set({ lastSyncTime: Date.now() });
-              console.log(`[TRUESKILL_STORE] Successfully synced to cloud`);
+              
+              // ===== CHECK RATINGS COUNT AFTER SYNC =====
+              const ratingsAfterSync = Object.keys(get().ratings).length;
+              console.log(`🆙🆙🆙 [REGULAR_SYNC_AUDIT] Ratings after sync: ${ratingsAfterSync}`);
+              console.log(`🆙🆙🆙 [REGULAR_SYNC_AUDIT] Rating count change: ${ratingsBeforeSync} → ${ratingsAfterSync} (${ratingsAfterSync - ratingsBeforeSync})`);
+              console.log(`🆙🆙🆙 [REGULAR_SYNC_AUDIT] Successfully synced to cloud`);
+              
+              if (ratingsAfterSync !== ratingsBeforeSync) {
+                console.log(`🚨🚨🚨 [REGULAR_SYNC_AUDIT] ⚠️ RATING COUNT CHANGED DURING REGULAR SYNC!`);
+              }
             } else {
               throw new Error(result.error || 'Unknown sync error');
             }
           } catch (error) {
-            console.error('[TRUESKILL_STORE] Sync to cloud failed:', error);
+            console.error('🆙🆙🆙 [REGULAR_SYNC_AUDIT] Sync to cloud failed:', error);
           } finally {
             set({ syncInProgress: false });
           }
@@ -339,7 +353,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       loadFromCloud: async () => {
         try {
-          console.log(`[TRUESKILL_STORE] Loading from cloud...`);
+          // ===== TRACK RATINGS COUNT BEFORE LOAD =====
+          const ratingsBeforeLoad = Object.keys(get().ratings).length;
+          console.log(`📥📥📥 [LOAD_FROM_CLOUD_AUDIT] ===== LOAD FROM CLOUD START =====`);
+          console.log(`📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Ratings before load: ${ratingsBeforeLoad}`);
+          console.log(`📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Loading from cloud...`);
           
           const response = await fetch('/api/trueskill/get', {
             method: 'POST',
@@ -353,8 +371,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           const result = await response.json();
           if (result.success && result.ratings) {
+            const cloudRatingsCount = Object.keys(result.ratings).length;
+            console.log(`📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Cloud data: ${cloudRatingsCount} ratings, ${result.totalBattles || 0} total battles, ${(result.pendingBattles || []).length} pending battles, ${(result.refinementQueue || []).length} refinement battles`);
+            
             console.log(
-              `[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${
+              `📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Loaded ${Object.keys(result.ratings).length} ratings, ${
                 result.totalBattles || 0} total battles, ${
                 (result.pendingBattles || []).length} pending battles, ${
                 (result.refinementQueue || []).length} refinement battles from cloud`
@@ -366,18 +387,41 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               refinementQueue: result.refinementQueue || [],
               isHydrated: true
             });
-            console.log('[TRUESKILL_STORE] Hydration flag set after cloud load');
+            
+            // ===== CHECK RATINGS COUNT AFTER LOAD =====
+            const ratingsAfterLoad = Object.keys(get().ratings).length;
+            console.log(`📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Ratings after load: ${ratingsAfterLoad}`);
+            console.log(`📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Rating count change: ${ratingsBeforeLoad} → ${ratingsAfterLoad} (${ratingsAfterLoad - ratingsBeforeLoad})`);
+            console.log('📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Hydration flag set after cloud load');
+            
+            if (ratingsAfterLoad !== ratingsBeforeLoad) {
+              console.log(`🚨🚨🚨 [LOAD_FROM_CLOUD_AUDIT] ⚠️ RATING COUNT CHANGED DURING LOAD FROM CLOUD!`);
+            }
           }
         } catch (error) {
-          console.error('[TRUESKILL_STORE] Load from cloud failed:', error);
+          console.error('📥📥📥 [LOAD_FROM_CLOUD_AUDIT] Load from cloud failed:', error);
         }
       },
 
       smartSync: async () => {
         const state = get();
-        if (state.syncInProgress) return;
+        
+        // ===== SMART SYNC TRIGGER CONDITIONS AUDIT =====
+        const triggerAuditId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] ===== SMART SYNC TRIGGER AUDIT =====`);
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Smart sync called`);
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Current sync in progress: ${state.syncInProgress}`);
+        
+        if (state.syncInProgress) {
+          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] ❌ EXITING - Sync already in progress`);
+          return;
+        }
 
         set({ syncInProgress: true });
+        
+        // ===== TRACK RATINGS COUNT BEFORE SMART SYNC =====
+        const ratingsBeforeSmartSync = Object.keys(state.ratings).length;
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Ratings before smart sync: ${ratingsBeforeSmartSync}`);
         
         // ===== NEW COMPREHENSIVE MERGE LOGGING =====
         const mergeId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -529,6 +573,15 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 6 - STATE UPDATED AND HYDRATED`);
           console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Hydration flag set after smart sync`);
           
+          // ===== CHECK RATINGS COUNT AFTER SMART SYNC MERGE =====
+          const ratingsAfterSmartSync = Object.keys(get().ratings).length;
+          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Ratings after smart sync: ${ratingsAfterSmartSync}`);
+          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Rating count change: ${ratingsBeforeSmartSync} → ${ratingsAfterSmartSync} (${ratingsAfterSmartSync - ratingsBeforeSmartSync})`);
+          
+          if (ratingsAfterSmartSync !== ratingsBeforeSmartSync) {
+            console.log(`🚨🚨🚨 [SMART_SYNC_TRIGGER_${triggerAuditId}] ⚠️ RATING COUNT CHANGED DURING SMART SYNC!`);
+          }
+          
           // Sync the final merged state back to the cloud
           await get().syncToCloud();
           
@@ -562,10 +615,24 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       restoreSessionFromCloud: async (userId: string) => {
         try {
-          console.log(`[TRUESKILL_STORE] Restoring session for user: ${userId}`);
+          // ===== TRACK RATINGS COUNT BEFORE RESTORE SESSION =====
+          const ratingsBeforeRestore = Object.keys(get().ratings).length;
+          console.log(`🔄🔄🔄 [RESTORE_SESSION_AUDIT] ===== RESTORE SESSION START =====`);
+          console.log(`🔄🔄🔄 [RESTORE_SESSION_AUDIT] Ratings before restore: ${ratingsBeforeRestore}`);
+          console.log(`🔄🔄🔄 [RESTORE_SESSION_AUDIT] Restoring session for user: ${userId}`);
+          
           await get().smartSync();
+          
+          // ===== CHECK RATINGS COUNT AFTER RESTORE SESSION =====
+          const ratingsAfterRestore = Object.keys(get().ratings).length;
+          console.log(`🔄🔄🔄 [RESTORE_SESSION_AUDIT] Ratings after restore: ${ratingsAfterRestore}`);
+          console.log(`🔄🔄🔄 [RESTORE_SESSION_AUDIT] Rating count change: ${ratingsBeforeRestore} → ${ratingsAfterRestore} (${ratingsAfterRestore - ratingsBeforeRestore})`);
+          
+          if (ratingsAfterRestore !== ratingsBeforeRestore) {
+            console.log(`🚨🚨🚨 [RESTORE_SESSION_AUDIT] ⚠️ RATING COUNT CHANGED DURING SESSION RESTORE!`);
+          }
         } catch (error) {
-          console.error('[TRUESKILL_STORE] Session restoration failed:', error);
+          console.error('🔄🔄🔄 [RESTORE_SESSION_AUDIT] Session restoration failed:', error);
         }
       }
     }),
