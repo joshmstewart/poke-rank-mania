@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -69,32 +68,39 @@ export const useBattleStarterEvents = (
     }
   }, [getAllPendingIds, startNewBattleCallbackRef]);
 
-  // ROBUST FIX: Check for initiatePendingBattle flag when battle mode is ready
+  // ROBUST AND FINAL FIX: Synchronously check for the flag and start the battle
   useEffect(() => {
+    // Only run if ALL conditions are perfect for starting a pending battle.
     if (
-      componentMountedRef.current &&
+      initiatePendingBattle &&
       isHydrated &&
       filteredPokemon.length > 0 &&
       currentBattle.length === 0 &&
-      startNewBattleCallbackRef.current &&
-      initiatePendingBattle
+      startNewBattleCallbackRef.current
     ) {
-      console.log(`🚦 [FLAG_COORDINATION] Battle mode ready with initiatePendingBattle flag set`);
       console.log(`🚦 [FLAG_COORDINATION] Triggering pending battle and clearing flag`);
-      
-      // Clear the flag first to prevent multiple triggers
+
+      // IMPORTANT: Clear the flag BEFORE starting the battle to prevent re-entry.
       setInitiatePendingBattle(false);
       
-      // Trigger the pending battle check
-      checkForPendingPokemon();
+      // Call the battle starter function directly and SYNCHRONOUSLY.
+      // The startNewBattle function already contains the logic to prioritize pending Pokemon.
+      try {
+        console.log(`🚦 [FLAG_COORDINATION] 🚀 Calling startNewBattle for pending Pokemon SYNCHRONOUSLY`);
+        startNewBattleCallbackRef.current("pairs");
+      } catch (error) {
+        console.error(`🚦 [FLAG_COORDINATION] ❌ Error during synchronous pending battle start:`, error);
+      }
     }
   }, [
+    // The dependencies that determine if we are ready for a battle
+    initiatePendingBattle,
     isHydrated,
     filteredPokemon.length,
     currentBattle.length,
-    initiatePendingBattle,
+    // Other stable dependencies
     setInitiatePendingBattle,
-    checkForPendingPokemon
+    startNewBattleCallbackRef // Pass the ref object itself
   ]);
 
   // Event listeners for manual starring (when already in battle mode)
