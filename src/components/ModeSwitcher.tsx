@@ -17,16 +17,13 @@ interface ModeSwitcherProps {
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
   const { getAllPendingIds, hasPendingPokemon, isHydrated } = useCloudPendingBattles();
 
-  // CRITICAL DEBUG: Add debugging directly to button clicks
   const handleBattleClick = () => {
     console.log(`🚨🚨🚨 BATTLE BUTTON CLICKED! Current mode: ${currentMode}`);
-    console.log(`🚨🚨🚨 About to call handleModeChange("battle")`);
     handleModeChange("battle");
   };
 
   const handleRankClick = () => {
     console.log(`🚨🚨🚨 RANK BUTTON CLICKED! Current mode: ${currentMode}`);
-    console.log(`🚨🚨🚨 About to call handleModeChange("rank")`);
     handleModeChange("rank");
   };
 
@@ -35,63 +32,47 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     
     console.log(`🔥🔥🔥 [${debugId}] ===== MODE SWITCH CLICKED =====`);
     console.log(`🔥🔥🔥 [${debugId}] From: ${currentMode} → To: ${mode}`);
-    console.log(`🔥🔥🔥 [${debugId}] Timestamp: ${new Date().toISOString()}`);
-    console.log(`🔥🔥🔥 [${debugId}] Is hydrated: ${isHydrated}`);
     
-    // DETAILED PENDING BATTLE ANALYSIS
+    // CRITICAL FIX: Get pending Pokemon state BEFORE mode change
     const pendingPokemon = getAllPendingIds();
-    const hasPending = hasPendingPokemon;
+    const hasPending = Array.isArray(pendingPokemon) && pendingPokemon.length > 0;
     
-    console.log(`🔥🔥🔥 [${debugId}] ===== PENDING BATTLE STATE ANALYSIS =====`);
-    console.log(`🔥🔥🔥 [${debugId}] Pending Pokemon IDs:`, pendingPokemon);
-    console.log(`🔥🔥🔥 [${debugId}] Count: ${pendingPokemon?.length || 0}`);
-    console.log(`🔥🔥🔥 [${debugId}] Type: ${typeof pendingPokemon}`);
-    console.log(`🔥🔥🔥 [${debugId}] Is Array: ${Array.isArray(pendingPokemon)}`);
-    console.log(`🔥🔥🔥 [${debugId}] Has pending flag: ${hasPending}`);
-    console.log(`🔥🔥🔥 [${debugId}] Is switching to battle: ${mode === "battle"}`);
-    console.log(`🔥🔥🔥 [${debugId}] Should trigger event: ${mode === "battle" && Array.isArray(pendingPokemon) && pendingPokemon.length > 0}`);
+    console.log(`🔥🔥🔥 [${debugId}] Pending Pokemon before mode change:`, pendingPokemon);
+    console.log(`🔥🔥🔥 [${debugId}] Has pending: ${hasPending}`);
     
-    // Call the mode change first - this is critical for proper initialization
+    // STEP 1: Call the mode change first - this is critical for proper initialization
     console.log(`🔥🔥🔥 [${debugId}] Calling onModeChange(${mode})`);
     onModeChange(mode);
-    console.log(`🔥🔥🔥 [${debugId}] onModeChange completed`);
     
-    if (mode === "battle" && Array.isArray(pendingPokemon) && pendingPokemon.length > 0) {
+    // STEP 2: If switching to battle mode with pending Pokemon, set up delayed event dispatch
+    if (mode === "battle" && hasPending) {
       console.log(`🔥🔥🔥 [${debugId}] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
-      // CRITICAL FIX: Give the battle components time to mount before dispatching events
-      const dispatchEvents = () => {
+      // CRITICAL FIX: Wait for React to complete the mode switch and component mounting
+      // before dispatching any events
+      setTimeout(() => {
+        console.log(`🔥🔥🔥 [${debugId}] ===== DISPATCHING EVENTS AFTER MODE SWITCH =====`);
+        
         const eventDetail = { 
           pendingPokemon: pendingPokemon,
           source: 'mode-switcher-cloud',
           timestamp: Date.now(),
-          immediate: true,
           debugId: debugId
         };
         
-        console.log(`🔥🔥🔥 [${debugId}] ===== DISPATCHING EVENTS =====`);
-        console.log(`🔥🔥🔥 [${debugId}] Event detail:`, eventDetail);
-        
-        // Multiple timing attempts to ensure event is received
-        console.log(`🔥🔥🔥 [${debugId}] Dispatching IMMEDIATE event`);
-        const immediateEvent = new CustomEvent('pending-battles-detected', {
-          detail: { ...eventDetail, timing: 'immediate' }
-        });
-        document.dispatchEvent(immediateEvent);
-        
-        // Progressive delays to ensure battle components are mounted
-        [100, 300, 500, 1000, 2000].forEach((delay, index) => {
+        // Dispatch events with proper spacing to ensure components are ready
+        [500, 1000, 1500, 2000].forEach((delay, index) => {
           setTimeout(() => {
-            console.log(`🔥🔥🔥 [${debugId}] Dispatching ${delay}ms DELAYED event (attempt ${index + 1})`);
-            const delayedEvent = new CustomEvent('pending-battles-detected', {
+            console.log(`🔥🔥🔥 [${debugId}] Dispatching ${delay}ms event (attempt ${index + 1})`);
+            const event = new CustomEvent('pending-battles-detected', {
               detail: { ...eventDetail, timing: `${delay}ms-delay`, attempt: index + 1 }
             });
-            document.dispatchEvent(delayedEvent);
+            document.dispatchEvent(event);
           }, delay);
         });
         
-        // CRITICAL: Also dispatch force-check events at longer intervals
-        [1500, 3000, 5000].forEach((delay, index) => {
+        // Also dispatch force-check events for redundancy
+        [1000, 2000, 3000].forEach((delay, index) => {
           setTimeout(() => {
             console.log(`🔥🔥🔥 [${debugId}] Dispatching ${delay}ms FORCE CHECK event`);
             const forceCheckEvent = new CustomEvent('force-pending-battle-check', {
@@ -105,23 +86,14 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
             document.dispatchEvent(forceCheckEvent);
           }, delay);
         });
-      };
+        
+      }, 100); // Initial delay to ensure mode switch has started
       
-      // CRITICAL FIX: Start dispatching immediately but also after component mount delays
-      dispatchEvents();
-      
-      // Additional safety: dispatch again after giving components time to mount
-      setTimeout(() => {
-        console.log(`🔥🔥🔥 [${debugId}] ⏰ SAFETY DISPATCH after component mount time`);
-        dispatchEvents();
-      }, 1000);
-      
-      console.log(`🔥🔥🔥 [${debugId}] ✅ All events scheduled for dispatch`);
+      console.log(`🔥🔥🔥 [${debugId}] ✅ Events scheduled for dispatch after component mounting`);
       return;
     }
     
     console.log(`🔥🔥🔥 [${debugId}] Normal mode switch - no pending Pokemon or not switching to battle`);
-    console.log(`🔥🔥🔥 [${debugId}] Conditions: mode=${mode}, pendingPokemon=${JSON.stringify(pendingPokemon)}, isArray=${Array.isArray(pendingPokemon)}, length=${pendingPokemon?.length}`);
   };
 
   // Debug render
@@ -131,8 +103,6 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     hasPendingPokemon,
     pendingCount: currentPending?.length || 0,
     pendingIds: currentPending,
-    pendingType: typeof currentPending,
-    pendingIsArray: Array.isArray(currentPending),
     isHydrated,
     timestamp: new Date().toISOString()
   });
