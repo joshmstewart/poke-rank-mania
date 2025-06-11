@@ -66,9 +66,18 @@ export const useCloudPendingBattles = () => {
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Length:`, ids?.length || 'undefined');
     if (Array.isArray(ids)) {
       console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Individual items:`, ids.map(id => `${id}(${typeof id})`));
+      
+      // DEBUG: Check if the first few IDs match what the cards are checking
+      const firstFew = ids.slice(0, 5);
+      console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] 🔍 CHECKING FIRST FEW IDS:`, firstFew);
+      firstFew.forEach(id => {
+        const pendingCheck = isPokemonPending(id);
+        console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] 🔍 isPokemonPending(${id}): ${pendingCheck}`);
+        console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] 🔍 ID type: ${typeof id}, value: ${id}`);
+      });
     }
     return ids || [];
-  }, [getAllPendingBattles]);
+  }, [getAllPendingBattles, isPokemonPending]);
 
   const hasPendingPokemon = getAllPendingBattles().length > 0;
 
