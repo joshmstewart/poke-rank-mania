@@ -417,31 +417,55 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudState.totalBattles} battles, ${Object.keys(cloudState.ratings).length} ratings, ${cloudState.pendingBattles.length} pending, ${cloudState.refinementQueue.length} refinement battles.`);
 
-          // If local has more battles, it's the newer state. Prioritize it.
-          if (localState.totalBattles >= cloudState.totalBattles) {
-            console.log('[TRUESKILL_SMART_SYNC] Local state is newer or equal. Merging cloud into local.');
-            const mergedPending = [...new Set([...localState.pendingBattles, ...cloudState.pendingBattles])];
-            const mergedRefinements = [...localState.refinementQueue, ...cloudState.refinementQueue];
-            set({
-              ratings: { ...cloudState.ratings, ...localState.ratings },
-              totalBattles: localState.totalBattles,
-              pendingBattles: mergedPending,
-              refinementQueue: mergedRefinements,
-            });
-          } else {
-            // If cloud has more battles, it's the newer state. Prioritize it.
-            console.log('[TRUESKILL_SMART_SYNC] Cloud state is newer. Merging local into cloud.');
-             const mergedPending = [...new Set([...cloudState.pendingBattles, ...localState.pendingBattles])];
-             const mergedRefinements = [...cloudState.refinementQueue, ...localState.refinementQueue];
-             set({
-              ratings: { ...localState.ratings, ...cloudState.ratings },
-              totalBattles: cloudState.totalBattles,
-              pendingBattles: mergedPending,
-              refinementQueue: mergedRefinements,
-            });
-          }
+          // FIXED: Properly merge ratings data per-Pokemon to preserve all ranked data
+          const mergedRatings: Record<string, TrueSkillRating> = {};
           
-          set({ isHydrated: true });
+          // Get all unique Pokemon IDs from both sources
+          const allPokemonIds = new Set([
+            ...Object.keys(localState.ratings),
+            ...Object.keys(cloudState.ratings)
+          ]);
+          
+          console.log(`[TRUESKILL_SMART_SYNC] Merging ${allPokemonIds.size} unique Pokemon from both sources`);
+          
+          // Merge each Pokemon individually
+          allPokemonIds.forEach(pokemonId => {
+            const localRating = localState.ratings[pokemonId];
+            const cloudRating = cloudState.ratings[pokemonId];
+            
+            if (localRating && cloudRating) {
+              // Both have this Pokemon - use the one with higher battle count (more recent)
+              const useLocal = localRating.battleCount >= cloudRating.battleCount;
+              mergedRatings[pokemonId] = useLocal ? localRating : cloudRating;
+              console.log(`[TRUESKILL_SMART_SYNC] Pokemon ${pokemonId}: Using ${useLocal ? 'local' : 'cloud'} data (${useLocal ? localRating.battleCount : cloudRating.battleCount} battles)`);
+            } else if (localRating) {
+              // Only local has this Pokemon
+              mergedRatings[pokemonId] = localRating;
+              console.log(`[TRUESKILL_SMART_SYNC] Pokemon ${pokemonId}: Using local data only (${localRating.battleCount} battles)`);
+            } else if (cloudRating) {
+              // Only cloud has this Pokemon
+              mergedRatings[pokemonId] = cloudRating;
+              console.log(`[TRUESKILL_SMART_SYNC] Pokemon ${pokemonId}: Using cloud data only (${cloudRating.battleCount} battles)`);
+            }
+          });
+
+          // Merge other data arrays (keeping unique items)
+          const mergedPending = [...new Set([...localState.pendingBattles, ...cloudState.pendingBattles])];
+          const mergedRefinements = [...localState.refinementQueue, ...cloudState.refinementQueue];
+          
+          // Use the higher total battle count
+          const mergedTotalBattles = Math.max(localState.totalBattles, cloudState.totalBattles);
+          
+          console.log(`[TRUESKILL_SMART_SYNC] Final merged data: ${Object.keys(mergedRatings).length} ratings, ${mergedTotalBattles} total battles, ${mergedPending.length} pending, ${mergedRefinements.length} refinement battles`);
+          
+          set({
+            ratings: mergedRatings,
+            totalBattles: mergedTotalBattles,
+            pendingBattles: mergedPending,
+            refinementQueue: mergedRefinements,
+            isHydrated: true
+          });
+          
           console.log(`[TRUESKILL_STORE] Hydration flag set after smart sync`);
           
           // Sync the final merged state back to the cloud

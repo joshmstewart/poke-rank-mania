@@ -16,7 +16,7 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { smartSync, syncToCloud, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
+  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
   // Simple session restoration when user is authenticated and hydrated
   useEffect(() => {
@@ -26,18 +26,13 @@ export const useCloudSync = () => {
     }
   }, [user?.id, isHydrated, restoreSessionFromCloud]);
 
-  // Auto-sync when authenticated and hydrated
-  useEffect(() => {
-    if (user && session && isHydrated) {
-      syncToCloud();
-    }
-  }, [user, session, syncToCloud, isHydrated]);
+  // REMOVED: Auto-sync that was competing with the store's own sync logic
+  // The TrueSkill store now handles all syncing internally
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
-    if (isHydrated) {
-      await syncToCloud();
-    }
-  }, [syncToCloud, isHydrated]);
+    // Sync is now handled automatically by the store when data changes
+    console.log('[CLOUD_SYNC] Battle data saved - auto-sync will handle cloud updates');
+  }, []);
 
   const loadBattleFromCloud = useCallback(async (generation: number): Promise<BattleData | null> => {
     if (!isHydrated) {
@@ -65,21 +60,19 @@ export const useCloudSync = () => {
       return;
     }
     
-    await syncToCloud();
+    // Sync is now handled automatically by the store
+    console.log('[CLOUD_SYNC] Rankings saved - auto-sync will handle cloud updates');
 
     toast({
       title: "Progress Saved",
       description: "Your rankings have been saved to the cloud!",
     });
-  }, [syncToCloud, isHydrated]);
+  }, [isHydrated]);
 
   const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
-    if (isHydrated) {
-      await syncToCloud();
-      return true;
-    }
-    return false;
-  }, [syncToCloud, isHydrated]);
+    // Sync is now handled automatically by the store
+    return isHydrated;
+  }, [isHydrated]);
 
   const loadSessionFromCloud = useCallback(async (sessionId: string) => {
     if (!isHydrated) {
