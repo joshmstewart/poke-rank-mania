@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import BattleModeCore from "./battle/BattleModeCore";
 import PokemonRankerProvider from "./pokemon/PokemonRankerProvider";
 import PokemonRankerWithProvider from "./pokemon/PokemonRankerWithProvider";
+import { RefinementQueueProvider } from "./battle/RefinementQueueProvider";
 
 const AppContent: React.FC = () => {
   const [mode, setMode] = useState<"rank" | "battle">("rank");
@@ -41,31 +42,33 @@ const AppContent: React.FC = () => {
 
   return (
     <PokemonRankerProvider>
-      <div className="w-full flex justify-between px-4 py-2 border-b border-border">
-        <h1 className="text-lg font-semibold">Pokémon Ranker</h1>
+      <RefinementQueueProvider>
+        <div className="w-full flex justify-between px-4 py-2 border-b border-border">
+          <h1 className="text-lg font-semibold">Pokémon Ranker</h1>
 
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={() => handleModeChange(mode === "rank" ? "battle" : "rank")}>
-            {mode === "rank" ? "Go to Battle Mode" : "Go to Manual Mode"}
-          </Button>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-96">
-              <div className="p-4">
-                <h2 className="text-lg font-semibold mb-4">Settings</h2>
-                <p>Settings content will go here</p>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={() => handleModeChange(mode === "rank" ? "battle" : "rank")}>
+              {mode === "rank" ? "Go to Battle Mode" : "Go to Manual Mode"}
+            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-96">
+                <div className="p-4">
+                  <h2 className="text-lg font-semibold mb-4">Settings</h2>
+                  <p>Settings content will go here</p>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </div>
 
-      {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeCore />}
+        {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeCore />}
+      </RefinementQueueProvider>
     </PokemonRankerProvider>
   );
 };
