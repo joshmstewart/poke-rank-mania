@@ -17,6 +17,19 @@ interface ModeSwitcherProps {
 const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }) => {
   const { getAllPendingIds, hasPendingPokemon, isHydrated } = useCloudPendingBattles();
 
+  // CRITICAL DEBUG: Add debugging directly to button clicks
+  const handleBattleClick = () => {
+    console.log(`🚨🚨🚨 BATTLE BUTTON CLICKED! Current mode: ${currentMode}`);
+    console.log(`🚨🚨🚨 About to call handleModeChange("battle")`);
+    handleModeChange("battle");
+  };
+
+  const handleRankClick = () => {
+    console.log(`🚨🚨🚨 RANK BUTTON CLICKED! Current mode: ${currentMode}`);
+    console.log(`🚨🚨🚨 About to call handleModeChange("rank")`);
+    handleModeChange("rank");
+  };
+
   const handleModeChange = (mode: "rank" | "battle") => {
     const debugId = `MODE_SWITCH_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -131,7 +144,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => handleModeChange("battle")}
+                onClick={handleBattleClick}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm relative ${
                   currentMode === "battle"
                     ? "bg-blue-900 text-white shadow-sm"
@@ -155,7 +168,7 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => handleModeChange("rank")}
+                onClick={handleRankClick}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all duration-200 font-medium text-sm ${
                   currentMode === "rank"
                     ? "bg-blue-900 text-white shadow-sm"
