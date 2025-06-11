@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -87,7 +88,13 @@ export const useBattleStarterEvents = (
       // The startNewBattle function already contains the logic to prioritize pending Pokemon.
       try {
         console.log(`🚦 [FLAG_COORDINATION] 🚀 Calling startNewBattle for pending Pokemon SYNCHRONOUSLY`);
-        startNewBattleCallbackRef.current("pairs");
+        const result = startNewBattleCallbackRef.current("pairs");
+        
+        // THE FINAL FIX: If the pending battle was created, INSTANTLY set the ref.
+        if (result && result.length > 0) {
+          initialBattleStartedRef.current = true;
+          console.log(`🚦 [FLAG_COORDINATION] ✅ Set initialBattleStartedRef to prevent race condition`);
+        }
       } catch (error) {
         console.error(`🚦 [FLAG_COORDINATION] ❌ Error during synchronous pending battle start:`, error);
       }
