@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -69,45 +68,57 @@ export const useBattleStarterEvents = (
     }
   }, [getAllPendingIds, startNewBattleCallbackRef]);
 
-  // ROBUST AND FINAL FIX: Synchronously check for the flag and start the battle
+  // ====================================================================================
+  // MASTER BATTLE CREATION EFFECT - SINGLE SOURCE OF TRUTH
+  // This replaces both the FLAG_COORDINATION and INITIAL_BATTLE_DEBUG effects
+  // ====================================================================================
   useEffect(() => {
-    // Only run if ALL conditions are perfect for starting a pending battle.
+    // This is the master gatekeeper. It only runs when the app is ready for its
+    // VERY FIRST battle and has not started one yet.
     if (
-      initiatePendingBattle &&
+      !initialBattleStartedRef.current &&
       isHydrated &&
       filteredPokemon.length > 0 &&
       currentBattle.length === 0 &&
       startNewBattleCallbackRef.current
     ) {
-      console.log(`🚦 [FLAG_COORDINATION] Triggering pending battle and clearing flag`);
+      // --- STEP 1: Lock the gate. ---
+      // We are now committed to starting a battle. Set the ref immediately
+      // to guarantee this entire block of code never runs again.
+      initialBattleStartedRef.current = true;
+      console.log('🏁 [MASTER_BATTLE_START] Gate locked. Deciding which battle to create.');
 
-      // IMPORTANT: Clear the flag BEFORE starting the battle to prevent re-entry.
-      setInitiatePendingBattle(false);
-      
-      // Call the battle starter function directly and SYNCHRONOUSLY.
-      // The startNewBattle function already contains the logic to prioritize pending Pokemon.
-      try {
-        console.log(`🚦 [FLAG_COORDINATION] 🚀 Calling startNewBattle for pending Pokemon SYNCHRONOUSLY`);
-        const result = startNewBattleCallbackRef.current("pairs");
+      // --- STEP 2: Decide which path to take. ---
+      if (initiatePendingBattle) {
+        console.log('🚦 [MASTER_BATTLE_START] Path chosen: PENDING BATTLE.');
         
-        // THE FINAL FIX: If the pending battle was created, INSTANTLY set the ref.
-        if (result && result.length > 0) {
-          initialBattleStartedRef.current = true;
-          console.log(`🚦 [FLAG_COORDINATION] ✅ Set initialBattleStartedRef to prevent race condition`);
+        // We are handling the pending battle, so reset the flag now.
+        setInitiatePendingBattle(false);
+
+        try {
+          // This function already knows to prioritize pending Pokemon.
+          startNewBattleCallbackRef.current("pairs");
+        } catch (error) {
+          console.error('❌ Error during master pending battle start:', error);
         }
-      } catch (error) {
-        console.error(`🚦 [FLAG_COORDINATION] ❌ Error during synchronous pending battle start:`, error);
+
+      } else {
+        console.log('🎲 [MASTER_BATTLE_START] Path chosen: RANDOM BATTLE.');
+        // If no pending battle is requested, start a normal random one.
+        try {
+          startNewBattleCallbackRef.current("pairs");
+        } catch (error) {
+          console.error('❌ Error during master random battle start:', error);
+        }
       }
     }
   }, [
-    // The dependencies that determine if we are ready for a battle
-    initiatePendingBattle,
+    // Dependencies that determine if we are ready for ANY battle
     isHydrated,
     filteredPokemon.length,
     currentBattle.length,
-    // Other stable dependencies
-    setInitiatePendingBattle,
-    startNewBattleCallbackRef // Pass the ref object itself
+    initiatePendingBattle, // This is needed to re-evaluate if the flag changes
+    setInitiatePendingBattle
   ]);
 
   // Event listeners for manual starring (when already in battle mode)
@@ -130,41 +141,6 @@ export const useBattleStarterEvents = (
       document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
     };
   }, [checkForPendingPokemon]);
-
-  // Auto-trigger for normal battles (only when no pending Pokemon)
-  useEffect(() => {
-    if (
-      componentMountedRef.current &&
-      !initialBattleStartedRef.current &&
-      !autoTriggerDisabledRef.current &&
-      filteredPokemon.length > 0 &&
-      currentBattle.length === 0 &&
-      startNewBattleCallbackRef.current &&
-      isHydrated &&
-      !initiatePendingBattle
-    ) {
-      const pendingIds = getAllPendingIds();
-      
-      if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
-        console.log(`🔍 [DEBUG_EVENTS] Skipping auto-trigger - pending Pokemon exist`);
-        return;
-      }
-      
-      console.log(`🔍 [DEBUG_EVENTS] Auto-triggering first battle`);
-      const triggerTimer = setTimeout(() => {
-        if (componentMountedRef.current && startNewBattleCallbackRef.current && currentBattle.length === 0) {
-          try {
-            const result = startNewBattleCallbackRef.current("pairs");
-            initialBattleStartedRef.current = true;
-          } catch (error) {
-            console.error(`🔍 [DEBUG_EVENTS] Auto-trigger error:`, error);
-          }
-        }
-      }, 200);
-
-      return () => clearTimeout(triggerTimer);
-    }
-  }, [filteredPokemon.length, currentBattle.length, isHydrated, getAllPendingIds, initiatePendingBattle]);
 
   // Cleanup
   useEffect(() => {
