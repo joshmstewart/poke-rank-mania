@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useMode } from "@/contexts/ModeContext";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -20,6 +21,7 @@ export const useBattleStarterEvents = (
   
   const { initiatePendingBattle, setInitiatePendingBattle } = useTrueSkillStore();
   const { getAllPendingIds, removePendingPokemon } = useCloudPendingBattles();
+  const { mode } = useMode();
 
   // MASTER_BATTLE_START: The single authoritative battle coordinator
   useEffect(() => {
@@ -169,32 +171,21 @@ export const useBattleStarterEvents = (
     initiatePendingBattle
   ]);
 
-  // Mode switch event listener
+  // React to mode changes directly
   useEffect(() => {
-    const handleModeSwitch = (event: any) => {
-      const { mode, timestamp } = event.detail;
-      console.log(`🔄 [MODE_SWITCH_HANDLER] Mode switched to: ${mode} at ${timestamp}`);
-      
-      if (mode === 'battle') {
-        console.log(`🚦 [MODE_COORDINATION] Entering battle mode, checking for pending battles`);
-        
-        const pendingIds = getAllPendingIds();
-        if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
-          console.log(`🚦 [MODE_COORDINATION] Found pending battles: ${pendingIds}`);
-          console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: true`);
-          setInitiatePendingBattle(true);
-        } else {
-          console.log(`🚦 [MODE_COORDINATION] No pending battles found`);
-        }
-      }
-    };
+    if (mode !== 'battle') return;
 
-    document.addEventListener('mode-switch', handleModeSwitch);
-    
-    return () => {
-      document.removeEventListener('mode-switch', handleModeSwitch);
-    };
-  }, [getAllPendingIds, setInitiatePendingBattle]);
+    console.log(`🚦 [MODE_COORDINATION] Mode is 'battle', checking for pending battles`);
+
+    const pendingIds = getAllPendingIds();
+    if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
+      console.log(`🚦 [MODE_COORDINATION] Found pending battles: ${pendingIds}`);
+      console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: true`);
+      setInitiatePendingBattle(true);
+    } else {
+      console.log(`🚦 [MODE_COORDINATION] No pending battles found`);
+    }
+  }, [mode, getAllPendingIds, setInitiatePendingBattle]);
 
   // Reset refs when Pokemon data changes
   useEffect(() => {
