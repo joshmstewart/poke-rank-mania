@@ -23,16 +23,17 @@ export const useCloudSync = () => {
   console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
   console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] isHydrated: ${isHydrated}`);
 
-  // Enhanced logging for sync trigger debugging
+  // FIXED: Enhanced logging for sync trigger debugging with better dependency tracking
   useEffect(() => {
     const syncCheckId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ===== SYNC EFFECT TRIGGER CHECK =====`);
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] user?.id: ${user?.id || 'UNDEFINED'}`);
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] isHydrated: ${isHydrated}`);
-    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Both conditions met: ${!!(user?.id && isHydrated)}`);
     
     const effectiveUserId = user?.id || session?.user?.id;
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] effectiveUserId: ${effectiveUserId || 'UNDEFINED'}`);
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Both conditions met: ${!!(effectiveUserId && isHydrated)}`);
     
     if (effectiveUserId && isHydrated) {
       console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ✅ CONDITIONS MET - TRIGGERING RESTORE SESSION`);
