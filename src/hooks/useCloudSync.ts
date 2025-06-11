@@ -18,16 +18,98 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
-  // Simple session restoration when user is authenticated and hydrated
+  // Enhanced logging for sync trigger debugging
   useEffect(() => {
+    const syncCheckId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ===== SYNC EFFECT TRIGGER CHECK =====`);
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] user?.id: ${user?.id || 'UNDEFINED'}`);
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] isHydrated: ${isHydrated}`);
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Both conditions met: ${!!(user?.id && isHydrated)}`);
+    
     if (user?.id && isHydrated) {
-      console.log('[CLOUD_SYNC] User authenticated and hydrated, restoring session with smart sync');
+      console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ✅ CONDITIONS MET - TRIGGERING RESTORE SESSION`);
+      console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] User authenticated and hydrated, restoring session with smart sync`);
+      
+      const ratingsBeforeSync = getAllRatings();
+      const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
+      console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Local rankings before sync: ${rankedCountBefore}`);
+      
       restoreSessionFromCloud(user.id);
+      
+      // Check after sync with a delay
+      setTimeout(() => {
+        const ratingsAfterSync = getAllRatings();
+        const rankedCountAfter = Object.keys(ratingsAfterSync).length;
+        console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Local rankings after sync: ${rankedCountAfter}`);
+        if (rankedCountAfter !== rankedCountBefore) {
+          console.log(`🚨🚨🚨 [CLOUD_SYNC_DEBUG_${syncCheckId}] RANKING COUNT CHANGED! Before: ${rankedCountBefore}, After: ${rankedCountAfter}`);
+        }
+      }, 2000);
+    } else {
+      console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ❌ CONDITIONS NOT MET - SYNC WILL NOT RUN`);
+      if (!user?.id) {
+        console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Missing user ID`);
+      }
+      if (!isHydrated) {
+        console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Store not hydrated yet`);
+      }
     }
-  }, [user?.id, isHydrated, restoreSessionFromCloud]);
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ===== SYNC EFFECT CHECK COMPLETE =====`);
+  }, [user?.id, isHydrated, restoreSessionFromCloud, getAllRatings]);
 
-  // REMOVED: Auto-sync that was competing with the store's own sync logic
-  // The TrueSkill store now handles all syncing internally
+  // Manual sync function for testing
+  const triggerManualSync = useCallback(async () => {
+    console.log(`🔧🔧🔧 [MANUAL_SYNC] ===== MANUAL SYNC TRIGGERED =====`);
+    
+    if (!user?.id) {
+      console.log(`🔧🔧🔧 [MANUAL_SYNC] ❌ No user ID available`);
+      toast({
+        title: "Sync Failed",
+        description: "No user authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isHydrated) {
+      console.log(`🔧🔧🔧 [MANUAL_SYNC] ❌ Store not hydrated`);
+      toast({
+        title: "Sync Failed", 
+        description: "Store not ready",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const ratingsBeforeSync = getAllRatings();
+    const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
+    console.log(`🔧🔧🔧 [MANUAL_SYNC] Local rankings before manual sync: ${rankedCountBefore}`);
+    
+    try {
+      await smartSync();
+      
+      const ratingsAfterSync = getAllRatings();
+      const rankedCountAfter = Object.keys(ratingsAfterSync).length;
+      console.log(`🔧🔧🔧 [MANUAL_SYNC] Local rankings after manual sync: ${rankedCountAfter}`);
+      
+      toast({
+        title: "Manual Sync Complete",
+        description: `Before: ${rankedCountBefore} rankings, After: ${rankedCountAfter} rankings`,
+        duration: 5000
+      });
+      
+      if (rankedCountAfter !== rankedCountBefore) {
+        console.log(`🚨🚨🚨 [MANUAL_SYNC] RANKING COUNT CHANGED! Before: ${rankedCountBefore}, After: ${rankedCountAfter}`);
+      }
+    } catch (error) {
+      console.error(`🔧🔧🔧 [MANUAL_SYNC] Manual sync failed:`, error);
+      toast({
+        title: "Manual Sync Failed",
+        description: "Check console for details",
+        variant: "destructive"
+      });
+    }
+  }, [user?.id, isHydrated, smartSync, getAllRatings]);
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
     // Sync is now handled automatically by the store when data changes
@@ -89,6 +171,7 @@ export const useCloudSync = () => {
     saveRankingsToCloud,
     saveSessionToCloud,
     loadSessionFromCloud,
+    triggerManualSync, // New manual sync function
     isAuthenticated: !!user
   };
 };
