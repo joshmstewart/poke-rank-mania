@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -300,16 +301,22 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         try {
           console.log(`[TRUESKILL_SMART_SYNC] Starting smart sync...`);
-          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${Object.keys(state.ratings).length} ratings, ${state.pendingBattles.length} pending battles`);
-          
-          // Get current cloud data
+          const localRatingsCount = Object.keys(state.ratings).length;
+          const localPendingCount = state.pendingBattles.length;
+          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${state.totalBattles} battles, ${localRatingsCount} ratings, ${localPendingCount} pending`);
+
           const response = await fetch('/api/trueskill/get', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId: state.sessionId })
           });
           
-          let cloudData = null;
+          let cloudData = {
+            totalBattles: 0,
+            ratings: {},
+            pendingBattles: []
+          };
+
           if (response.ok) {
             const result = await response.json();
             if (result.success) {
@@ -321,46 +328,33 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           }
           
-          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData?.totalBattles || 0} battles, ${Object.keys(cloudData?.ratings || {}).length} ratings, ${(cloudData?.pendingBattles || []).length} pending battles`);
+          const cloudRatingsCount = Object.keys(cloudData.ratings).length;
+          const cloudPendingCount = cloudData.pendingBattles.length;
+          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudData.totalBattles} battles, ${cloudRatingsCount} ratings, ${cloudPendingCount} pending`);
+
+          // --- NEW MERGE LOGIC ---
+          const mergedRatings = { ...state.ratings, ...cloudData.ratings };
+          const mergedPendingBattles = [...new Set([...state.pendingBattles, ...cloudData.pendingBattles])];
+          const finalTotalBattles = Math.max(state.totalBattles, cloudData.totalBattles);
           
-          const localBattles = state.totalBattles;
-          const cloudBattles = cloudData?.totalBattles || 0;
-          
-          // Smart sync logic
-          if (cloudBattles > localBattles) {
-            // Case 1 & 3: Cloud has more data, use cloud and update local
-            console.log(`[TRUESKILL_SMART_SYNC] Cloud wins (${cloudBattles} > ${localBattles}), updating local with cloud data`);
-            set({
-              ratings: cloudData?.ratings || {},
-              totalBattles: cloudBattles,
-              pendingBattles: cloudData?.pendingBattles || []
-            });
-          } else if (localBattles > cloudBattles) {
-            // Case 2: Local has more data, push local to cloud
-            console.log(`[TRUESKILL_SMART_SYNC] Local wins (${localBattles} > ${cloudBattles}), pushing local data to cloud`);
-            await get().syncToCloud();
-          } else if (localBattles === cloudBattles && cloudBattles > 0) {
-            // Equal and both have data, use cloud as authoritative
-            console.log(`[TRUESKILL_SMART_SYNC] Equal battle counts (${localBattles}), using cloud as authoritative source`);
-            set({
-              ratings: cloudData?.ratings || {},
-              totalBattles: cloudBattles,
-              pendingBattles: cloudData?.pendingBattles || []
-            });
-          } else {
-            // Both are 0 or local > cloud but cloud is 0
-            console.log(`[TRUESKILL_SMART_SYNC] Using local data (local: ${localBattles}, cloud: ${cloudBattles})`);
-            if (localBattles > 0) {
-              await get().syncToCloud();
-            }
-          }
+          console.log(`[TRUESKILL_SMART_SYNC] Merging data. Final state will have ${finalTotalBattles} battles, ${Object.keys(mergedRatings).length} ratings, and ${mergedPendingBattles.length} pending battles.`);
+
+          set({
+            ratings: mergedRatings,
+            totalBattles: finalTotalBattles,
+            pendingBattles: mergedPendingBattles,
+            isHydrated: true
+          });
+
+          // Sync the newly merged state back to the cloud
+          await get().syncToCloud();
           
           console.log(`[TRUESKILL_SMART_SYNC] Smart sync completed successfully`);
-          set({ isHydrated: true });
-          console.log('[TRUESKILL_STORE] Hydration flag set after smart sync');
           
         } catch (error) {
           console.error('[TRUESKILL_SMART_SYNC] Smart sync failed:', error);
+          // If sync fails, ensure hydration is still set to true to not block the app
+          set({ isHydrated: true });
         } finally {
           set({ syncInProgress: false });
         }
