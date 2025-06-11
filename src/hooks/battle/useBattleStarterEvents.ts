@@ -1,6 +1,6 @@
-
 import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
+import { BattleType } from "./types";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
@@ -9,7 +9,7 @@ export const useBattleStarterEvents = (
   currentBattle: Pokemon[],
   initialBattleStartedRef: React.MutableRefObject<boolean>,
   autoTriggerDisabledRef: React.MutableRefObject<boolean>,
-  startNewBattleCallbackRef: React.MutableRefObject<(() => Pokemon[]) | null>,
+  startNewBattleCallbackRef: React.MutableRefObject<((battleType: BattleType) => Pokemon[]) | null>,
   initializationTimerRef: React.MutableRefObject<NodeJS.Timeout | null>,
   initializationCompleteRef: React.MutableRefObject<boolean>,
   setCurrentBattle: (battle: Pokemon[]) => void,
@@ -101,7 +101,7 @@ export const useBattleStarterEvents = (
       
       // Use the normal battle creation process
       if (startNewBattleCallbackRef.current) {
-        const newBattle = startNewBattleCallbackRef.current();
+        const newBattle = startNewBattleCallbackRef.current("pairs");
         if (newBattle && newBattle.length > 0) {
           setCurrentBattle(newBattle);
           setSelectedPokemon([]);
@@ -147,7 +147,7 @@ export const useBattleStarterEvents = (
       console.log(`🚀 [INITIAL_BATTLE_DEBUG] Starting initial RANDOM battle...`);
       
       if (startNewBattleCallbackRef.current) {
-        const newBattle = startNewBattleCallbackRef.current();
+        const newBattle = startNewBattleCallbackRef.current("pairs");
         if (newBattle && newBattle.length > 0) {
           setCurrentBattle(newBattle);
           setSelectedPokemon([]);
