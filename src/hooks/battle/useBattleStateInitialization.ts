@@ -165,6 +165,14 @@ export const useBattleStateInitialization = (
     }
   }, [allPokemon, providersData, generateRandomBattle]);
 
+  // =======================================================
+  // DELETED: The competing INITIAL_BATTLE_DEBUG useEffect
+  // This was causing the race condition by overwriting the 
+  // correct pending battle with a random one. The master
+  // effect in useBattleStarterEvents.ts is now the sole
+  // authority for creating the initial battle.
+  // =======================================================
+
   return {
     stateManagerData,
     providersData,

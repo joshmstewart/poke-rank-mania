@@ -12,11 +12,12 @@ interface PokemonCardProps {
   isDragging?: boolean;
   viewMode?: "list" | "grid";
   compact?: boolean;
+  isPending?: boolean; // Add pending status as prop instead of hook call
 }
 
-const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: PokemonCardProps) => {
+const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact, isPending }: PokemonCardProps) => {
   // DEBUG: Log where compact prop comes from
-  console.log(`🔍 [POKEMON_CARD_DEBUG] ${pokemon.name}: compact prop = ${compact}, viewMode = ${viewMode}`);
+  console.log(`🔍 [POKEMON_CARD_DEBUG] ${pokemon.name}: compact prop = ${compact}, viewMode = ${viewMode}, isPending = ${isPending}`);
 
   // Validate the Pokemon to ensure image and name consistency
   const validatedPokemon = useMemo(() => {
@@ -47,7 +48,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
     // Grid layout: compact vertical layout with image on top, name and number below
     return (
       <Card 
-        className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
+        className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""} ${isPending ? "ring-2 ring-yellow-400" : ""}`}
         onClick={handleCardClick}
       >
         <div className="absolute top-1 right-1 z-10">
@@ -84,7 +85,7 @@ const PokemonCard = ({ pokemon, isDragging, viewMode = "list", compact }: Pokemo
   // Original list layout for other views
   return (
     <Card 
-      className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""}`}
+      className={`w-full overflow-hidden relative ${isDragging ? "opacity-50" : ""} ${isPending ? "ring-2 ring-yellow-400" : ""}`}
       onClick={handleCardClick}
     >
       <div className="absolute top-1 right-1 z-10">
