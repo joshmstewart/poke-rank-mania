@@ -18,7 +18,7 @@ export const useBattleStarterIntegration = (
   const { shouldIncludePokemon, analyzeFilteringPipeline } = useFormFilters();
   
   // Get cloud pending battles
-  const { getAllPendingIds } = useCloudPendingBattles();
+  const { getAllPendingIds, removePendingPokemon } = useCloudPendingBattles();
   
   // CRITICAL FIX: Filter Pokemon but ALWAYS include pending Pokemon
   const filteredPokemon = useMemo(() => {
@@ -133,6 +133,11 @@ export const useBattleStarterIntegration = (
             console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
             setCurrentBattle(emergencyResult);
             setSelectedPokemon([]);
+            
+            // CRITICAL FIX: Remove the pending Pokemon after using it
+            console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ REMOVING PENDING POKEMON: ${primaryPokemon.id}`);
+            removePendingPokemon(primaryPokemon.id);
+            
             console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Emergency battle state set`);
             return emergencyResult;
           }
@@ -180,6 +185,17 @@ export const useBattleStarterIntegration = (
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
         setCurrentBattle(pendingResult);
         setSelectedPokemon([]);
+        
+        // CRITICAL FIX: Remove the pending Pokemon after using it
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ REMOVING PENDING POKEMON: ${primaryPokemon.id}`);
+        removePendingPokemon(primaryPokemon.id);
+        
+        // ALSO remove opponent if it was pending
+        if (cloudPendingIds.includes(opponent.id)) {
+          console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ ALSO REMOVING PENDING OPPONENT: ${opponent.id}`);
+          removePendingPokemon(opponent.id);
+        }
+        
         console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Battle state set successfully`);
         
         return pendingResult;
@@ -242,7 +258,7 @@ export const useBattleStarterIntegration = (
     
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== startNewBattle COMPLETE =====`);
     return normalResult || [];
-  }, [battleStarter, filteredPokemon, getAllPendingIds, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon]);
+  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon]);
 
   // Log whenever startNewBattle callback changes
   useEffect(() => {
