@@ -88,17 +88,10 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     
     // Simple check for info button clicks - match manual mode approach
     const target = e.target as HTMLElement;
-    const isInfoButtonClick = target.closest('[data-info-button="true"]') ||
+    const isInfoButtonClick = target.closest('[data-info-button="true"]') || 
         target.closest('[data-radix-dialog-content]') ||
         target.closest('[data-radix-dialog-overlay]') ||
         target.closest('[role="dialog"]');
-
-    // Skip selection if clicking the star prioritize button
-    if (target.closest('[data-priority-button="true"]')) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
     
     if (isInfoButtonClick) {
       console.log(`ℹ️ [INFO_BUTTON_DEBUG] BattleCardContainer: Info dialog interaction for ${displayName}, preventing card selection`);
@@ -208,7 +201,6 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       <CardContent className="p-4 text-center relative">
         {/* Prioritize button - only visible on card hover */}
         <button
-          data-priority-button="true"
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();

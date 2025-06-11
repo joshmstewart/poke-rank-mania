@@ -92,21 +92,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isDragging,
   } = sortableResult;
 
-  // Wrap sortable listeners to ignore events originating from the priority button
-  const wrappedListeners = React.useMemo(() => {
-    const entries = Object.entries(listeners).map(([key, handler]) => {
-      if (typeof handler !== 'function') return [key, handler];
-      return [key, (event: any) => {
-        const target = event.target as HTMLElement;
-        if (target?.closest('[data-priority-button="true"]')) {
-          return;
-        }
-        return (handler as Function)(event);
-      }];
-    });
-    return Object.fromEntries(entries) as typeof listeners;
-  }, [listeners]);
-
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0) scaleX(${transform.scaleX || 1}) scaleY(${transform.scaleY || 1})` : 'translate3d(0, 0, 0)',
     transition: transition || undefined,
@@ -164,7 +149,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       {...(isDraggable && !isOpen ? attributes : {})}
-      {...(isDraggable && !isOpen ? wrappedListeners : {})}
+      {...(isDraggable && !isOpen ? listeners : {})}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
@@ -189,7 +174,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       {/* Prioritize button - only visible on card hover */}
       {!isDragging && (context === 'ranked' || context === 'available') && (
         <button
-          data-priority-button="true"
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
