@@ -23,7 +23,7 @@ export const useCloudSync = () => {
   console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
   console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] isHydrated: ${isHydrated}`);
 
-  // FIXED: Enhanced logging for sync trigger debugging with better dependency tracking
+  // FIXED: Force effect to run by using more specific dependencies and adding a condition check
   useEffect(() => {
     const syncCheckId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ===== SYNC EFFECT TRIGGER CHECK =====`);
