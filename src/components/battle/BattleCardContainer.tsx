@@ -1,7 +1,13 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
@@ -29,7 +35,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   onSelect,
   isProcessing,
   imageUrl,
-  displayName
+  displayName,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -37,16 +43,18 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const [isHovered, setIsHovered] = useState(false);
 
   // CRITICAL FIX: Use cloud pending battles instead of local state
-  const { isPokemonPending, addPendingPokemon, removePendingPokemon } = useCloudPendingBattles();
+  const { isPokemonPending, addPendingPokemon, removePendingPokemon } =
+    useCloudPendingBattles();
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } = useSharedRefinementQueue();
+  const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } =
+    useSharedRefinementQueue();
   const { allPokemon } = usePokemonContext();
 
   const contextAvailable = Boolean(
     refinementQueue &&
-    Array.isArray(refinementQueue) &&
-    typeof hasRefinementBattles === 'boolean'
+      Array.isArray(refinementQueue) &&
+      typeof hasRefinementBattles === "boolean",
   );
 
   const hadRefinementBattlesRef = useRef(false);
@@ -64,18 +72,37 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       isPendingRefinement &&
       hadRefinementBattlesRef.current
     ) {
-      console.log(`🌟 [CLEANUP_TRACE] Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
+      console.log(
+        `🌟 [CLEANUP_TRACE] Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`,
+      );
       removePendingPokemon(pokemon.id);
       hadRefinementBattlesRef.current = false;
     }
-  }, [contextAvailable, hasRefinementBattles, isPendingRefinement, pokemon.id, removePendingPokemon]);
+  }, [
+    contextAvailable,
+    hasRefinementBattles,
+    isPendingRefinement,
+    pokemon.id,
+    removePendingPokemon,
+  ]);
 
   // Hooks for modal content - match manual mode approach
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
+  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(
+    pokemon.id,
+    isOpen,
+  );
+  const {
+    tcgCard,
+    secondTcgCard,
+    isLoading: isLoadingTCG,
+    error: tcgError,
+    hasTcgCard,
+  } = usePokemonTCGCard(pokemon.name, isOpen);
 
   useEffect(() => {
-    console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Component mounted/updated`);
+    console.log(
+      `🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Component mounted/updated`,
+    );
     return () => {
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current);
@@ -83,54 +110,71 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     };
   }, [displayName]);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    console.log(`🖱️ [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Card clicked`);
-    
-    // Simple check for info button clicks - match manual mode approach
-    const target = e.target as HTMLElement;
-    const isInfoButtonClick = target.closest('[data-info-button="true"]') || 
-        target.closest('[data-radix-dialog-content]') ||
-        target.closest('[data-radix-dialog-overlay]') ||
-        target.closest('[role="dialog"]');
-    
-    if (isInfoButtonClick) {
-      console.log(`ℹ️ [INFO_BUTTON_DEBUG] BattleCardContainer: Info dialog interaction for ${displayName}, preventing card selection`);
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      console.log(
+        `🖱️ [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Card clicked`,
+      );
 
-    const now = Date.now();
-    
-    // Prevent rapid double-clicks
-    if (now - lastClickTimeRef.current < 300) {
-      console.log(`🚫 BattleCardContainer: Ignoring rapid click on ${displayName}`);
-      return;
-    }
-    
-    lastClickTimeRef.current = now;
-    
-    console.log(`🖱️ BattleCardContainer: Click on ${displayName} (${pokemon.id}) - processing: ${isProcessing}`);
-    
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-    }
-    
-    clickTimeoutRef.current = setTimeout(() => {
-      onSelect(pokemon.id);
-      clickTimeoutRef.current = null;
-    }, 50);
-  }, [pokemon.id, displayName, onSelect, isProcessing]);
+      // Simple check for info button clicks - match manual mode approach
+      const target = e.target as HTMLElement;
+      const isInfoButtonClick =
+        target.closest('[data-info-button="true"]') ||
+        target.closest("[data-radix-dialog-content]") ||
+        target.closest("[data-radix-dialog-overlay]") ||
+        target.closest('[role="dialog"]');
+      const isStarClick = target.closest('[data-priority-button="true"]');
+
+      if (isInfoButtonClick || isStarClick) {
+        console.log(
+          `ℹ️ [INFO_BUTTON_DEBUG] BattleCardContainer: Info dialog interaction for ${displayName}, preventing card selection`,
+        );
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      const now = Date.now();
+
+      // Prevent rapid double-clicks
+      if (now - lastClickTimeRef.current < 300) {
+        console.log(
+          `🚫 BattleCardContainer: Ignoring rapid click on ${displayName}`,
+        );
+        return;
+      }
+
+      lastClickTimeRef.current = now;
+
+      console.log(
+        `🖱️ BattleCardContainer: Click on ${displayName} (${pokemon.id}) - processing: ${isProcessing}`,
+      );
+
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+
+      clickTimeoutRef.current = setTimeout(() => {
+        onSelect(pokemon.id);
+        clickTimeoutRef.current = null;
+      }, 50);
+    },
+    [pokemon.id, displayName, onSelect, isProcessing],
+  );
 
   const handleMouseEnter = useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse enter - isProcessing: ${isProcessing}`);
+    console.log(
+      `🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse enter - isProcessing: ${isProcessing}`,
+    );
     if (!isProcessing) {
       setIsHovered(true);
     }
   }, [isProcessing, displayName]);
 
   const handleMouseLeave = useCallback(() => {
-    console.log(`🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse leave`);
+    console.log(
+      `🔘 [HOVER_DEBUG] BattleCardContainer ${displayName}: Mouse leave`,
+    );
     setIsHovered(false);
   }, [displayName]);
 
@@ -138,32 +182,46 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
     e.stopPropagation();
     e.preventDefault();
 
-    console.log(`⭐ [STAR_TOGGLE_FIXED] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
+    console.log(
+      `⭐ [STAR_TOGGLE_FIXED] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`,
+    );
 
     if (!isPendingRefinement) {
       // CRITICAL FIX: Use cloud pending system
-      console.log(`⭐ [STAR_TOGGLE_FIXED] Adding ${pokemon.name} to CLOUD pending state`);
+      console.log(
+        `⭐ [STAR_TOGGLE_FIXED] Adding ${pokemon.name} to CLOUD pending state`,
+      );
       addPendingPokemon(pokemon.id);
 
       if (contextAvailable && allPokemon.length > 1) {
-        const pool = allPokemon.filter(p => p.id !== pokemon.id);
+        const pool = allPokemon.filter((p) => p.id !== pokemon.id);
         const opponents: number[] = [];
         const copy = [...pool];
         while (opponents.length < 3 && copy.length > 0) {
           const rand = Math.floor(Math.random() * copy.length);
           opponents.push(copy.splice(rand, 1)[0].id);
         }
-        console.log(`🌟 [BATTLE_CARD] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
+        console.log(
+          `🌟 [BATTLE_CARD] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`,
+          opponents,
+        );
         try {
           const newLength = queueBattlesForReorder(pokemon.id, opponents, -1);
-          console.log(`🌟 [BATTLE_CARD_QUEUE] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
+          console.log(
+            `🌟 [BATTLE_CARD_QUEUE] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`,
+          );
         } catch (error) {
-          console.error('Failed to queue refinement battles from battle card', error);
+          console.error(
+            "Failed to queue refinement battles from battle card",
+            error,
+          );
         }
       }
     } else {
       // CRITICAL FIX: Use cloud pending system
-      console.log(`⭐ [STAR_TOGGLE_FIXED] Removing ${pokemon.name} from CLOUD pending state`);
+      console.log(
+        `⭐ [STAR_TOGGLE_FIXED] Removing ${pokemon.name} from CLOUD pending state`,
+      );
       removePendingPokemon(pokemon.id);
     }
   };
@@ -173,9 +231,9 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
 
   const cardClasses = `
     relative cursor-pointer transition-all duration-200 transform group
-    ${isSelected ? 'ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl' : 'hover:scale-105 hover:shadow-lg'}
-    ${isProcessing ? 'pointer-events-none' : ''}
-    ${shouldShowHover ? 'ring-2 ring-blue-300 ring-opacity-50' : ''}
+    ${isSelected ? "ring-4 ring-blue-500 bg-blue-50 scale-105 shadow-xl" : "hover:scale-105 hover:shadow-lg"}
+    ${isProcessing ? "pointer-events-none" : ""}
+    ${shouldShowHover ? "ring-2 ring-blue-300 ring-opacity-50" : ""}
   `.trim();
 
   const handleDialogClick = (e: React.MouseEvent) => {
@@ -188,7 +246,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
 
   return (
-    <Card 
+    <Card
       className={cardClasses}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
@@ -201,35 +259,52 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       <CardContent className="p-4 text-center relative">
         {/* Prioritize button - only visible on card hover */}
         <button
+          data-priority-button="true"
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
           }}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+          }}
           onClick={handlePrioritizeClick}
           className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
-            isPendingRefinement 
-              ? 'opacity-100' 
-              : isHovered && !isProcessing 
-                ? 'opacity-100' 
-                : 'opacity-0 pointer-events-none'
+            isPendingRefinement
+              ? "opacity-100"
+              : isHovered && !isProcessing
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
           }`}
-          title={isPendingRefinement ? "Remove from refinement queue" : "Prioritize for refinement battle"}
+          title={
+            isPendingRefinement
+              ? "Remove from refinement queue"
+              : "Prioritize for refinement battle"
+          }
           type="button"
         >
           <Star
             className={`w-16 h-16 transition-all duration-300 ${
-              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+              isPendingRefinement
+                ? "text-yellow-400 fill-yellow-400"
+                : "text-gray-500 hover:text-yellow-500"
             }`}
           />
         </button>
 
         {/* Info Button - only visible on card hover */}
-        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
-          isHovered && !isProcessing ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
+        <div
+          className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
+            isHovered && !isProcessing
+              ? "opacity-100"
+              : "opacity-0 pointer-events-none"
+          }`}
+        >
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <button 
+              <button
                 className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -242,13 +317,13 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
                   e.stopPropagation();
                 }}
                 type="button"
-                style={{ pointerEvents: 'auto' }}
+                style={{ pointerEvents: "auto" }}
               >
                 i
               </button>
             </DialogTrigger>
-            
-            <DialogContent 
+
+            <DialogContent
               className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
               onClick={handleDialogClick}
               data-radix-dialog-content="true"
@@ -274,7 +349,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
         </div>
 
         {/* Interactive elements */}
-        <BattleCardInteractions 
+        <BattleCardInteractions
           isHovered={shouldShowHover}
           isSelected={isSelected}
           isProcessing={isProcessing}
@@ -282,14 +357,14 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
 
         <div className="relative">
           {/* Pokemon Image */}
-          <BattleCardImage 
+          <BattleCardImage
             imageUrl={imageUrl}
             displayName={displayName}
             pokemonId={pokemon.id}
           />
 
           {/* Pokemon Info */}
-          <BattleCardInfo 
+          <BattleCardInfo
             displayName={displayName}
             pokemonId={pokemon.id}
             types={pokemon.types}
