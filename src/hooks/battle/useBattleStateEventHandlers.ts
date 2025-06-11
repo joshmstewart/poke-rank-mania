@@ -2,6 +2,7 @@
 import { useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleStateEventHandlers = (
   allPokemon: Pokemon[],
@@ -10,6 +11,9 @@ export const useBattleStateEventHandlers = (
   milestoneHandlers?: any,
   setFinalRankingsWithLogging?: (rankings: any) => void
 ) => {
+  // Get pending battles functions from TrueSkill store
+  const { getAllPendingBattles, clearAllPendingBattles } = useTrueSkillStore();
+
   // Create a parameterless wrapper for milestone handlers with proper async handling
   const startNewBattleWrapper = useCallback(async () => {
     console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Parameterless wrapper called`);
@@ -73,6 +77,44 @@ export const useBattleStateEventHandlers = (
     };
   }, [milestoneHandlers, stateData.battleHistory]);
 
+  // NEW: Mode switch event listener to handle pending Pokemon
+  useEffect(() => {
+    const handleModeSwitch = (event: CustomEvent) => {
+      const { mode, previousMode } = event.detail;
+      console.log(`🔄 [MODE_SWITCH_HANDLER] Mode switched from ${previousMode} to ${mode}`);
+      
+      // Only process when switching TO battle mode
+      if (mode === 'battle' && previousMode === 'rank') {
+        console.log(`🔄 [MODE_SWITCH_HANDLER] Switching to battle mode - checking for pending Pokemon`);
+        
+        const pendingPokemon = getAllPendingBattles();
+        console.log(`🔄 [MODE_SWITCH_HANDLER] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
+        
+        if (pendingPokemon.length > 0) {
+          console.log(`🔄 [MODE_SWITCH_HANDLER] Starting battle with pending Pokemon`);
+          
+          // Clear pending battles since we're about to use them
+          clearAllPendingBattles();
+          console.log(`🔄 [MODE_SWITCH_HANDLER] Cleared pending battles list`);
+          
+          // Start a battle - this will use the refinement queue which should contain the pending Pokemon
+          setTimeout(() => {
+            console.log(`🔄 [MODE_SWITCH_HANDLER] Triggering battle start after mode switch`);
+            startNewBattleWrapper();
+          }, 100);
+        } else {
+          console.log(`🔄 [MODE_SWITCH_HANDLER] No pending Pokemon found - normal battle flow will apply`);
+        }
+      }
+    };
+
+    document.addEventListener('mode-switch', handleModeSwitch as EventListener);
+    
+    return () => {
+      document.removeEventListener('mode-switch', handleModeSwitch as EventListener);
+    };
+  }, [getAllPendingBattles, clearAllPendingBattles, startNewBattleWrapper]);
+
   // CRITICAL FIX: Context-aware pokemon-starred-for-battle event listener
   useEffect(() => {
     const handlePokemonStarred = (event: CustomEvent) => {
@@ -85,8 +127,8 @@ export const useBattleStateEventHandlers = (
       console.log(`⭐ [POKEMON_STARRED_EVENT] Current mode check - inBattleMode: ${isInBattleMode}, path: ${currentPath}`);
       
       if (!isInBattleMode) {
-        console.log(`⭐ [POKEMON_STARRED_EVENT] Not in battle mode, deferring battle start until mode switch`);
-        return; // Do nothing when not in battle mode
+        console.log(`⭐ [POKEMON_STARRED_EVENT] Not in battle mode, Pokemon will be processed when switching to battle mode`);
+        return; // Do nothing when not in battle mode - the mode switch handler will pick this up
       }
       
       console.log(`⭐ [POKEMON_STARRED_EVENT] In battle mode, starting new battle...`);
