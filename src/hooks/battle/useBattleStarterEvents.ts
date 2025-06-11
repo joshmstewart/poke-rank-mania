@@ -92,7 +92,6 @@ export const useBattleStarterEvents = (
     isHydrated,
     filteredPokemon.length,
     currentBattle.length,
-    startNewBattleCallbackRef.current,
     initiatePendingBattle,
     setInitiatePendingBattle,
     checkForPendingPokemon
