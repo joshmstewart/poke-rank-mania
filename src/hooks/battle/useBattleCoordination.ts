@@ -121,19 +121,8 @@ export const useBattleCoordination = (
     stableSetSelectedPokemon
   );
 
-  // CRITICAL FIX: Check for queued refinement battles when battle coordination initializes
-  useEffect(() => {
-    // Small delay to ensure all components are mounted
-    const checkForQueuedBattles = setTimeout(() => {
-      if (refinementQueue?.hasRefinementBattles && currentBattle.length === 0) {
-        console.log(`🎯 [BATTLE_COORDINATION] Found queued refinement battles on initialization, triggering battle`);
-        const result = startNewBattle("pairs");
-        console.log(`🎯 [BATTLE_COORDINATION] Battle triggered result:`, result?.map(p => p.name));
-      }
-    }, 500);
-
-    return () => clearTimeout(checkForQueuedBattles);
-  }, [refinementQueue?.hasRefinementBattles, currentBattle.length, startNewBattle]);
+  // REMOVED: The competing refinement queue effect that was causing race conditions
+  // This was the final rogue effect trying to start battles based on refinement queue detection
 
   return {
     contextPokemon,
