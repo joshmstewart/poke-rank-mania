@@ -59,64 +59,64 @@ const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ currentMode, onModeChange }
     if (mode === "battle" && Array.isArray(pendingPokemon) && pendingPokemon.length > 0) {
       console.log(`🔥🔥🔥 [${debugId}] ⭐ SWITCHING TO BATTLE MODE WITH PENDING POKEMON!`);
       
-      // Multiple timing attempts to ensure event is received
-      const eventDetail = { 
-        pendingPokemon: pendingPokemon,
-        source: 'mode-switcher-cloud',
-        timestamp: Date.now(),
-        immediate: true,
-        debugId: debugId
+      // CRITICAL FIX: Give the battle components time to mount before dispatching events
+      const dispatchEvents = () => {
+        const eventDetail = { 
+          pendingPokemon: pendingPokemon,
+          source: 'mode-switcher-cloud',
+          timestamp: Date.now(),
+          immediate: true,
+          debugId: debugId
+        };
+        
+        console.log(`🔥🔥🔥 [${debugId}] ===== DISPATCHING EVENTS =====`);
+        console.log(`🔥🔥🔥 [${debugId}] Event detail:`, eventDetail);
+        
+        // Multiple timing attempts to ensure event is received
+        console.log(`🔥🔥🔥 [${debugId}] Dispatching IMMEDIATE event`);
+        const immediateEvent = new CustomEvent('pending-battles-detected', {
+          detail: { ...eventDetail, timing: 'immediate' }
+        });
+        document.dispatchEvent(immediateEvent);
+        
+        // Progressive delays to ensure battle components are mounted
+        [100, 300, 500, 1000, 2000].forEach((delay, index) => {
+          setTimeout(() => {
+            console.log(`🔥🔥🔥 [${debugId}] Dispatching ${delay}ms DELAYED event (attempt ${index + 1})`);
+            const delayedEvent = new CustomEvent('pending-battles-detected', {
+              detail: { ...eventDetail, timing: `${delay}ms-delay`, attempt: index + 1 }
+            });
+            document.dispatchEvent(delayedEvent);
+          }, delay);
+        });
+        
+        // CRITICAL: Also dispatch force-check events at longer intervals
+        [1500, 3000, 5000].forEach((delay, index) => {
+          setTimeout(() => {
+            console.log(`🔥🔥🔥 [${debugId}] Dispatching ${delay}ms FORCE CHECK event`);
+            const forceCheckEvent = new CustomEvent('force-pending-battle-check', {
+              detail: { 
+                source: 'mode-switcher-force-check',
+                pendingPokemon: pendingPokemon,
+                debugId: debugId,
+                attempt: index + 1
+              }
+            });
+            document.dispatchEvent(forceCheckEvent);
+          }, delay);
+        });
       };
       
-      console.log(`🔥🔥🔥 [${debugId}] ===== DISPATCHING EVENTS =====`);
-      console.log(`🔥🔥🔥 [${debugId}] Event detail:`, eventDetail);
+      // CRITICAL FIX: Start dispatching immediately but also after component mount delays
+      dispatchEvents();
       
-      // Immediate dispatch
-      console.log(`🔥🔥🔥 [${debugId}] Dispatching IMMEDIATE event`);
-      const immediateEvent = new CustomEvent('pending-battles-detected', {
-        detail: { ...eventDetail, timing: 'immediate' }
-      });
-      document.dispatchEvent(immediateEvent);
-      
-      // Short delay dispatch
+      // Additional safety: dispatch again after giving components time to mount
       setTimeout(() => {
-        console.log(`🔥🔥🔥 [${debugId}] Dispatching 100ms DELAYED event`);
-        const delayedEvent = new CustomEvent('pending-battles-detected', {
-          detail: { ...eventDetail, timing: '100ms-delay' }
-        });
-        document.dispatchEvent(delayedEvent);
-      }, 100);
-      
-      // Medium delay dispatch
-      setTimeout(() => {
-        console.log(`🔥🔥🔥 [${debugId}] Dispatching 500ms DELAYED event`);
-        const mediumDelayedEvent = new CustomEvent('pending-battles-detected', {
-          detail: { ...eventDetail, timing: '500ms-delay' }
-        });
-        document.dispatchEvent(mediumDelayedEvent);
-      }, 500);
-      
-      // Long delay dispatch - CRITICAL ADDITION: Force battle check
-      setTimeout(() => {
-        console.log(`🔥🔥🔥 [${debugId}] Dispatching 1000ms DELAYED event`);
-        const longDelayedEvent = new CustomEvent('pending-battles-detected', {
-          detail: { ...eventDetail, timing: '1000ms-delay' }
-        });
-        document.dispatchEvent(longDelayedEvent);
-        
-        // CRITICAL ADDITION: Also dispatch a force-check event
-        console.log(`🔥🔥🔥 [${debugId}] Dispatching FORCE CHECK event`);
-        const forceCheckEvent = new CustomEvent('force-pending-battle-check', {
-          detail: { 
-            source: 'mode-switcher-force-check',
-            pendingPokemon: pendingPokemon,
-            debugId: debugId
-          }
-        });
-        document.dispatchEvent(forceCheckEvent);
+        console.log(`🔥🔥🔥 [${debugId}] ⏰ SAFETY DISPATCH after component mount time`);
+        dispatchEvents();
       }, 1000);
       
-      console.log(`🔥🔥🔥 [${debugId}] ✅ All events dispatched`);
+      console.log(`🔥🔥🔥 [${debugId}] ✅ All events scheduled for dispatch`);
       return;
     }
     

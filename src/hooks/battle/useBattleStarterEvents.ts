@@ -23,6 +23,7 @@ export const useBattleStarterEvents = (
   const filteredPokemonCountRef = useRef(filteredPokemon.length);
   const currentBattleLengthRef = useRef(currentBattle.length);
   const isHydratedRef = useRef(isHydrated);
+  const componentMountedRef = useRef(true);
   
   // Update refs when values change
   filteredPokemonCountRef.current = filteredPokemon.length;
@@ -32,11 +33,16 @@ export const useBattleStarterEvents = (
   // CRITICAL FIX: Create stable callback for pending check
   const checkForPendingPokemon = useCallback(() => {
     console.log(`🔍 [DEBUG_EVENTS] ===== checkForPendingPokemon CALLED =====`);
+    console.log(`🔍 [DEBUG_EVENTS] - Component mounted: ${componentMountedRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - filteredPokemonCount: ${filteredPokemonCountRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - isHydrated: ${isHydratedRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - currentBattleLength: ${currentBattleLengthRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - startNewBattleCallback exists: ${!!startNewBattleCallbackRef.current}`);
     
+    if (!componentMountedRef.current) {
+      console.log(`🔍 [DEBUG_EVENTS] ❌ Component unmounted, returning`);
+      return;
+    }
     if (filteredPokemonCountRef.current === 0) {
       console.log(`🔍 [DEBUG_EVENTS] ❌ No filtered Pokemon, returning`);
       return;
@@ -65,10 +71,11 @@ export const useBattleStarterEvents = (
       
       setTimeout(() => {
         console.log(`🔍 [DEBUG_EVENTS] ===== TIMEOUT EXECUTING FOR PENDING BATTLE =====`);
+        console.log(`🔍 [DEBUG_EVENTS] - Component still mounted: ${componentMountedRef.current}`);
         console.log(`🔍 [DEBUG_EVENTS] - Callback still available: ${!!startNewBattleCallbackRef.current}`);
         console.log(`🔍 [DEBUG_EVENTS] - Current battle length still 0: ${currentBattleLengthRef.current === 0}`);
         
-        if (startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
+        if (componentMountedRef.current && startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
           console.log(`🔍 [DEBUG_EVENTS] 🚀🚀🚀 CALLING startNewBattle callback for PENDING POKEMON!`);
           try {
             const result = startNewBattleCallbackRef.current("pairs");
@@ -78,7 +85,7 @@ export const useBattleStarterEvents = (
             console.error(`🔍 [DEBUG_EVENTS] ❌ Error calling startNewBattle:`, error);
           }
         } else {
-          console.log(`🔍 [DEBUG_EVENTS] ❌ Cannot call callback - callback: ${!!startNewBattleCallbackRef.current}, battle empty: ${currentBattleLengthRef.current === 0}`);
+          console.log(`🔍 [DEBUG_EVENTS] ❌ Cannot call callback - mounted: ${componentMountedRef.current}, callback: ${!!startNewBattleCallbackRef.current}, battle empty: ${currentBattleLengthRef.current === 0}`);
         }
       }, 100);
     } else {
@@ -86,30 +93,35 @@ export const useBattleStarterEvents = (
     }
   }, [getAllPendingIds, startNewBattleCallbackRef]);
 
-  // Listen for specific pending battle events
+  // CRITICAL FIX: Listen for specific pending battle events with better logging
   useEffect(() => {
     console.log(`🔍 [DEBUG_EVENTS] ===== SETTING UP EVENT LISTENERS =====`);
+    console.log(`🔍 [DEBUG_EVENTS] Component mounted at: ${new Date().toISOString()}`);
+    componentMountedRef.current = true;
     
     const handlePendingBattlesDetected = (event: CustomEvent) => {
       const eventId = `EVENT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ===== PENDING BATTLES DETECTED EVENT RECEIVED =====`);
+      console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ===== 🎉 PENDING BATTLES DETECTED EVENT RECEIVED 🎉 =====`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Event type: ${event.type}`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Event detail:`, event.detail);
+      console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Component mounted: ${componentMountedRef.current}`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Current battle length: ${currentBattleLengthRef.current}`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Callback available: ${!!startNewBattleCallbackRef.current}`);
+      console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Timestamp: ${new Date().toISOString()}`);
       
       if (event.detail?.pendingPokemon && Array.isArray(event.detail.pendingPokemon)) {
         console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Pending Pokemon from event: ${event.detail.pendingPokemon}`);
         
-        if (currentBattleLengthRef.current === 0) {
+        if (componentMountedRef.current && currentBattleLengthRef.current === 0) {
           console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ✅ TRIGGERING BATTLE FOR PENDING POKEMON`);
           
           setTimeout(() => {
             console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Event setTimeout executing...`);
+            console.log(`🔍 [DEBUG_EVENTS] [${eventId}] - Component still mounted: ${componentMountedRef.current}`);
             console.log(`🔍 [DEBUG_EVENTS] [${eventId}] - Callback still available: ${!!startNewBattleCallbackRef.current}`);
             console.log(`🔍 [DEBUG_EVENTS] [${eventId}] - Current battle length: ${currentBattleLengthRef.current}`);
             
-            if (startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
+            if (componentMountedRef.current && startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
               console.log(`🔍 [DEBUG_EVENTS] [${eventId}] 🚀 CALLING startNewBattle from event`);
               try {
                 const result = startNewBattleCallbackRef.current("pairs");
@@ -122,7 +134,7 @@ export const useBattleStarterEvents = (
             }
           }, 100);
         } else {
-          console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ❌ Current battle exists, not triggering`);
+          console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ❌ Current battle exists or component unmounted, not triggering`);
         }
       } else {
         console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ❌ No valid pending Pokemon in event detail`);
@@ -133,15 +145,16 @@ export const useBattleStarterEvents = (
       const eventId = `STAR_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ===== POKEMON STARRED EVENT RECEIVED =====`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Event detail:`, event.detail);
+      console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Component mounted: ${componentMountedRef.current}`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Current battle length: ${currentBattleLengthRef.current}`);
       console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Callback available: ${!!startNewBattleCallbackRef.current}`);
       
-      if (currentBattleLengthRef.current === 0) {
+      if (componentMountedRef.current && currentBattleLengthRef.current === 0) {
         console.log(`🔍 [DEBUG_EVENTS] [${eventId}] ✅ TRIGGERING BATTLE AFTER STAR`);
         
         setTimeout(() => {
           console.log(`🔍 [DEBUG_EVENTS] [${eventId}] Star setTimeout executing...`);
-          if (startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
+          if (componentMountedRef.current && startNewBattleCallbackRef.current && currentBattleLengthRef.current === 0) {
             console.log(`🔍 [DEBUG_EVENTS] [${eventId}] 🚀 CALLING startNewBattle after star`);
             try {
               const result = startNewBattleCallbackRef.current("pairs");
@@ -155,20 +168,27 @@ export const useBattleStarterEvents = (
     };
 
     const handleForceCheck = (event: CustomEvent) => {
-      console.log(`🔍 [DEBUG_EVENTS] ===== FORCE CHECK EVENT RECEIVED =====`);
+      console.log(`🔍 [DEBUG_EVENTS] ===== 🚨 FORCE CHECK EVENT RECEIVED 🚨 =====`);
       console.log(`🔍 [DEBUG_EVENTS] Force check event detail:`, event.detail);
+      console.log(`🔍 [DEBUG_EVENTS] Component mounted: ${componentMountedRef.current}`);
       console.log(`🔍 [DEBUG_EVENTS] 🚨 CALLING checkForPendingPokemon from force check`);
-      checkForPendingPokemon();
+      
+      if (componentMountedRef.current) {
+        checkForPendingPokemon();
+      } else {
+        console.log(`🔍 [DEBUG_EVENTS] ❌ Force check ignored - component unmounted`);
+      }
     };
 
     document.addEventListener('pending-battles-detected', handlePendingBattlesDetected as EventListener);
     document.addEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
     document.addEventListener('force-pending-battle-check', handleForceCheck as EventListener);
     
-    console.log(`🔍 [DEBUG_EVENTS] ✅ Event listeners attached successfully`);
+    console.log(`🔍 [DEBUG_EVENTS] ✅ Event listeners attached successfully at ${new Date().toISOString()}`);
     
     return () => {
-      console.log(`🔍 [DEBUG_EVENTS] Removing event listeners`);
+      console.log(`🔍 [DEBUG_EVENTS] Removing event listeners and marking component unmounted`);
+      componentMountedRef.current = false;
       document.removeEventListener('pending-battles-detected', handlePendingBattlesDetected as EventListener);
       document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
       document.removeEventListener('force-pending-battle-check', handleForceCheck as EventListener);
@@ -181,17 +201,21 @@ export const useBattleStarterEvents = (
     console.log(`🔍 [DEBUG_EVENTS] - isHydrated: ${isHydrated}`);
     console.log(`🔍 [DEBUG_EVENTS] - filteredPokemon.length: ${filteredPokemon.length}`);
     console.log(`🔍 [DEBUG_EVENTS] - currentBattle.length: ${currentBattle.length}`);
+    console.log(`🔍 [DEBUG_EVENTS] - componentMounted: ${componentMountedRef.current}`);
     
-    if (isHydrated && filteredPokemon.length > 0 && currentBattle.length === 0) {
+    if (componentMountedRef.current && isHydrated && filteredPokemon.length > 0 && currentBattle.length === 0) {
       console.log(`🔍 [DEBUG_EVENTS] ✅ Conditions met, calling checkForPendingPokemon from initial effect`);
       
       // Add a small delay to ensure everything is set up
       setTimeout(() => {
         console.log(`🔍 [DEBUG_EVENTS] ⏰ Initial check timeout executing...`);
-        checkForPendingPokemon();
+        if (componentMountedRef.current) {
+          checkForPendingPokemon();
+        }
       }, 500);
     } else {
       console.log(`🔍 [DEBUG_EVENTS] ❌ Initial check conditions not met:`);
+      console.log(`🔍 [DEBUG_EVENTS]   - componentMounted: ${componentMountedRef.current}`);
       console.log(`🔍 [DEBUG_EVENTS]   - isHydrated: ${isHydrated}`);
       console.log(`🔍 [DEBUG_EVENTS]   - filteredPokemon.length > 0: ${filteredPokemon.length > 0}`);
       console.log(`🔍 [DEBUG_EVENTS]   - currentBattle.length === 0: ${currentBattle.length === 0}`);
@@ -202,6 +226,7 @@ export const useBattleStarterEvents = (
   useEffect(() => {
     console.log(`🔍 [DEBUG_EVENTS] ===== AUTO-TRIGGER EFFECT =====`);
     console.log(`🔍 [DEBUG_EVENTS] Auto-trigger effect checking conditions:`);
+    console.log(`🔍 [DEBUG_EVENTS] - componentMounted: ${componentMountedRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - initialBattleStarted: ${initialBattleStartedRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - autoTriggerDisabled: ${autoTriggerDisabledRef.current}`);
     console.log(`🔍 [DEBUG_EVENTS] - filteredPokemon.length: ${filteredPokemon.length}`);
@@ -210,6 +235,7 @@ export const useBattleStarterEvents = (
     console.log(`🔍 [DEBUG_EVENTS] - isHydrated: ${isHydrated}`);
     
     if (
+      componentMountedRef.current &&
       !initialBattleStartedRef.current &&
       !autoTriggerDisabledRef.current &&
       filteredPokemon.length > 0 &&
@@ -234,7 +260,7 @@ export const useBattleStarterEvents = (
       
       const triggerTimer = setTimeout(() => {
         console.log(`🔍 [DEBUG_EVENTS] Auto-trigger setTimeout executing...`);
-        if (startNewBattleCallbackRef.current && currentBattle.length === 0) {
+        if (componentMountedRef.current && startNewBattleCallbackRef.current && currentBattle.length === 0) {
           console.log(`🔍 [DEBUG_EVENTS] 🚀 CALLING startNewBattle for auto-trigger`);
           try {
             const result = startNewBattleCallbackRef.current("pairs");
@@ -260,6 +286,8 @@ export const useBattleStarterEvents = (
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      console.log(`🔍 [DEBUG_EVENTS] Component unmounting - cleaning up`);
+      componentMountedRef.current = false;
       if (initializationTimerRef.current) {
         clearTimeout(initializationTimerRef.current);
         initializationTimerRef.current = null;
