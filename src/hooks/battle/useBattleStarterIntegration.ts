@@ -1,3 +1,4 @@
+
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
@@ -78,7 +79,7 @@ export const useBattleStarterIntegration = (
   // Use shared refinement queue instead of creating a new instance
   const refinementQueue = useSharedRefinementQueue();
 
-  // CRITICAL FIX: Stabilize startNewBattle with useCallback and proper dependencies
+  // CRITICAL FIX: Fix the startNewBattle function to actually prioritize pending Pokemon
   const startNewBattle = useCallback((battleType: any) => {
     const callId = `CALL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -93,115 +94,73 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // CRITICAL FIX: Check for cloud pending battles FIRST and handle them directly
+    // CRITICAL FIX: ALWAYS check for cloud pending battles FIRST and prioritize them
     const cloudPendingIds = getAllPendingIds();
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== CLOUD PENDING BATTLES CHECK =====`);
+    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== MANDATORY CLOUD PENDING BATTLES CHECK =====`);
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Cloud pending IDs: ${cloudPendingIds}`);
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Cloud pending IDs type: ${typeof cloudPendingIds}`);
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Cloud pending IDs isArray: ${Array.isArray(cloudPendingIds)}`);
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Cloud pending IDs length: ${cloudPendingIds?.length || 'undefined'}`);
+    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Cloud pending count: ${cloudPendingIds?.length || 0}`);
     
     if (cloudPendingIds && Array.isArray(cloudPendingIds) && cloudPendingIds.length > 0) {
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== FOUND ${cloudPendingIds.length} CLOUD PENDING BATTLES =====`);
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🎯 FORCING PENDING POKEMON BATTLE!`);
       
-      // CRITICAL FIX: Actually find the Pokemon objects for the pending IDs
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Looking for pending Pokemon in allPokemon (${allPokemon.length} total)`);
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] First few allPokemon IDs: ${allPokemon.slice(0, 10).map(p => p.id)}`);
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Pending IDs to find: ${cloudPendingIds.slice(0, 10)}`);
-      
+      // Find pending Pokemon objects
       const pendingPokemon = allPokemon.filter(p => cloudPendingIds.includes(p.id));
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Found ${pendingPokemon.length} pending Pokemon in allPokemon:`);
-      pendingPokemon.forEach(p => console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] - ${p.name}(${p.id})`));
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Found ${pendingPokemon.length} pending Pokemon objects`);
       
-      if (pendingPokemon.length === 0) {
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ CRITICAL: No pending Pokemon found in allPokemon!`);
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] This means the pending IDs don't match any Pokemon in the dataset`);
-        
-        // Check a sample of allPokemon IDs to see what range we have
-        const sampleIds = allPokemon.slice(0, 20).map(p => p.id);
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Sample allPokemon IDs: ${sampleIds}`);
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] Pending IDs: ${cloudPendingIds.slice(0, 10)}`);
-        
-        // Fall back to normal battle generation
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Falling back to normal battle generation`);
-      } else {
-        // SUCCESS: We have actual pending Pokemon objects, create a battle with them
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ SUCCESS: Creating battle with ${pendingPokemon.length} actual pending Pokemon`);
-        
+      if (pendingPokemon.length > 0) {
         // Use the first pending Pokemon as primary
         const primaryPokemon = pendingPokemon[0];
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Primary Pokemon: ${primaryPokemon.name}(${primaryPokemon.id})`);
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🎯 FORCING PRIMARY: ${primaryPokemon.name}(${primaryPokemon.id})`);
         
-        // Find an opponent (prefer non-pending Pokemon from allPokemon, but allow pending if needed)
-        const nonPendingOpponents = allPokemon.filter(p => 
-          p.id !== primaryPokemon.id && !cloudPendingIds.includes(p.id)
-        );
-        
+        // Find an opponent from available Pokemon
+        const availableOpponents = allPokemon.filter(p => p.id !== primaryPokemon.id);
         let opponent: Pokemon;
-        if (nonPendingOpponents.length > 0) {
-          opponent = nonPendingOpponents[Math.floor(Math.random() * nonPendingOpponents.length)];
-          console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Using non-pending opponent: ${opponent.name}(${opponent.id})`);
+        
+        if (availableOpponents.length > 0) {
+          opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+          console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🎯 OPPONENT: ${opponent.name}(${opponent.id})`);
         } else {
-          const otherPendingOpponents = pendingPokemon.filter(p => p.id !== primaryPokemon.id);
-          if (otherPendingOpponents.length > 0) {
-            opponent = otherPendingOpponents[Math.floor(Math.random() * otherPendingOpponents.length)];
-            console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Using pending opponent: ${opponent.name}(${opponent.id})`);
-          } else {
-            const anyOpponents = allPokemon.filter(p => p.id !== primaryPokemon.id);
-            if (anyOpponents.length > 0) {
-              opponent = anyOpponents[Math.floor(Math.random() * anyOpponents.length)];
-              console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Using any available opponent: ${opponent.name}(${opponent.id})`);
-            } else {
-              console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ No opponents available at all!`);
-              return [];
-            }
-          }
+          console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ No opponents available!`);
+          return [];
         }
         
-        const pendingResult = [primaryPokemon, opponent];
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ PENDING BATTLE CREATED: ${primaryPokemon.name} vs ${opponent.name}`);
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ PENDING BATTLE IDs: ${primaryPokemon.id} vs ${opponent.id}`);
+        const forcedBattle = [primaryPokemon, opponent];
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ FORCED PENDING BATTLE: ${primaryPokemon.name} vs ${opponent.name}`);
         
         // Set the battle immediately
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting current battle...`);
-        setCurrentBattle(pendingResult);
+        setCurrentBattle(forcedBattle);
         setSelectedPokemon([]);
         
-        // CRITICAL FIX: Remove the pending Pokemon after using it
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ REMOVING PENDING POKEMON: ${primaryPokemon.id}`);
+        // Remove the pending Pokemon after using it
+        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ REMOVING PENDING: ${primaryPokemon.id}`);
         removePendingPokemon(primaryPokemon.id);
         
-        // ALSO remove opponent if it was pending
+        // Also remove opponent if it was pending
         if (cloudPendingIds.includes(opponent.id)) {
           console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] 🗑️ ALSO REMOVING PENDING OPPONENT: ${opponent.id}`);
           removePendingPokemon(opponent.id);
         }
         
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Battle state set successfully`);
-        
-        return pendingResult;
+        return forcedBattle;
+      } else {
+        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ No pending Pokemon objects found!`);
       }
     } else {
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] No cloud pending battles found`);
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] No pending Pokemon - proceeding with normal battle`);
     }
     
     // Check refinement queue
     console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== CHECKING REFINEMENT QUEUE =====`);
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Refinement queue exists: ${!!refinementQueue}`);
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Refinement queue has battles: ${refinementQueue?.hasRefinementBattles}`);
-    
     if (refinementQueue?.hasRefinementBattles && refinementQueue.getNextRefinementBattle) {
       console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== GENERATING REFINEMENT BATTLE =====`);
       
       const nextBattle = refinementQueue.getNextRefinementBattle();
       if (nextBattle) {
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Next refinement battle: ${nextBattle.primaryPokemonId} vs ${nextBattle.opponentPokemonId}`);
-        
         const pokemon1 = filteredPokemon.find(p => p.id === nextBattle.primaryPokemonId);
         const pokemon2 = filteredPokemon.find(p => p.id === nextBattle.opponentPokemonId);
         
         if (pokemon1 && pokemon2) {
-          console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ REFINEMENT BATTLE GENERATED: ${pokemon1.name} vs ${pokemon2.name}`);
+          console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ REFINEMENT BATTLE: ${pokemon1.name} vs ${pokemon2.name}`);
           const refinementResult = [pokemon1, pokemon2];
           
           setCurrentBattle(refinementResult);
@@ -209,35 +168,20 @@ export const useBattleStarterIntegration = (
           refinementQueue.popRefinementBattle();
           
           return refinementResult;
-        } else {
-          console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ Could not find Pokemon for refinement battle`);
         }
       }
     }
     
     // Fall back to normal battle generation
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== CALLING NORMAL BATTLE STARTER =====`);
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] BattleStarter.startNewBattle exists: ${!!battleStarter.startNewBattle}`);
+    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== NORMAL BATTLE GENERATION =====`);
+    const normalResult = battleStarter.startNewBattle(battleType, refinementQueue);
     
-    let normalResult: Pokemon[] = [];
-    try {
-      normalResult = battleStarter.startNewBattle(battleType, refinementQueue);
-      
-      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Battle result:`, normalResult ? normalResult.map(p => `${p.name}(${p.id})`).join(' vs ') : 'null/empty');
-      
-      if (normalResult && normalResult.length > 0) {
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] Setting normal battle state...`);
-        setCurrentBattle(normalResult);
-        setSelectedPokemon([]);
-        console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Normal battle set successfully`);
-      } else {
-        console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ No battle generated from normal starter`);
-      }
-    } catch (error) {
-      console.error(`🔍 [DEBUG_INTEGRATION] [${callId}] ❌ Error calling battleStarter.startNewBattle:`, error);
+    if (normalResult && normalResult.length > 0) {
+      setCurrentBattle(normalResult);
+      setSelectedPokemon([]);
+      console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ✅ Normal battle: ${normalResult.map(p => p.name).join(' vs ')}`);
     }
     
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== startNewBattle COMPLETE =====`);
     return normalResult || [];
   }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon]);
 
