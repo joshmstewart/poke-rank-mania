@@ -1,6 +1,5 @@
-
 import { useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { toast } from '@/hooks/use-toast';
 
@@ -18,15 +17,24 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
+  // CRITICAL DEBUG: Always log hook execution
+  console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] useCloudSync hook is running at: ${new Date().toISOString()}`);
+  console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] user?.id: ${user?.id || 'UNDEFINED'}`);
+  console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
+  console.log(`🔍🔍🔍 [CLOUD_SYNC_HOOK_EXECUTION] isHydrated: ${isHydrated}`);
+
   // Enhanced logging for sync trigger debugging
   useEffect(() => {
     const syncCheckId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ===== SYNC EFFECT TRIGGER CHECK =====`);
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] user?.id: ${user?.id || 'UNDEFINED'}`);
+    console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] isHydrated: ${isHydrated}`);
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Both conditions met: ${!!(user?.id && isHydrated)}`);
     
-    if (user?.id && isHydrated) {
+    const effectiveUserId = user?.id || session?.user?.id;
+    
+    if (effectiveUserId && isHydrated) {
       console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ✅ CONDITIONS MET - TRIGGERING RESTORE SESSION`);
       console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] User authenticated and hydrated, restoring session with smart sync`);
       
@@ -34,7 +42,7 @@ export const useCloudSync = () => {
       const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
       console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Local rankings before sync: ${rankedCountBefore}`);
       
-      restoreSessionFromCloud(user.id);
+      restoreSessionFromCloud(effectiveUserId);
       
       // Check after sync with a delay
       setTimeout(() => {
@@ -47,7 +55,7 @@ export const useCloudSync = () => {
       }, 2000);
     } else {
       console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ❌ CONDITIONS NOT MET - SYNC WILL NOT RUN`);
-      if (!user?.id) {
+      if (!effectiveUserId) {
         console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] Missing user ID`);
       }
       if (!isHydrated) {
@@ -55,13 +63,15 @@ export const useCloudSync = () => {
       }
     }
     console.log(`🔍🔍🔍 [CLOUD_SYNC_DEBUG_${syncCheckId}] ===== SYNC EFFECT CHECK COMPLETE =====`);
-  }, [user?.id, isHydrated, restoreSessionFromCloud, getAllRatings]);
+  }, [user?.id, session?.user?.id, isHydrated, restoreSessionFromCloud, getAllRatings]);
 
   // Manual sync function for testing
   const triggerManualSync = useCallback(async () => {
     console.log(`🔧🔧🔧 [MANUAL_SYNC] ===== MANUAL SYNC TRIGGERED =====`);
     
-    if (!user?.id) {
+    const effectiveUserId = user?.id || session?.user?.id;
+    
+    if (!effectiveUserId) {
       console.log(`🔧🔧🔧 [MANUAL_SYNC] ❌ No user ID available`);
       toast({
         title: "Sync Failed",
@@ -109,7 +119,7 @@ export const useCloudSync = () => {
         variant: "destructive"
       });
     }
-  }, [user?.id, isHydrated, smartSync, getAllRatings]);
+  }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
     // Sync is now handled automatically by the store when data changes
@@ -172,6 +182,6 @@ export const useCloudSync = () => {
     saveSessionToCloud,
     loadSessionFromCloud,
     triggerManualSync, // New manual sync function
-    isAuthenticated: !!user
+    isAuthenticated: !!(user || session?.user)
   };
 };
