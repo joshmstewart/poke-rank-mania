@@ -1,16 +1,16 @@
 
-import React, { useEffect, useRef } from "react";
-
+import React, { useState, useEffect, useRef } from "react";
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
 import AppHeader from "@/components/layout/AppHeader";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
 import { AuthWrapper } from "@/components/auth/AuthWrapper";
 import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProvider";
-import { ModeProvider, useMode } from "@/contexts/ModeContext";
 
 function AppContent() {
-  const { mode, setMode } = useMode();
+  const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
   const stableInstance = useRef('app-content-main-stable-FIXED');
@@ -97,6 +97,12 @@ function AppContent() {
     };
   }, []);
 
+  useEffect(() => {
+    const evt = new CustomEvent('mode-switch', {
+      detail: { mode, timestamp: new Date().toISOString() }
+    });
+    document.dispatchEvent(evt);
+  }, [mode]);
 
   const handleModeChange = (newMode: "rank" | "battle") => {
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: Mode changing from', mode, 'to', newMode);
@@ -187,12 +193,10 @@ function App() {
   }, []);
   
   console.log('🚀🚀🚀 ROOT_APP_FIXED: About to render fixed structure');
-
+  
   return (
     <AuthWrapper>
-      <ModeProvider>
-        <AppContent />
-      </ModeProvider>
+      <AppContent />
     </AuthWrapper>
   );
 }
