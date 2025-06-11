@@ -5,6 +5,7 @@ import { BattleType } from "./types";
 import { useBattleStateManager } from "./useBattleStateManager";
 import { useBattleStateProviders } from "./useBattleStateProviders";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 export const useBattleStateInitialization = (
   allPokemon: Pokemon[] = [],
@@ -14,6 +15,9 @@ export const useBattleStateInitialization = (
   const initializationRef = useRef(false);
   const hookInstanceRef = useRef(`core-${Date.now()}`);
   const lastGeneratedBattleRef = useRef<string>("");
+  
+  // CRITICAL FIX: Get the pending battle flag from TrueSkill store
+  const { initiatePendingBattle } = useTrueSkillStore();
   
   if (!initializationRef.current) {
     console.log(`[DEBUG useBattleStateInitialization] INIT - Instance: ${hookInstanceRef.current} - Using context for Pokemon data`);
@@ -118,6 +122,13 @@ export const useBattleStateInitialization = (
     console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] Call ID: ${callId}`);
     console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] Battle type: ${battleType}`);
     
+    // CRITICAL FIX: Check for pending battle flag before proceeding
+    if (initiatePendingBattle) {
+      console.log(`🏁 [ENHANCED_START_MEGA_DEBUG] Pending battle initiation in progress, skipping random battle generation.`);
+      console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] ===== RETURNING EMPTY ARRAY FOR PENDING =====`);
+      return [];
+    }
+    
     const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
     console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] Battle count: ${currentBattleCount}`);
 
@@ -163,7 +174,7 @@ export const useBattleStateInitialization = (
       console.log(`🧪🧪🧪 [ENHANCED_START_MEGA_DEBUG] ===== RETURNING EMPTY ARRAY =====`);
       return [];
     }
-  }, [allPokemon, providersData, generateRandomBattle]);
+  }, [allPokemon, providersData, generateRandomBattle, initiatePendingBattle]);
 
   // =======================================================
   // DELETED: The competing INITIAL_BATTLE_DEBUG useEffect
