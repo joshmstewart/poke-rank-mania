@@ -408,12 +408,12 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         // ===== SMART SYNC TRIGGER CONDITIONS AUDIT =====
         const triggerAuditId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] ===== SMART SYNC TRIGGER AUDIT =====`);
-        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Smart sync called`);
-        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Current sync in progress: ${state.syncInProgress}`);
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] ===== SMART SYNC TRIGGER AUDIT =====`);
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] Smart sync called`);
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] Current sync in progress: ${state.syncInProgress}`);
         
         if (state.syncInProgress) {
-          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] ❌ EXITING - Sync already in progress`);
+          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] ❌ EXITING - Sync already in progress`);
           return;
         }
 
@@ -421,12 +421,12 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         // ===== TRACK RATINGS COUNT BEFORE SMART SYNC =====
         const ratingsBeforeSmartSync = Object.keys(state.ratings).length;
-        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Ratings before smart sync: ${ratingsBeforeSmartSync}`);
+        console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] Ratings before smart sync: ${ratingsBeforeSmartSync}`);
         
         // ===== NEW COMPREHENSIVE MERGE LOGGING =====
         const mergeId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] ===== STARTING SMART SYNC MERGE AUDIT =====`);
-        console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Merge operation ID: ${mergeId}`);
+        console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] ===== STARTING SMART SYNC MERGE AUDIT =====`);
+        console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Merge operation ID: ${mergeId}`);
 
         try {
           const localState = {
@@ -437,11 +437,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           };
           
           const localRatingCount = Object.keys(localState.ratings).length;
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 1 - LOCAL STATE BEFORE MERGE:`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local ratings count: ${localRatingCount}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local total battles: ${localState.totalBattles}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local pending battles: ${localState.pendingBattles.length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local refinement queue: ${localState.refinementQueue.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] STEP 1 - LOCAL STATE BEFORE MERGE:`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local ratings count: ${localRatingCount}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local total battles: ${localState.totalBattles}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local pending battles: ${localState.pendingBattles.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local refinement queue: ${localState.refinementQueue.length}`);
 
           const response = await fetch('/api/trueskill/get', {
             method: 'POST',
@@ -467,15 +467,15 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               };
             }
           } else {
-            console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Could not fetch cloud state. Proceeding with local state only.`);
+            console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Could not fetch cloud state. Proceeding with local state only.`);
           }
           
           const cloudRatingCount = Object.keys(cloudState.ratings).length;
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 2 - CLOUD STATE FETCHED:`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud ratings count: ${cloudRatingCount}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud total battles: ${cloudState.totalBattles}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud pending battles: ${cloudState.pendingBattles.length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud refinement queue: ${cloudState.refinementQueue.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] STEP 2 - CLOUD STATE FETCHED:`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud ratings count: ${cloudRatingCount}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud total battles: ${cloudState.totalBattles}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud pending battles: ${cloudState.pendingBattles.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud refinement queue: ${cloudState.refinementQueue.length}`);
 
           // ===== DETAILED POKEMON-BY-POKEMON MERGE TRACKING =====
           const mergedRatings: Record<string, TrueSkillRating> = {};
@@ -486,11 +486,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             ...Object.keys(cloudState.ratings)
           ]);
           
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 3 - POKEMON MERGE ANALYSIS:`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Total unique Pokemon across both sources: ${allPokemonIds.size}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local-only Pokemon: ${Object.keys(localState.ratings).filter(id => !cloudState.ratings[id]).length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud-only Pokemon: ${Object.keys(cloudState.ratings).filter(id => !localState.ratings[id]).length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Overlapping Pokemon: ${Object.keys(localState.ratings).filter(id => cloudState.ratings[id]).length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] STEP 3 - POKEMON MERGE ANALYSIS:`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Total unique Pokemon across both sources: ${allPokemonIds.size}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local-only Pokemon: ${Object.keys(localState.ratings).filter(id => !cloudState.ratings[id]).length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud-only Pokemon: ${Object.keys(cloudState.ratings).filter(id => !localState.ratings[id]).length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Overlapping Pokemon: ${Object.keys(localState.ratings).filter(id => cloudState.ratings[id]).length}`);
           
           // Track merge decisions
           const localWins: string[] = [];
@@ -511,25 +511,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               
               if (useLocal) {
                 localWins.push(pokemonId);
-                console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Pokemon ${pokemonId}: LOCAL WINS (${localRating.battleCount} vs ${cloudRating.battleCount} battles)`);
+                console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Pokemon ${pokemonId}: LOCAL WINS (${localRating.battleCount} vs ${cloudRating.battleCount} battles)`);
               } else {
                 cloudWins.push(pokemonId);
-                console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Pokemon ${pokemonId}: CLOUD WINS (${cloudRating.battleCount} vs ${localRating.battleCount} battles)`);
+                console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Pokemon ${pokemonId}: CLOUD WINS (${cloudRating.battleCount} vs ${localRating.battleCount} battles)`);
               }
             } else if (localRating) {
               // Only local has this Pokemon
               mergedRatings[pokemonId] = localRating;
               localOnlyKept.push(pokemonId);
-              console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Pokemon ${pokemonId}: LOCAL ONLY KEPT (${localRating.battleCount} battles)`);
+              console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Pokemon ${pokemonId}: LOCAL ONLY KEPT (${localRating.battleCount} battles)`);
             } else if (cloudRating) {
               // Only cloud has this Pokemon
               mergedRatings[pokemonId] = cloudRating;
               cloudOnlyKept.push(pokemonId);
-              console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Pokemon ${pokemonId}: CLOUD ONLY KEPT (${cloudRating.battleCount} battles)`);
+              console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Pokemon ${pokemonId}: CLOUD ONLY KEPT (${cloudRating.battleCount} battles)`);
             } else {
               // This should never happen, but track it if it does
               pokemonLost.push(pokemonId);
-              console.error(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Pokemon ${pokemonId}: ERROR - BOTH SOURCES MISSING DATA!`);
+              console.error(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Pokemon ${pokemonId}: ERROR - BOTH SOURCES MISSING DATA!`);
             }
           });
 
@@ -542,23 +542,23 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           const finalRatingCount = Object.keys(mergedRatings).length;
           
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 4 - MERGE DECISIONS SUMMARY:`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local wins: ${localWins.length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud wins: ${cloudWins.length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local-only kept: ${localOnlyKept.length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud-only kept: ${cloudOnlyKept.length}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Pokemon lost: ${pokemonLost.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] STEP 4 - MERGE DECISIONS SUMMARY:`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local wins: ${localWins.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud wins: ${cloudWins.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local-only kept: ${localOnlyKept.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud-only kept: ${cloudOnlyKept.length}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Pokemon lost: ${pokemonLost.length}`);
           
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 5 - FINAL MERGE RESULTS:`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Started with ${allPokemonIds.size} unique Pokemon`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Final merged count: ${finalRatingCount}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Pokemon difference: ${allPokemonIds.size - finalRatingCount}`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Local count change: ${localRatingCount} → ${finalRatingCount} (${finalRatingCount - localRatingCount})`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] - Cloud count change: ${cloudRatingCount} → ${finalRatingCount} (${finalRatingCount - cloudRatingCount})`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] STEP 5 - FINAL MERGE RESULTS:`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Started with ${allPokemonIds.size} unique Pokemon`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Final merged count: ${finalRatingCount}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Pokemon difference: ${allPokemonIds.size - finalRatingCount}`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Local count change: ${localRatingCount} → ${finalRatingCount} (${finalRatingCount - localRatingCount})`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] - Cloud count change: ${cloudRatingCount} → ${finalRatingCount} (${finalRatingCount - cloudRatingCount})`);
           
           // Log sample of lost Pokemon if any
           if (pokemonLost.length > 0) {
-            console.error(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] ⚠️ POKEMON LOST:`, pokemonLost.slice(0, 10).join(', '), pokemonLost.length > 10 ? `... and ${pokemonLost.length - 10} more` : '');
+            console.error(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] ⚠️ POKEMON LOST:`, pokemonLost.slice(0, 10).join(', '), pokemonLost.length > 10 ? `... and ${pokemonLost.length - 10} more` : '');
           }
           
           // Apply the merged state
@@ -570,25 +570,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             isHydrated: true
           });
           
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] STEP 6 - STATE UPDATED AND HYDRATED`);
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Hydration flag set after smart sync`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] STEP 6 - STATE UPDATED AND HYDRATED`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Hydration flag set after smart sync`);
           
           // ===== CHECK RATINGS COUNT AFTER SMART SYNC MERGE =====
           const ratingsAfterSmartSync = Object.keys(get().ratings).length;
-          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Ratings after smart sync: ${ratingsAfterSmartSync}`);
-          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_${triggerAuditId}] Rating count change: ${ratingsBeforeSmartSync} → ${ratingsAfterSmartSync} (${ratingsAfterSmartSync - ratingsBeforeSmartSync})`);
+          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] Ratings after smart sync: ${ratingsAfterSmartSync}`);
+          console.log(`🧠🧠🧠 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] Rating count change: ${ratingsBeforeSmartSync} → ${ratingsAfterSmartSync} (${ratingsAfterSmartSync - ratingsBeforeSmartSync})`);
           
           if (ratingsAfterSmartSync !== ratingsBeforeSmartSync) {
-            console.log(`🚨🚨🚨 [SMART_SYNC_TRIGGER_${triggerAuditId}] ⚠️ RATING COUNT CHANGED DURING SMART SYNC!`);
+            console.log(`🚨🚨🚨 [SMART_SYNC_TRIGGER_AUDIT_${triggerAuditId}] ⚠️ RATING COUNT CHANGED DURING SMART SYNC!`);
           }
           
           // Sync the final merged state back to the cloud
           await get().syncToCloud();
           
-          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] ===== SMART SYNC MERGE AUDIT COMPLETE =====`);
+          console.log(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] ===== SMART SYNC MERGE AUDIT COMPLETE =====`);
 
         } catch (error) {
-          console.error(`🚨🚨🚨 [SMART_SYNC_MERGE_${mergeId}] Smart sync failed:`, error);
+          console.error(`🚨🚨🚨 [SMART_SYNC_MERGE_AUDIT_${mergeId}] Smart sync failed:`, error);
           set({ isHydrated: true }); // Ensure app doesn't hang
         } finally {
           set({ syncInProgress: false });
