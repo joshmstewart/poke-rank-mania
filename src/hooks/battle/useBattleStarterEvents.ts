@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -43,14 +44,9 @@ export const useBattleStarterEvents = (
     if (pendingIds && Array.isArray(pendingIds) && pendingIds.length > 0) {
       console.log(`🚦 [MASTER_BATTLE_START] Path chosen: PENDING BATTLE.`);
       
-      // Reset the flag first
-      setInitiatePendingBattle(false);
-      console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: false`);
-      
-      // CRITICAL FIX: Actually create the battle from pending IDs
+      // CRITICAL FIX: Find pending Pokemon objects
       console.log(`🎯 [MASTER_BATTLE_START] Creating battle from pending IDs: ${pendingIds}`);
       
-      // Find pending Pokemon objects
       const pendingPokemon = allPokemon.filter(p => pendingIds.includes(p.id));
       console.log(`🎯 [MASTER_BATTLE_START] Found ${pendingPokemon.length} pending Pokemon objects`);
       
@@ -69,35 +65,42 @@ export const useBattleStarterEvents = (
           const pendingBattle = [primaryPokemon, opponent];
           console.log(`✅ [MASTER_BATTLE_START] Creating pending battle: ${primaryPokemon.name} vs ${opponent.name}`);
           
-          // Set the battle state
+          // Set the battle state FIRST
           setCurrentBattle(pendingBattle);
           setSelectedPokemon([]);
-          
-          // Remove the pending Pokemon after using it
-          console.log(`🗑️ [MASTER_BATTLE_START] Removing pending Pokemon: ${primaryPokemon.id}`);
-          removePendingPokemon(primaryPokemon.id);
-          
-          // Also remove opponent if it was pending
-          if (pendingIds.includes(opponent.id)) {
-            console.log(`🗑️ [MASTER_BATTLE_START] Also removing pending opponent: ${opponent.id}`);
-            removePendingPokemon(opponent.id);
-          }
-          
           initialBattleStartedRef.current = true;
-          console.log(`✅ [MASTER_BATTLE_START] Pending battle creation complete!`);
+          
+          // CRITICAL FIX: Clear the flag AFTER battle is established with a delay
+          setTimeout(() => {
+            console.log(`🚦 [MASTER_BATTLE_START] Battle established - now clearing initiatePendingBattle flag`);
+            setInitiatePendingBattle(false);
+            
+            // Remove the pending Pokemon after flag is cleared
+            console.log(`🗑️ [MASTER_BATTLE_START] Removing pending Pokemon: ${primaryPokemon.id}`);
+            removePendingPokemon(primaryPokemon.id);
+            
+            // Also remove opponent if it was pending
+            if (pendingIds.includes(opponent.id)) {
+              console.log(`🗑️ [MASTER_BATTLE_START] Also removing pending opponent: ${opponent.id}`);
+              removePendingPokemon(opponent.id);
+            }
+            
+            console.log(`✅ [MASTER_BATTLE_START] Pending battle creation complete!`);
+          }, 200); // Give time for battle state to propagate
           
         } else {
           console.error(`❌ [MASTER_BATTLE_START] No opponents available for pending battle`);
+          setInitiatePendingBattle(false);
         }
       } else {
         console.error(`❌ [MASTER_BATTLE_START] No pending Pokemon objects found for IDs: ${pendingIds}`);
+        setInitiatePendingBattle(false);
       }
     } else {
       console.log(`🚦 [MASTER_BATTLE_START] No pending IDs, falling back to normal battle creation`);
       
       // Reset the flag
       setInitiatePendingBattle(false);
-      console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: false`);
       
       // Use the normal battle creation process
       if (startNewBattleCallbackRef.current) {
@@ -139,6 +142,12 @@ export const useBattleStarterEvents = (
       return;
     }
 
+    // CRITICAL FIX: Also check if master battle is processing
+    if (masterBattleProcessingRef.current) {
+      console.log(`🏁 [INITIAL_BATTLE_DEBUG] Master battle processing - deferring initialization`);
+      return;
+    }
+
     const pokemonDataAvailable = allPokemon.length > 0;
     const isBattleActive = currentBattle.length > 0;
     const initialStarted = initialBattleStartedRef.current;
@@ -166,7 +175,8 @@ export const useBattleStarterEvents = (
     startNewBattleCallbackRef, 
     setCurrentBattle, 
     setSelectedPokemon, 
-    initiatePendingBattle
+    initiatePendingBattle,
+    masterBattleProcessingRef
   ]);
 
   // Mode switch event listener
