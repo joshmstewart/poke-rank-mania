@@ -77,7 +77,7 @@ export const useBattleStateEventHandlers = (
     };
   }, [milestoneHandlers, stateData.battleHistory]);
 
-  // NEW: Mode switch event listener to handle pending Pokemon
+  // FIXED: Mode switch event listener - ONLY sets flag, doesn't clear or start battles
   useEffect(() => {
     const handleModeSwitch = (event: CustomEvent) => {
       const { mode, previousMode } = event.detail;
@@ -91,17 +91,14 @@ export const useBattleStateEventHandlers = (
         console.log(`🔄 [MODE_SWITCH_HANDLER] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
         
         if (pendingPokemon.length > 0) {
-          console.log(`🔄 [MODE_SWITCH_HANDLER] Starting battle with pending Pokemon`);
+          console.log(`🔄 [MODE_SWITCH_HANDLER] CRITICAL FIX: Found pending Pokemon - setting initiatePendingBattle flag ONLY`);
+          console.log(`🔄 [MODE_SWITCH_HANDLER] NOT clearing pending battles - letting proper battle systems handle them`);
           
-          // Clear pending battles since we're about to use them
-          clearAllPendingBattles();
-          console.log(`🔄 [MODE_SWITCH_HANDLER] Cleared pending battles list`);
+          // CRITICAL FIX: ONLY set the flag - don't clear or start battles here
+          // Let the proper battle creation systems (useBattleStarterEvents) handle the rest
+          useTrueSkillStore.setState({ initiatePendingBattle: true });
           
-          // Start a battle - this will use the refinement queue which should contain the pending Pokemon
-          setTimeout(() => {
-            console.log(`🔄 [MODE_SWITCH_HANDLER] Triggering battle start after mode switch`);
-            startNewBattleWrapper();
-          }, 100);
+          console.log(`🔄 [MODE_SWITCH_HANDLER] Flag set - proper battle systems will now process pending Pokemon`);
         } else {
           console.log(`🔄 [MODE_SWITCH_HANDLER] No pending Pokemon found - normal battle flow will apply`);
         }
@@ -113,7 +110,7 @@ export const useBattleStateEventHandlers = (
     return () => {
       document.removeEventListener('mode-switch', handleModeSwitch as EventListener);
     };
-  }, [getAllPendingBattles, clearAllPendingBattles, startNewBattleWrapper]);
+  }, [getAllPendingBattles]);
 
   // CRITICAL FIX: Context-aware pokemon-starred-for-battle event listener
   useEffect(() => {
