@@ -25,6 +25,16 @@ export const useBattleStarterIntegration = (
   // Get cloud pending battles
   const { getAllPendingIds, removePendingPokemon } = useCloudPendingBattles();
   
+  // CRITICAL FIX: Check current mode to prevent infinite loops on manual page
+  const currentMode = useMemo(() => {
+    try {
+      const savedMode = localStorage.getItem('pokemon-ranker-mode');
+      return (savedMode === "rank" || savedMode === "battle") ? savedMode : "battle";
+    } catch (e) {
+      return "battle";
+    }
+  }, []);
+  
   // CRITICAL FIX: Filter Pokemon but ALWAYS include pending Pokemon
   const filteredPokemon = useMemo(() => {
     console.log(`🔍 [DEBUG_INTEGRATION] ===== STARTING POKEMON FILTERING =====`);
@@ -86,6 +96,15 @@ export const useBattleStarterIntegration = (
 
   // CRITICAL FIX: Fix the startNewBattle function to actually prioritize pending Pokemon
   const startNewBattle = useCallback((battleType: any) => {
+    // ===============================================================
+    // CRITICAL MODE CHECK: Prevent infinite loops on manual page
+    // Only start battles when explicitly in battle mode
+    // ===============================================================
+    if (currentMode !== 'battle') {
+      console.log(`🚫 [MODE_CHECK] Not in battle mode (current: ${currentMode}), refusing to start battle`);
+      return [];
+    }
+
     // ===============================================================
     // FINAL FIX: This guard makes it impossible for a second initial
     // battle to be created, no matter what calls this function.
@@ -206,7 +225,7 @@ export const useBattleStarterIntegration = (
     }
     
     return normalResult || [];
-  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef, initiatePendingBattle]);
+  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef, initiatePendingBattle, currentMode]);
 
   // Log whenever startNewBattle callback changes
   useEffect(() => {
