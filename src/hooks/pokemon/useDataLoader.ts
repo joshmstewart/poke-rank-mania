@@ -1,6 +1,8 @@
+
 import { useCallback } from "react";
 import { usePokemonData } from "./usePokemonData";
 import { LoadingType } from "./types";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 export const useDataLoader = (
   selectedGeneration: number,
@@ -12,7 +14,9 @@ export const useDataLoader = (
   setTotalPages: React.Dispatch<React.SetStateAction<number>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
-  const { getPokemonData } = usePokemonData();
+  // Get Pokemon data from context to pass to usePokemonData
+  const { allPokemon } = usePokemonContext();
+  const { getPokemonData } = usePokemonData(allPokemon);
 
   const loadData = useCallback(async () => {
     console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ===== CRITICAL REGRESSION FIX =====`);
@@ -51,7 +55,7 @@ export const useDataLoader = (
     }
     
     console.log(`🔄 [DATA_LOADER_ACTIVE_FIX] ===== DATA LOADER COMPLETE =====`);
-  }, [selectedGeneration, currentPage, loadSize, loadingType, getPokemonData, setIsLoading, setAvailablePokemon, setRankedPokemon, setTotalPages]);
+  }, [selectedGeneration, currentPage, loadSize, loadingType, getPokemonData, setIsLoading, setAvailablePokemon, setRankedPokemon, setTotalPages, allPokemon]);
 
   return { loadData };
 };
