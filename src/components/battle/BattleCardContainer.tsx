@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -192,9 +193,26 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
         >
           <Star
             className={`w-16 h-16 transition-all duration-300 ${
-              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+              isPendingRefinement 
+                ? 'text-yellow-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] filter brightness-125' 
+                : 'text-gray-500 hover:text-yellow-500'
             }`}
+            fill={isPendingRefinement ? "url(#starGradient)" : "none"}
           />
+          {/* SVG gradient definition for shiny star effect */}
+          {isPendingRefinement && (
+            <svg width="0" height="0" className="absolute">
+              <defs>
+                <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="25%" stopColor="#f59e0b" />
+                  <stop offset="50%" stopColor="#fbbf24" />
+                  <stop offset="75%" stopColor="#eab308" />
+                  <stop offset="100%" stopColor="#ca8a04" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
         </button>
 
         {/* Info Button - only visible on card hover */}
