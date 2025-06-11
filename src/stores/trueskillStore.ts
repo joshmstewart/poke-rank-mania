@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -18,6 +17,7 @@ interface TrueSkillStore {
   lastSyncTime: number;
   syncInProgress: boolean;
   totalBattles: number;
+  initiatePendingBattle: boolean; // New flag for mode switch coordination
   
   // Actions
   updateRating: (pokemonId: string, rating: Rating) => void;
@@ -36,6 +36,9 @@ interface TrueSkillStore {
   clearAllPendingBattles: () => void;
   isPokemonPending: (pokemonId: number) => boolean;
   getAllPendingBattles: () => number[];
+  
+  // Mode switch coordination
+  setInitiatePendingBattle: (value: boolean) => void;
   
   // Cloud sync actions
   syncToCloud: () => Promise<void>;
@@ -61,6 +64,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       lastSyncTime: 0,
       syncInProgress: false,
       totalBattles: 0,
+      initiatePendingBattle: false,
 
       updateRating: (pokemonId: string, rating: Rating) => {
         set((state) => ({
@@ -186,6 +190,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         const pending = get().pendingBattles;
         console.log(`🌥️ [CLOUD_PENDING] Get all pending battles:`, pending);
         return pending;
+      },
+
+      setInitiatePendingBattle: (value: boolean) => {
+        console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: ${value}`);
+        set({ initiatePendingBattle: value });
       },
 
       syncToCloud: async () => {
