@@ -10,9 +10,9 @@ import BattleCardImage from "./BattleCardImage";
 import BattleCardInfo from "./BattleCardInfo";
 import BattleCardInteractions from "./BattleCardInteractions";
 import { Star } from "lucide-react";
-import { useSharedRefinementQueue } from "@/hooks/battle/useSharedRefinementQueue";
-import { usePokemonContext } from "@/contexts/PokemonContext";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { usePokemonContext } from "@/contexts/PokemonContext";
 
 interface BattleCardContainerProps {
   pokemon: Pokemon;
@@ -36,43 +36,14 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // CRITICAL FIX: Use cloud pending battles instead of local state
+  // Use cloud pending battles and Zustand store for queue operations
   const { isPokemonPending, addPendingPokemon, removePendingPokemon } = useCloudPendingBattles();
+  const { queueBattlesForReorder } = useTrueSkillStore();
+  const { allPokemon } = usePokemonContext();
+  
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  const { refinementQueue, hasRefinementBattles, queueBattlesForReorder } = useSharedRefinementQueue();
-  const { allPokemon } = usePokemonContext();
-
-  const contextAvailable = Boolean(
-    refinementQueue &&
-    Array.isArray(refinementQueue) &&
-    typeof hasRefinementBattles === 'boolean'
-  );
-
   const hadRefinementBattlesRef = useRef(false);
-
-  useEffect(() => {
-    if (hasRefinementBattles) {
-      hadRefinementBattlesRef.current = true;
-    }
-  }, [hasRefinementBattles]);
-
-  useEffect(() => {
-    if (
-      contextAvailable &&
-      hasRefinementBattles === false &&
-      isPendingRefinement &&
-      hadRefinementBattlesRef.current
-    ) {
-      console.log(`🌟 [CLEANUP_TRACE] Cleared pending state for ${pokemon.name} (#${pokemon.id}) - battles processed`);
-      removePendingPokemon(pokemon.id);
-      hadRefinementBattlesRef.current = false;
-    }
-  }, [contextAvailable, hasRefinementBattles, isPendingRefinement, pokemon.id, removePendingPokemon]);
-
-  // Hooks for modal content - match manual mode approach
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
   useEffect(() => {
     console.log(`🔘 [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Component mounted/updated`);
@@ -82,6 +53,10 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       }
     };
   }, [displayName]);
+
+  // Hooks for modal content - match manual mode approach
+  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     console.log(`🖱️ [INFO_BUTTON_DEBUG] BattleCardContainer ${displayName}: Card clicked`);
@@ -135,17 +110,17 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   }, [displayName]);
 
   const handlePrioritizeClick = (e: React.MouseEvent) => {
+    // CRITICAL: This MUST be the first line to prevent event bubbling
     e.stopPropagation();
     e.preventDefault();
 
-    console.log(`⭐ [STAR_TOGGLE_FIXED] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
+    console.log(`⭐ [ZUSTAND_STAR_TOGGLE] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
 
     if (!isPendingRefinement) {
-      // CRITICAL FIX: Use cloud pending system
-      console.log(`⭐ [STAR_TOGGLE_FIXED] Adding ${pokemon.name} to CLOUD pending state`);
+      console.log(`⭐ [ZUSTAND_STAR_TOGGLE] Adding ${pokemon.name} to CLOUD pending state`);
       addPendingPokemon(pokemon.id);
 
-      if (contextAvailable && allPokemon.length > 1) {
+      if (allPokemon.length > 1) {
         const pool = allPokemon.filter(p => p.id !== pokemon.id);
         const opponents: number[] = [];
         const copy = [...pool];
@@ -153,17 +128,16 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
           const rand = Math.floor(Math.random() * copy.length);
           opponents.push(copy.splice(rand, 1)[0].id);
         }
-        console.log(`🌟 [BATTLE_CARD] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
+        console.log(`🌟 [ZUSTAND_QUEUE] Opponents chosen for ${pokemon.name} (#${pokemon.id}):`, opponents);
         try {
           const newLength = queueBattlesForReorder(pokemon.id, opponents, -1);
-          console.log(`🌟 [BATTLE_CARD_QUEUE] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
+          console.log(`🌟 [ZUSTAND_QUEUE] New queue length after queuing for ${pokemon.name} (#${pokemon.id}): ${newLength}`);
         } catch (error) {
           console.error('Failed to queue refinement battles from battle card', error);
         }
       }
     } else {
-      // CRITICAL FIX: Use cloud pending system
-      console.log(`⭐ [STAR_TOGGLE_FIXED] Removing ${pokemon.name} from CLOUD pending state`);
+      console.log(`⭐ [ZUSTAND_STAR_TOGGLE] Removing ${pokemon.name} from CLOUD pending state`);
       removePendingPokemon(pokemon.id);
     }
   };

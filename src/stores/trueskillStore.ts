@@ -9,15 +9,22 @@ interface TrueSkillRating {
   battleCount: number;
 }
 
+interface RefinementBattle {
+  primaryPokemonId: number;
+  opponentPokemonId: number;
+  priority: number;
+}
+
 interface TrueSkillStore {
   ratings: Record<string, TrueSkillRating>;
   pendingBattles: number[];
+  refinementQueue: RefinementBattle[];
   sessionId: string;
   isHydrated: boolean;
   lastSyncTime: number;
   syncInProgress: boolean;
   totalBattles: number;
-  initiatePendingBattle: boolean; // New flag for mode switch coordination
+  initiatePendingBattle: boolean;
   
   // Actions
   updateRating: (pokemonId: string, rating: Rating) => void;
@@ -36,6 +43,14 @@ interface TrueSkillStore {
   clearAllPendingBattles: () => void;
   isPokemonPending: (pokemonId: number) => boolean;
   getAllPendingBattles: () => number[];
+  
+  // Refinement queue actions
+  queueBattlesForReorder: (primaryPokemonId: number, opponentIds: number[], priority: number) => number;
+  getNextRefinementBattle: () => RefinementBattle | null;
+  popRefinementBattle: () => void;
+  hasRefinementBattles: () => boolean;
+  getRefinementBattleCount: () => number;
+  clearRefinementQueue: () => void;
   
   // Mode switch coordination
   setInitiatePendingBattle: (value: boolean) => void;
@@ -59,6 +74,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
     (set, get) => ({
       ratings: {},
       pendingBattles: [],
+      refinementQueue: [],
       sessionId: generateSessionId(),
       isHydrated: false,
       lastSyncTime: 0,
@@ -150,7 +166,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         get().updateRating(pokemonId, newRating);
       },
 
-      // Pending battles management
       addPendingBattle: (pokemonId: number) => {
         set((state) => {
           if (!state.pendingBattles.includes(pokemonId)) {
@@ -192,6 +207,69 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         return pending;
       },
 
+      queueBattlesForReorder: (primaryPokemonId: number, opponentIds: number[], priority: number) => {
+        console.log(`🏪 [ZUSTAND_QUEUE] Queuing battles for Pokemon ${primaryPokemonId} with opponents:`, opponentIds);
+        
+        const newBattles: RefinementBattle[] = opponentIds.map(opponentPokemonId => ({
+          primaryPokemonId,
+          opponentPokemonId,
+          priority
+        }));
+        
+        set((state) => {
+          const updatedQueue = [...state.refinementQueue, ...newBattles]
+            .sort((a, b) => a.priority - b.priority);
+          
+          console.log(`🏪 [ZUSTAND_QUEUE] New queue length: ${updatedQueue.length}`);
+          return { refinementQueue: updatedQueue };
+        });
+        
+        const finalLength = get().refinementQueue.length;
+        console.log(`🏪 [ZUSTAND_QUEUE] Final queue length after adding: ${finalLength}`);
+        
+        // Sync to cloud
+        get().syncToCloud();
+        
+        return finalLength;
+      },
+
+      getNextRefinementBattle: () => {
+        const queue = get().refinementQueue;
+        const nextBattle = queue.length > 0 ? queue[0] : null;
+        console.log(`🏪 [ZUSTAND_QUEUE] Getting next battle:`, nextBattle);
+        return nextBattle;
+      },
+
+      popRefinementBattle: () => {
+        console.log(`🏪 [ZUSTAND_QUEUE] Popping battle from queue`);
+        set((state) => {
+          const newQueue = state.refinementQueue.slice(1);
+          console.log(`🏪 [ZUSTAND_QUEUE] Queue length after pop: ${newQueue.length}`);
+          return { refinementQueue: newQueue };
+        });
+        
+        // Sync to cloud
+        get().syncToCloud();
+      },
+
+      hasRefinementBattles: () => {
+        const hasRefinements = get().refinementQueue.length > 0;
+        console.log(`🏪 [ZUSTAND_QUEUE] Has refinement battles: ${hasRefinements}`);
+        return hasRefinements;
+      },
+
+      getRefinementBattleCount: () => {
+        const count = get().refinementQueue.length;
+        console.log(`🏪 [ZUSTAND_QUEUE] Refinement battle count: ${count}`);
+        return count;
+      },
+
+      clearRefinementQueue: () => {
+        console.log(`🏪 [ZUSTAND_QUEUE] Clearing refinement queue`);
+        set({ refinementQueue: [] });
+        get().syncToCloud();
+      },
+
       setInitiatePendingBattle: (value: boolean) => {
         console.log(`🚦 [MODE_COORDINATION] Setting initiatePendingBattle flag to: ${value}`);
         set({ initiatePendingBattle: value });
@@ -209,7 +287,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           set({ syncInProgress: true });
           
           try {
-            console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles, ${state.pendingBattles.length} pending battles`);
+            console.log(`[TRUESKILL_STORE] Syncing to cloud - ${Object.keys(state.ratings).length} ratings, ${state.totalBattles} total battles, ${state.pendingBattles.length} pending battles, ${state.refinementQueue.length} refinement battles`);
             
             const response = await fetch('/api/trueskill/sync', {
               method: 'POST',
@@ -219,6 +297,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 ratings: state.ratings as any,
                 totalBattles: state.totalBattles,
                 pendingBattles: state.pendingBattles,
+                refinementQueue: state.refinementQueue,
                 lastUpdated: new Date().toISOString()
               })
             });
@@ -277,12 +356,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             console.log(
               `[TRUESKILL_STORE] Loaded ${Object.keys(result.ratings).length} ratings, ${
                 result.totalBattles || 0} total battles, ${
-                (result.pendingBattles || []).length} pending battles from cloud`
+                (result.pendingBattles || []).length} pending battles, ${
+                (result.refinementQueue || []).length} refinement battles from cloud`
             );
             set({
               ratings: result.ratings,
               totalBattles: result.totalBattles || 0,
               pendingBattles: result.pendingBattles || [],
+              refinementQueue: result.refinementQueue || [],
               isHydrated: true
             });
             console.log('[TRUESKILL_STORE] Hydration flag set after cloud load');
@@ -304,8 +385,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             ratings: state.ratings,
             totalBattles: state.totalBattles,
             pendingBattles: state.pendingBattles,
+            refinementQueue: state.refinementQueue,
           };
-          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${localState.totalBattles} battles, ${Object.keys(localState.ratings).length} ratings, ${localState.pendingBattles.length} pending.`);
+          console.log(`[TRUESKILL_SMART_SYNC] Local state: ${localState.totalBattles} battles, ${Object.keys(localState.ratings).length} ratings, ${localState.pendingBattles.length} pending, ${localState.refinementQueue.length} refinement battles.`);
 
           const response = await fetch('/api/trueskill/get', {
             method: 'POST',
@@ -317,6 +399,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             ratings: {},
             totalBattles: 0,
             pendingBattles: [],
+            refinementQueue: [],
           };
 
           if (response.ok) {
@@ -326,35 +409,37 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 ratings: result.ratings || {},
                 totalBattles: result.totalBattles || 0,
                 pendingBattles: result.pendingBattles || [],
+                refinementQueue: result.refinementQueue || [],
               };
             }
           } else {
             console.log('[TRUESKILL_SMART_SYNC] Could not fetch cloud state. Proceeding with local state only.');
           }
-          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudState.totalBattles} battles, ${Object.keys(cloudState.ratings).length} ratings, ${cloudState.pendingBattles.length} pending.`);
+          console.log(`[TRUESKILL_SMART_SYNC] Cloud state: ${cloudState.totalBattles} battles, ${Object.keys(cloudState.ratings).length} ratings, ${cloudState.pendingBattles.length} pending, ${cloudState.refinementQueue.length} refinement battles.`);
 
-          // --- THE CORRECTED MERGE LOGIC ---
           // If local has more battles, it's the newer state. Prioritize it.
           if (localState.totalBattles >= cloudState.totalBattles) {
             console.log('[TRUESKILL_SMART_SYNC] Local state is newer or equal. Merging cloud into local.');
             const mergedPending = [...new Set([...localState.pendingBattles, ...cloudState.pendingBattles])];
+            const mergedRefinements = [...localState.refinementQueue, ...cloudState.refinementQueue];
             set({
               ratings: { ...cloudState.ratings, ...localState.ratings },
               totalBattles: localState.totalBattles,
               pendingBattles: mergedPending,
+              refinementQueue: mergedRefinements,
             });
           } else {
             // If cloud has more battles, it's the newer state. Prioritize it.
             console.log('[TRUESKILL_SMART_SYNC] Cloud state is newer. Merging local into cloud.');
              const mergedPending = [...new Set([...cloudState.pendingBattles, ...localState.pendingBattles])];
+             const mergedRefinements = [...cloudState.refinementQueue, ...localState.refinementQueue];
              set({
               ratings: { ...localState.ratings, ...cloudState.ratings },
               totalBattles: cloudState.totalBattles,
               pendingBattles: mergedPending,
+              refinementQueue: mergedRefinements,
             });
           }
-          
-          // --- End of corrected logic ---
           
           set({ isHydrated: true });
           console.log(`[TRUESKILL_STORE] Hydration flag set after smart sync`);

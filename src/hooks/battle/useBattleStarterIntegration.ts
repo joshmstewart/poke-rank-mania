@@ -2,7 +2,6 @@
 import { useMemo, useCallback, useEffect } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { createBattleStarter } from "./createBattleStarter";
-import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useFormFilters } from "@/hooks/useFormFilters";
 import { useCloudPendingBattles } from "./useCloudPendingBattles";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -16,8 +15,15 @@ export const useBattleStarterIntegration = (
   currentBattle?: Pokemon[],
   initialBattleStartedRef?: React.MutableRefObject<boolean>
 ) => {
-  // CRITICAL FIX: Get the pending battle flag from TrueSkill store
-  const { initiatePendingBattle } = useTrueSkillStore();
+  // Get from Zustand store instead of React Context
+  const { 
+    initiatePendingBattle,
+    queueBattlesForReorder,
+    getNextRefinementBattle,
+    popRefinementBattle,
+    hasRefinementBattles,
+    getRefinementBattleCount
+  } = useTrueSkillStore();
   
   // Get form filters to ensure battle generation respects them
   const { shouldIncludePokemon, analyzeFilteringPipeline } = useFormFilters();
@@ -81,8 +87,14 @@ export const useBattleStarterIntegration = (
     return createBattleStarter(filteredPokemon, currentRankings);
   }, [filteredPokemon, currentRankings]);
 
-  // Use shared refinement queue instead of creating a new instance
-  const refinementQueue = useSharedRefinementQueue();
+  // Create a refinement queue object for compatibility with existing code
+  const refinementQueue = useMemo(() => ({
+    hasRefinementBattles: hasRefinementBattles(),
+    refinementBattleCount: getRefinementBattleCount(),
+    getNextRefinementBattle,
+    popRefinementBattle,
+    queueBattlesForReorder
+  }), [hasRefinementBattles, getRefinementBattleCount, getNextRefinementBattle, popRefinementBattle, queueBattlesForReorder]);
 
   // CRITICAL FIX: Fix the startNewBattle function to actually prioritize pending Pokemon
   const startNewBattle = useCallback((battleType: any) => {
@@ -172,12 +184,12 @@ export const useBattleStarterIntegration = (
       console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] No pending Pokemon - proceeding with normal battle`);
     }
     
-    // Check refinement queue
-    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== CHECKING REFINEMENT QUEUE =====`);
-    if (refinementQueue?.hasRefinementBattles && refinementQueue.getNextRefinementBattle) {
+    // Check refinement queue using Zustand store
+    console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== CHECKING ZUSTAND REFINEMENT QUEUE =====`);
+    if (hasRefinementBattles()) {
       console.log(`🔍 [DEBUG_INTEGRATION] [${callId}] ===== GENERATING REFINEMENT BATTLE =====`);
       
-      const nextBattle = refinementQueue.getNextRefinementBattle();
+      const nextBattle = getNextRefinementBattle();
       if (nextBattle) {
         const pokemon1 = filteredPokemon.find(p => p.id === nextBattle.primaryPokemonId);
         const pokemon2 = filteredPokemon.find(p => p.id === nextBattle.opponentPokemonId);
@@ -188,7 +200,7 @@ export const useBattleStarterIntegration = (
           
           setCurrentBattle(refinementResult);
           setSelectedPokemon([]);
-          refinementQueue.popRefinementBattle();
+          popRefinementBattle();
           
           return refinementResult;
         }
@@ -206,7 +218,7 @@ export const useBattleStarterIntegration = (
     }
     
     return normalResult || [];
-  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef, initiatePendingBattle]);
+  }, [battleStarter, filteredPokemon, getAllPendingIds, removePendingPokemon, refinementQueue, setCurrentBattle, setSelectedPokemon, allPokemon, initialBattleStartedRef, initiatePendingBattle, hasRefinementBattles, getNextRefinementBattle, popRefinementBattle]);
 
   // Log whenever startNewBattle callback changes
   useEffect(() => {
