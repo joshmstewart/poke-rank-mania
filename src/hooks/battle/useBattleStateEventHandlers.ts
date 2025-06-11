@@ -29,7 +29,6 @@ export const useBattleStateEventHandlers = (
         console.log(`✅ [START_NEW_BATTLE_WRAPPER] New battle set successfully`);
       } else {
         console.error(`🚀 [START_NEW_BATTLE_WRAPPER] Failed to create new battle - empty result`);
-        // REMOVED: Recursive retry that was causing the infinite loop
         console.log(`🚀 [START_NEW_BATTLE_WRAPPER] Not retrying to prevent infinite loop`);
       }
     } catch (error) {
@@ -77,7 +76,7 @@ export const useBattleStateEventHandlers = (
     };
   }, [milestoneHandlers, stateData.battleHistory]);
 
-  // FIXED: Mode switch event listener - ONLY sets flag, doesn't clear or start battles
+  // Mode switch event listener - REMOVED BATTLE CREATION LOGIC
   useEffect(() => {
     const handleModeSwitch = (event: CustomEvent) => {
       const { mode, previousMode } = event.detail;
@@ -91,14 +90,13 @@ export const useBattleStateEventHandlers = (
         console.log(`🔄 [MODE_SWITCH_HANDLER] Found ${pendingPokemon.length} pending Pokemon:`, pendingPokemon);
         
         if (pendingPokemon.length > 0) {
-          console.log(`🔄 [MODE_SWITCH_HANDLER] CRITICAL FIX: Found pending Pokemon - setting initiatePendingBattle flag ONLY`);
-          console.log(`🔄 [MODE_SWITCH_HANDLER] NOT clearing pending battles - letting proper battle systems handle them`);
+          console.log(`🔄 [MODE_SWITCH_HANDLER] Found pending Pokemon - setting initiatePendingBattle flag ONLY`);
+          console.log(`🔄 [MODE_SWITCH_HANDLER] NOT creating battles - letting single battle creator handle it`);
           
-          // CRITICAL FIX: ONLY set the flag - don't clear or start battles here
-          // Let the proper battle creation systems (useBattleStarterEvents) handle the rest
+          // ONLY set the flag - let the single battle creator handle the rest
           useTrueSkillStore.setState({ initiatePendingBattle: true });
           
-          console.log(`🔄 [MODE_SWITCH_HANDLER] Flag set - proper battle systems will now process pending Pokemon`);
+          console.log(`🔄 [MODE_SWITCH_HANDLER] Flag set - single battle creator will process pending Pokemon`);
         } else {
           console.log(`🔄 [MODE_SWITCH_HANDLER] No pending Pokemon found - normal battle flow will apply`);
         }
@@ -112,12 +110,12 @@ export const useBattleStateEventHandlers = (
     };
   }, [getAllPendingBattles]);
 
-  // CRITICAL FIX: Context-aware pokemon-starred-for-battle event listener
+  // Pokemon starred event listener - REMOVED BATTLE CREATION LOGIC
   useEffect(() => {
     const handlePokemonStarred = (event: CustomEvent) => {
       console.log(`⭐ [POKEMON_STARRED_EVENT] Received pokemon-starred-for-battle event:`, event.detail);
       
-      // CRITICAL FIX: Check if we're in battle mode before starting a battle
+      // Check if we're in battle mode
       const currentPath = window.location.pathname;
       const isInBattleMode = currentPath === '/' || currentPath.includes('battle');
       
@@ -125,11 +123,11 @@ export const useBattleStateEventHandlers = (
       
       if (!isInBattleMode) {
         console.log(`⭐ [POKEMON_STARRED_EVENT] Not in battle mode, Pokemon will be processed when switching to battle mode`);
-        return; // Do nothing when not in battle mode - the mode switch handler will pick this up
+        return;
       }
       
-      console.log(`⭐ [POKEMON_STARRED_EVENT] In battle mode, starting new battle...`);
-      startNewBattleWrapper();
+      console.log(`⭐ [POKEMON_STARRED_EVENT] In battle mode - let single battle creator handle this`);
+      // Don't create battles here - let the single battle creator handle it
     };
 
     document.addEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
@@ -137,31 +135,9 @@ export const useBattleStateEventHandlers = (
     return () => {
       document.removeEventListener('pokemon-starred-for-battle', handlePokemonStarred as EventListener);
     };
-  }, [startNewBattleWrapper]);
+  }, []);
 
-  // CRITICAL FIX: Add mode check to prevent infinite loop on non-battle pages
-  useEffect(() => {
-    // Check if we're in battle mode by looking at URL or a mode flag
-    const currentPath = window.location.pathname;
-    const isInBattleMode = currentPath === '/' || currentPath.includes('battle');
-    
-    console.log(`🚀 [INITIAL_BATTLE_DEBUG] Effect triggered - Pokemon: ${allPokemon.length}, currentBattle: ${stateData.currentBattle.length}, inBattleMode: ${isInBattleMode}`);
-    
-    // GUARD CLAUSE: Don't start battles if not in battle mode
-    if (!isInBattleMode) {
-      console.log(`🚀 [INITIAL_BATTLE_DEBUG] Not in battle mode, skipping battle initialization`);
-      return;
-    }
-    
-    if (allPokemon.length > 0 && stateData.currentBattle.length === 0) {
-      console.log(`🚀 [INITIAL_BATTLE_DEBUG] Starting initial battle...`);
-      
-      // Use async wrapper for consistent behavior
-      setTimeout(() => {
-        startNewBattleWrapper();
-      }, 100);
-    }
-  }, [allPokemon.length, stateData.currentBattle.length, startNewBattleWrapper]);
+  // REMOVED THE COMPETING INITIAL BATTLE EFFECT - let single battle creator handle it
 
   return {
     startNewBattleWrapper
