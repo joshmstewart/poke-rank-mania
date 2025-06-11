@@ -97,6 +97,13 @@ function AppContent() {
     };
   }, []);
 
+  useEffect(() => {
+    const evt = new CustomEvent('mode-switch', {
+      detail: { mode, timestamp: new Date().toISOString() }
+    });
+    document.dispatchEvent(evt);
+  }, [mode]);
+
   const handleModeChange = (newMode: "rank" | "battle") => {
     console.log('🚀🚀🚀 APP_CONTENT_FIXED: Mode changing from', mode, 'to', newMode);
     setMode(newMode);
