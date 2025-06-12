@@ -1,6 +1,6 @@
-
 import { useCallback, useEffect } from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
+import { useBattleFlowLogger } from './useBattleFlowLogger';
 
 export const useCloudPendingBattles = () => {
   const {
@@ -11,6 +11,8 @@ export const useCloudPendingBattles = () => {
     getAllPendingBattles,
     isHydrated
   } = useTrueSkillStore();
+
+  const { logStoreChange } = useBattleFlowLogger();
 
   console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hook initialized - hydrated: ${isHydrated}`);
 
@@ -27,6 +29,8 @@ export const useCloudPendingBattles = () => {
     console.log(`🔥🔥🔥 [${addId}] Current pending after add:`, afterAdd);
     console.log(`🔥🔥🔥 [${addId}] Successfully added: ${afterAdd.includes(pokemonId)}`);
     
+    logStoreChange('PENDING_POKEMON_ADDED', { pokemonId, addId });
+    
     // Dispatch immediate event to notify system
     const eventDetail = { 
       pokemonId,
@@ -41,21 +45,26 @@ export const useCloudPendingBattles = () => {
     });
     document.dispatchEvent(event);
     console.log(`🔥🔥🔥 [${addId}] ✅ Event dispatched successfully`);
-  }, [addPendingBattle, getAllPendingBattles]);
+  }, [addPendingBattle, getAllPendingBattles, logStoreChange]);
 
   const removePendingPokemon = useCallback((pokemonId: number) => {
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== REMOVING POKEMON ${pokemonId} =====`);
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending before remove:`, getAllPendingBattles());
     removePendingBattle(pokemonId);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after remove:`, getAllPendingBattles());
-  }, [removePendingBattle, getAllPendingBattles]);
+    const afterRemove = getAllPendingBattles();
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after remove:`, afterRemove);
+    
+    logStoreChange('PENDING_POKEMON_REMOVED', { pokemonId });
+  }, [removePendingBattle, getAllPendingBattles, logStoreChange]);
 
   const clearAllPending = useCallback(() => {
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== CLEARING ALL PENDING =====`);
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending before clear:`, getAllPendingBattles());
     clearAllPendingBattles();
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after clear:`, getAllPendingBattles());
-  }, [clearAllPendingBattles, getAllPendingBattles]);
+    
+    logStoreChange('ALL_PENDING_CLEARED', {});
+  }, [clearAllPendingBattles, getAllPendingBattles, logStoreChange]);
 
   const getAllPendingIds = useCallback((): number[] => {
     const ids = getAllPendingBattles();
@@ -64,7 +73,7 @@ export const useCloudPendingBattles = () => {
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Type:`, typeof ids);
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Is Array:`, Array.isArray(ids));
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Length:`, ids?.length || 'undefined');
-    if (Array.isArray(ids)) {
+    if (Array.isArray(ids) && ids.length > 0) {
       console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Individual items:`, ids.map(id => `${id}(${typeof id})`));
       
       // DEBUG: Check if the first few IDs match what the cards are checking
