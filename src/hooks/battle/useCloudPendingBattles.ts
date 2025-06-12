@@ -9,12 +9,13 @@ export const useCloudPendingBattles = () => {
     clearAllPendingBattles,
     isPokemonPending,
     getAllPendingBattles,
-    isHydrated
+    isHydrated,
+    smartSync
   } = useTrueSkillStore();
 
   console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hook initialized - hydrated: ${isHydrated}`);
 
-  const addPendingPokemon = useCallback((pokemonId: number) => {
+  const addPendingPokemon = useCallback(async (pokemonId: number) => {
     const addId = `ADD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     console.log(`🔥🔥🔥 [${addId}] ===== ADDING POKEMON ${pokemonId} =====`);
@@ -22,6 +23,15 @@ export const useCloudPendingBattles = () => {
     console.log(`🔥🔥🔥 [${addId}] Current pending before add:`, getAllPendingBattles());
     
     addPendingBattle(pokemonId);
+    
+    // CRITICAL FIX: Force immediate sync to cloud after adding
+    try {
+      console.log(`🔥🔥🔥 [${addId}] Forcing immediate cloud sync after add`);
+      await smartSync();
+      console.log(`🔥🔥🔥 [${addId}] ✅ Cloud sync successful after add`);
+    } catch (error) {
+      console.error(`🔥🔥🔥 [${addId}] ❌ Cloud sync failed after add:`, error);
+    }
     
     const afterAdd = getAllPendingBattles();
     console.log(`🔥🔥🔥 [${addId}] Current pending after add:`, afterAdd);
@@ -41,21 +51,61 @@ export const useCloudPendingBattles = () => {
     });
     document.dispatchEvent(event);
     console.log(`🔥🔥🔥 [${addId}] ✅ Event dispatched successfully`);
-  }, [addPendingBattle, getAllPendingBattles]);
+  }, [addPendingBattle, getAllPendingBattles, smartSync]);
 
-  const removePendingPokemon = useCallback((pokemonId: number) => {
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== REMOVING POKEMON ${pokemonId} =====`);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending before remove:`, getAllPendingBattles());
+  const removePendingPokemon = useCallback(async (pokemonId: number) => {
+    const removeId = `REMOVE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`🔥🔥🔥 [${removeId}] ===== REMOVING POKEMON ${pokemonId} =====`);
+    console.log(`🔥🔥🔥 [${removeId}] Current pending before remove:`, getAllPendingBattles());
+    
     removePendingBattle(pokemonId);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after remove:`, getAllPendingBattles());
-  }, [removePendingBattle, getAllPendingBattles]);
+    
+    // CRITICAL FIX: Force immediate sync to cloud after removing
+    try {
+      console.log(`🔥🔥🔥 [${removeId}] Forcing immediate cloud sync after remove`);
+      await smartSync();
+      console.log(`🔥🔥🔥 [${removeId}] ✅ Cloud sync successful after remove`);
+    } catch (error) {
+      console.error(`🔥🔥🔥 [${removeId}] ❌ Cloud sync failed after remove:`, error);
+    }
+    
+    console.log(`🔥🔥🔥 [${removeId}] Current pending after remove:`, getAllPendingBattles());
+    
+    // Dispatch event to notify system of removal
+    const eventDetail = { 
+      pokemonId,
+      source: 'cloud-pending-battles',
+      timestamp: Date.now(),
+      removeId: removeId,
+      action: 'remove'
+    };
+    
+    console.log(`🔥🔥🔥 [${removeId}] Dispatching pokemon-unstarred event:`, eventDetail);
+    const event = new CustomEvent('pokemon-unstarred', {
+      detail: eventDetail
+    });
+    document.dispatchEvent(event);
+    console.log(`🔥🔥🔥 [${removeId}] ✅ Unstar event dispatched successfully`);
+  }, [removePendingBattle, getAllPendingBattles, smartSync]);
 
-  const clearAllPending = useCallback(() => {
+  const clearAllPending = useCallback(async () => {
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== CLEARING ALL PENDING =====`);
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending before clear:`, getAllPendingBattles());
+    
     clearAllPendingBattles();
+    
+    // CRITICAL FIX: Force immediate sync to cloud after clearing
+    try {
+      console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Forcing immediate cloud sync after clear`);
+      await smartSync();
+      console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ✅ Cloud sync successful after clear`);
+    } catch (error) {
+      console.error(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ❌ Cloud sync failed after clear:`, error);
+    }
+    
     console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after clear:`, getAllPendingBattles());
-  }, [clearAllPendingBattles, getAllPendingBattles]);
+  }, [clearAllPendingBattles, getAllPendingBattles, smartSync]);
 
   const getAllPendingIds = useCallback((): number[] => {
     const ids = getAllPendingBattles();
