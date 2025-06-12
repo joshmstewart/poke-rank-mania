@@ -26,7 +26,7 @@ export const useBattleStarterIntegration = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // SIMPLIFIED: Create synchronous battle starter that doesn't compete with events
+  // FIXED: Create proper battle starter that constructs the correct config object
   const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
     console.log(`🚀 [INTEGRATION_FIX] startNewBattle called for type: ${battleType}`);
     
@@ -40,12 +40,20 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // FIXED: Pass proper BattleType instead of string
-    const result = startNewBattleCore(battleType);
+    // FIXED: Construct proper BattleStarterConfig object
+    const config = {
+      allPokemon,
+      currentRankings: finalRankings,
+      battleType,
+      selectedGeneration: 0, // Default to all generations
+      freezeList: [] // Default to no frozen Pokemon
+    };
+    
+    const result = startNewBattleCore(config);
     console.log(`🚀 [INTEGRATION_FIX] Generated battle:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
     
     return result || [];
-  }, [allPokemon, startNewBattleCore]);
+  }, [allPokemon, finalRankings, startNewBattleCore]);
 
   const resetSuggestionPriority = useCallback(() => {
     console.log(`🔧 [INTEGRATION_FIX] Suggestion priority reset`);
