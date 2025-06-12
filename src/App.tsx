@@ -123,6 +123,7 @@ function AppContent() {
   return (
     <div className="flex flex-col h-screen">
       <AppHeader mode={mode} onModeChange={handleModeChange} />
+      <HeaderSyncStatus />
       
       <main className="flex-grow bg-gray-100 py-6 px-4">
         <div className="container max-w-7xl mx-auto">
@@ -193,22 +194,12 @@ function App() {
   
   console.log('🚀🚀🚀 ROOT_APP_FIXED: About to render fixed structure');
   
-  // CRITICAL FIX: Establish proper provider hierarchy at the top level
+  // CRITICAL FIX: Use AppContent component properly with providers
   return (
     <AuthWrapper>
       <PokemonRankerProvider>
         <RefinementQueueProvider>
-          <div className="flex flex-col h-screen">
-            <AppHeader mode={mode} onModeChange={handleModeChange} />
-            <HeaderSyncStatus />
-            
-            <main className="flex-grow bg-gray-100 py-6 px-4">
-              <div className="container max-w-7xl mx-auto">
-                {renderContent()}
-              </div>
-            </main>
-            <Toaster />
-          </div>
+          <AppContent />
         </RefinementQueueProvider>
       </PokemonRankerProvider>
     </AuthWrapper>
