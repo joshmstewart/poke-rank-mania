@@ -158,6 +158,12 @@ export const useBattleStateSimplified = (
     }, 100);
   }, [allPokemon.length, startNewBattle]);
   
+  // Simple milestone reset function
+  const resetMilestoneInProgress = useCallback(() => {
+    console.log(`🚀 [SIMPLIFIED] Reset milestone in progress`);
+    // For simplified version, this is a no-op but maintains interface compatibility
+  }, []);
+  
   return {
     // State
     currentBattle,
@@ -189,7 +195,7 @@ export const useBattleStateSimplified = (
     handleSaveRankings: () => {},
     suggestRanking: () => {},
     removeSuggestion: () => {},
-    resetMilestoneInProgress: false,
+    resetMilestoneInProgress,
     handleManualReorder: () => {}
   };
 };
