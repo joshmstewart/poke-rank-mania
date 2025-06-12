@@ -35,6 +35,11 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
     console.log(`🚀 [CONTAINER_SIMPLIFIED] Battle type changed to: ${type}`);
   }, []);
 
+  // CRITICAL DEBUG: Monitor TrueSkill store changes
+  useEffect(() => {
+    console.log(`📊 [TRUESKILL_MONITOR] Total battles updated: ${totalBattles}`);
+  }, [totalBattles]);
+
   return (
     <RefinementQueueProvider>
       <BattleModeContainerContent
@@ -76,8 +81,9 @@ const BattleModeContainerContent: React.FC<{
     selectedGeneration
   );
 
-  // Sync battle count
+  // CRITICAL FIX: Sync battle count from TrueSkill store
   useEffect(() => {
+    console.log(`📊 [BATTLE_COUNT_SYNC] Syncing battle count: TrueSkill=${totalBattles}, battleState=${battleState.battlesCompleted}`);
     if (setBattlesCompleted) {
       setBattlesCompleted(totalBattles);
     }

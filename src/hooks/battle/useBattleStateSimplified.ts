@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -20,8 +21,8 @@ export const useBattleStateSimplified = (
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   
-  // TrueSkill integration
-  const { totalBattles } = useTrueSkillStore();
+  // TrueSkill integration - CRITICAL FIX: Get the increment function
+  const { totalBattles, incrementTotalBattles } = useTrueSkillStore();
   
   // Refinement queue integration
   const refinementQueue = useSharedRefinementQueue();
@@ -109,29 +110,75 @@ export const useBattleStateSimplified = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
   
-  // Optimized handlers - no delays
-  const handlePokemonSelect = useCallback((pokemonId: number) => {
-    console.log(`🚀 [SIMPLIFIED] Pokemon selected: ${pokemonId}`);
+  // CRITICAL FIX: Process battle results and increment counter
+  const processBattleResult = useCallback((selectedPokemonIds: number[]) => {
+    console.log(`🏆 [BATTLE_RESULT_FIX] Processing battle result with selected Pokemon:`, selectedPokemonIds);
     
     if (battleType === "pairs") {
-      // For pairs, immediately process the selection
-      const winner = currentBattle.find(p => p.id === pokemonId);
-      const loser = currentBattle.find(p => p.id !== pokemonId);
+      const winner = currentBattle.find(p => selectedPokemonIds.includes(p.id));
+      const loser = currentBattle.find(p => !selectedPokemonIds.includes(p.id));
       
       if (winner && loser) {
         const battle: SingleBattle = {
           battleType,
           generation: selectedGeneration,
           pokemonIds: currentBattle.map(p => p.id),
-          selectedPokemonIds: [pokemonId],
+          selectedPokemonIds,
           timestamp: new Date().toISOString(),
           winner,
           loser
         };
         
-        setBattleResults(prev => [...prev, battle]);
-        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: [pokemonId] }]);
+        console.log(`🏆 [BATTLE_RESULT_FIX] Created battle result:`, battle);
         
+        setBattleResults(prev => [...prev, battle]);
+        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
+        
+        // CRITICAL FIX: Increment the TrueSkill battle counter
+        incrementTotalBattles();
+        console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
+        
+        return battle;
+      }
+    } else {
+      // For triplets
+      const winners = currentBattle.filter(p => selectedPokemonIds.includes(p.id));
+      const loser = currentBattle.find(p => !selectedPokemonIds.includes(p.id));
+      
+      if (winners.length === 2 && loser) {
+        const battle: SingleBattle = {
+          battleType,
+          generation: selectedGeneration,
+          pokemonIds: currentBattle.map(p => p.id),
+          selectedPokemonIds,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log(`🏆 [BATTLE_RESULT_FIX] Created triplet battle result:`, battle);
+        
+        setBattleResults(prev => [...prev, battle]);
+        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
+        
+        // CRITICAL FIX: Increment the TrueSkill battle counter
+        incrementTotalBattles();
+        console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
+        
+        return battle;
+      }
+    }
+    
+    return null;
+  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles]);
+  
+  // Optimized handlers - no delays
+  const handlePokemonSelect = useCallback((pokemonId: number) => {
+    console.log(`🚀 [SIMPLIFIED] Pokemon selected: ${pokemonId}`);
+    
+    if (battleType === "pairs") {
+      // For pairs, immediately process the selection
+      const battleResult = processBattleResult([pokemonId]);
+      
+      if (battleResult) {
         // Start next battle immediately - no delay
         startNewBattle();
       }
@@ -144,21 +191,9 @@ export const useBattleStateSimplified = (
         
         if (newSelection.length === 2) {
           // Process triplet selection
-          const winners = currentBattle.filter(p => newSelection.includes(p.id));
-          const loser = currentBattle.find(p => !newSelection.includes(p.id));
+          const battleResult = processBattleResult(newSelection);
           
-          if (winners.length === 2 && loser) {
-            const battle: SingleBattle = {
-              battleType,
-              generation: selectedGeneration,
-              pokemonIds: currentBattle.map(p => p.id),
-              selectedPokemonIds: newSelection,
-              timestamp: new Date().toISOString()
-            };
-            
-            setBattleResults(prev => [...prev, battle]);
-            setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
-            
+          if (battleResult) {
             // Start next battle immediately - no delay
             startNewBattle();
           }
@@ -167,7 +202,7 @@ export const useBattleStateSimplified = (
         return newSelection;
       });
     }
-  }, [currentBattle, battleType, selectedGeneration, startNewBattle]);
+  }, [battleType, processBattleResult, startNewBattle]);
   
   const handleTripletSelectionComplete = useCallback(() => {
     // This is handled automatically in handlePokemonSelect
