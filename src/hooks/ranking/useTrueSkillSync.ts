@@ -31,7 +31,7 @@ export const useTrueSkillSync = () => {
       battles: rating.battleCount
     })));
   } else {
-    console.log(`🔄 [TRUESKILL_SYNC_CRITICAL] ❌ NO RATINGS FOUND - THIS IS THE PROBLEM!`);
+    console.log(`🔄 [TRUESKILL_SYNC_CRITICAL] ❌ NO RATINGS FOUND - FORCING IMMEDIATE SYNC!`);
   }
 
   // CRITICAL: Generate ranked Pokemon from TrueSkill data
@@ -97,6 +97,8 @@ export const useTrueSkillSync = () => {
         score: p.score.toFixed(2),
         battles: p.count
       })));
+    } else {
+      console.error(`🔄 [TRUESKILL_SYNC_MEMO] ❌ NO RANKINGS GENERATED! This is the main problem!`);
     }
     
     return rankings;
@@ -104,24 +106,24 @@ export const useTrueSkillSync = () => {
 
   // Force sync on first load if we don't have data but should
   useEffect(() => {
-    if (!initRef.current && isHydrated && pokemonLookupMap.size > 0) {
+    if (!initRef.current && isHydrated) {
       initRef.current = true;
       
       console.log(`🔄 [TRUESKILL_SYNC_INIT] First load sync check`);
       console.log(`🔄 [TRUESKILL_SYNC_INIT] Current rating count: ${Object.keys(allRatings).length}`);
       
-      // If we have very few ratings but expect more, force a sync
-      if (Object.keys(allRatings).length < 100) {
-        console.log(`🔄 [TRUESKILL_SYNC_INIT] Low rating count, forcing sync`);
+      // CRITICAL: Force sync immediately if no ratings found
+      if (Object.keys(allRatings).length === 0) {
+        console.log(`🔄 [TRUESKILL_SYNC_INIT] NO RATINGS FOUND - FORCING IMMEDIATE SYNC`);
         smartSync().then(() => {
           setLastSyncTime(Date.now());
-          console.log(`🔄 [TRUESKILL_SYNC_INIT] Sync completed`);
+          console.log(`🔄 [TRUESKILL_SYNC_INIT] Emergency sync completed`);
         }).catch(error => {
-          console.error(`🔄 [TRUESKILL_SYNC_INIT] Sync failed:`, error);
+          console.error(`🔄 [TRUESKILL_SYNC_INIT] Emergency sync failed:`, error);
         });
       }
     }
-  }, [isHydrated, pokemonLookupMap.size, allRatings, smartSync]);
+  }, [isHydrated, allRatings, smartSync]);
 
   console.log(`🔄 [TRUESKILL_SYNC_CRITICAL] ===== FINAL HOOK STATE =====`);
   console.log(`🔄 [TRUESKILL_SYNC_CRITICAL] Returning ${rankedPokemon.length} ranked Pokemon`);

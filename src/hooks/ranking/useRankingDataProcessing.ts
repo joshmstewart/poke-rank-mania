@@ -17,7 +17,7 @@ export const useRankingDataProcessing = ({
 }: UseRankingDataProcessingProps) => {
   console.log(`🔮 [RANKING_DATA_PROCESSING] ===== PROCESSING START =====`);
   
-  // CRITICAL: Use TrueSkill sync to get the real ranked Pokemon data
+  // CRITICAL: Get TrueSkill data directly - this is the source of truth
   const { rankedPokemon: trueskillRankedPokemon, isLoading, totalRankings } = useTrueSkillSync();
   
   console.log(`🔮 [RANKING_DATA_PROCESSING] TrueSkill ranked Pokemon: ${trueskillRankedPokemon.length}`);
@@ -25,18 +25,22 @@ export const useRankingDataProcessing = ({
   console.log(`🔮 [RANKING_DATA_PROCESSING] Available Pokemon: ${availablePokemon.length}`);
   console.log(`🔮 [RANKING_DATA_PROCESSING] Is loading: ${isLoading}`);
 
-  // CRITICAL: Always use TrueSkill data as the source of truth
+  // CRITICAL: ALWAYS use TrueSkill data as the primary source
   const localRankings = trueskillRankedPokemon;
+  
+  console.log(`🔮 [RANKING_DATA_PROCESSING] Using ${localRankings.length} Pokemon from TrueSkill as localRankings`);
 
   // Filter by generation if specified
   const filteredRankings = useMemo(() => {
+    console.log(`🔮 [RANKING_DATA_PROCESSING] Filtering ${localRankings.length} rankings for generation ${selectedGeneration}`);
+    
     if (selectedGeneration === 0) {
+      console.log(`🔮 [RANKING_DATA_PROCESSING] Generation 0 selected, returning all ${localRankings.length} rankings`);
       return localRankings;
     }
     
-    return localRankings.filter(pokemon => {
+    const filtered = localRankings.filter(pokemon => {
       // FIXED: Use generation ranges instead of checking for generation/gen properties
-      // that may not exist on RankedPokemon type
       const genRanges: { [key: number]: [number, number] } = {
         1: [1, 151], 2: [152, 251], 3: [252, 386], 4: [387, 493],
         5: [494, 649], 6: [650, 721], 7: [722, 809], 8: [810, 905], 9: [906, 1025]
@@ -48,11 +52,14 @@ export const useRankingDataProcessing = ({
       const [min, max] = range;
       return pokemon.id >= min && pokemon.id <= max;
     });
+    
+    console.log(`🔮 [RANKING_DATA_PROCESSING] Filtered to ${filtered.length} Pokemon for generation ${selectedGeneration}`);
+    return filtered;
   }, [localRankings, selectedGeneration]);
 
   console.log(`🔮 [RANKING_DATA_PROCESSING] Filtered rankings (gen ${selectedGeneration}): ${filteredRankings.length}`);
 
-  // Display rankings (for UI display)
+  // Display rankings (for UI display) - ALWAYS use filtered TrueSkill data
   const displayRankings = filteredRankings;
 
   // Filter available Pokemon to exclude already ranked ones
@@ -69,9 +76,8 @@ export const useRankingDataProcessing = ({
   }, [filteredAvailablePokemon]);
 
   const updateLocalRankings = (newRankings: any[]) => {
-    // This would typically update the TrueSkill store
     console.log(`🔮 [RANKING_DATA_PROCESSING] Update rankings called with ${newRankings.length} items`);
-    // For now, we don't update since TrueSkill store handles this
+    // Note: TrueSkill store handles the actual updates
   };
 
   console.log(`🔮 [RANKING_DATA_PROCESSING] ===== FINAL RESULTS =====`);
