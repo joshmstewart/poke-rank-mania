@@ -5,6 +5,7 @@ import { BattleType, SingleBattle } from "./types";
 import { useBattleStarterCore } from "./useBattleStarterCore";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
+import { useBattleMilestones } from "./useBattleMilestones";
 
 export const useBattleStateSimplified = (
   allPokemon: Pokemon[],
@@ -21,11 +22,29 @@ export const useBattleStateSimplified = (
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
   
+  // CRITICAL FIX: Add real milestone state management
+  const [showingMilestone, setShowingMilestone] = useState(false);
+  const [rankingGenerated, setRankingGenerated] = useState(false);
+  const [finalRankings, setFinalRankings] = useState(() => {
+    return allPokemon.map(pokemon => ({
+      ...pokemon,
+      score: 0,
+      count: 0,
+      confidence: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0
+    }));
+  });
+  
   // TrueSkill integration - CRITICAL FIX: Get the increment function
   const { totalBattles, incrementTotalBattles } = useTrueSkillStore();
   
   // Refinement queue integration
   const refinementQueue = useSharedRefinementQueue();
+  
+  // CRITICAL FIX: Add milestone detection
+  const { milestones, checkForMilestone } = useBattleMilestones();
   
   // Simple battle creation - no complex orchestration
   const getCurrentRankings = useCallback(() => {
@@ -123,7 +142,7 @@ export const useBattleStateSimplified = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
   
-  // CRITICAL FIX: Process battle results and increment counter + pop refinement battle
+  // CRITICAL FIX: Process battle results and increment counter + pop refinement battle + check for milestones
   const processBattleResult = useCallback((selectedPokemonIds: number[]) => {
     console.log(`🏆 [BATTLE_RESULT_FIX] Processing battle result with selected Pokemon:`, selectedPokemonIds);
     
@@ -150,6 +169,19 @@ export const useBattleStateSimplified = (
         // CRITICAL FIX: Increment the TrueSkill battle counter
         incrementTotalBattles();
         console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
+        
+        // CRITICAL FIX: Check for milestone after incrementing battles
+        const newBattleCount = totalBattles + 1; // totalBattles hasn't updated yet, so add 1
+        console.log(`🏆 [MILESTONE_CHECK] Checking milestone for battle count: ${newBattleCount}`);
+        
+        const isMilestone = checkForMilestone(newBattleCount);
+        if (isMilestone) {
+          console.log(`🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
+          // Update rankings before showing milestone
+          setFinalRankings(getCurrentRankings());
+          setRankingGenerated(true);
+          setShowingMilestone(true);
+        }
         
         // CRITICAL FIX: Pop refinement battle if this was a starred Pokemon battle
         if (refinementQueue.hasRefinementBattles) {
@@ -185,12 +217,25 @@ export const useBattleStateSimplified = (
         incrementTotalBattles();
         console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
         
+        // CRITICAL FIX: Check for milestone after incrementing battles
+        const newBattleCount = totalBattles + 1; // totalBattles hasn't updated yet, so add 1
+        console.log(`🏆 [MILESTONE_CHECK] Checking milestone for battle count: ${newBattleCount}`);
+        
+        const isMilestone = checkForMilestone(newBattleCount);
+        if (isMilestone) {
+          console.log(`🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
+          // Update rankings before showing milestone
+          setFinalRankings(getCurrentRankings());
+          setRankingGenerated(true);
+          setShowingMilestone(true);
+        }
+        
         return battle;
       }
     }
     
     return null;
-  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue]);
+  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue, totalBattles, checkForMilestone, getCurrentRankings]);
   
   // Optimized handlers - no delays
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -201,8 +246,10 @@ export const useBattleStateSimplified = (
       const battleResult = processBattleResult([pokemonId]);
       
       if (battleResult) {
-        // Start next battle immediately - no delay
-        startNewBattle();
+        // Only start next battle if not showing milestone
+        if (!showingMilestone) {
+          startNewBattle();
+        }
       }
     } else {
       // For triplets, collect selections
@@ -216,20 +263,30 @@ export const useBattleStateSimplified = (
           const battleResult = processBattleResult(newSelection);
           
           if (battleResult) {
-            // Start next battle immediately - no delay
-            startNewBattle();
+            // Only start next battle if not showing milestone
+            if (!showingMilestone) {
+              startNewBattle();
+            }
           }
         }
         
         return newSelection;
       });
     }
-  }, [battleType, processBattleResult, startNewBattle]);
+  }, [battleType, processBattleResult, startNewBattle, showingMilestone]);
   
   const handleTripletSelectionComplete = useCallback(() => {
     // This is handled automatically in handlePokemonSelect
     console.log(`🚀 [SIMPLIFIED] Triplet selection complete`);
   }, []);
+  
+  // CRITICAL FIX: Add milestone continue handler
+  const handleContinueBattles = useCallback(() => {
+    console.log(`🏆 [MILESTONE_CONTINUE] Continuing battles from milestone view`);
+    setShowingMilestone(false);
+    setRankingGenerated(false);
+    startNewBattle();
+  }, [startNewBattle]);
   
   // Simple reset
   const performFullBattleReset = useCallback(() => {
@@ -238,18 +295,22 @@ export const useBattleStateSimplified = (
     setSelectedPokemon([]);
     setBattleResults([]);
     setBattleHistory([]);
+    setShowingMilestone(false);
+    setRankingGenerated(false);
+    setFinalRankings(getCurrentRankings());
     initializedRef.current = false;
     
     // Restart immediately after reset - no delay
     if (allPokemon.length >= 2) {
       startNewBattle();
     }
-  }, [allPokemon.length, startNewBattle]);
+  }, [allPokemon.length, startNewBattle, getCurrentRankings]);
   
   // Simple milestone reset function
   const resetMilestoneInProgress = useCallback(() => {
     console.log(`🚀 [SIMPLIFIED] Reset milestone in progress`);
-    // For simplified version, this is a no-op but maintains interface compatibility
+    setShowingMilestone(false);
+    setRankingGenerated(false);
   }, []);
   
   return {
@@ -262,23 +323,23 @@ export const useBattleStateSimplified = (
     battleHistory,
     battlesCompleted: totalBattles,
     
-    // Simple derived state
-    showingMilestone: false,
-    rankingGenerated: false,
-    finalRankings: getCurrentRankings(),
+    // CRITICAL FIX: Real milestone state instead of hardcoded values
+    showingMilestone,
+    rankingGenerated,
+    finalRankings,
     activeTier: 'all',
-    milestones: [10, 50, 100, 250, 500, 1000],
+    milestones,
     isAnyProcessing: false,
     
     // Actions
     setBattleType,
     setSelectedGeneration,
-    setShowingMilestone: () => {},
+    setShowingMilestone,
     setActiveTier: () => {},
     handlePokemonSelect,
     handleTripletSelectionComplete,
     goBack: () => {},
-    handleContinueBattles: () => startNewBattle(),
+    handleContinueBattles,
     performFullBattleReset,
     handleSaveRankings: () => {},
     suggestRanking: () => {},
