@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -31,22 +32,37 @@ export const useBattleStarterCore = (
     return pokemonList.filter(pokemon => !freezeList.includes(pokemon.id));
   }, []);
 
-  // Optimized battle selection - much faster algorithm
+  // Enhanced battle selection that can handle starred Pokemon
   const selectBattlePokemon = useCallback((
     battleType: BattleType,
-    availablePokemon: Pokemon[]
+    availablePokemon: Pokemon[],
+    starredPokemonId?: number
   ): Pokemon[] => {
+    console.log(`🎯 [BATTLE_CORE] selectBattlePokemon called with starred: ${starredPokemonId}`);
+    
     if (battleType === "pairs") {
-      // Get recent battles for quick lookup (only last 5 for performance)
-      const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
-      const recentSet = new Set(recentlyUsed.slice(-5)); // Only check last 5 battles
+      // If we have a starred Pokemon, use it as primary
+      if (starredPokemonId) {
+        const starredPokemon = availablePokemon.find(p => p.id === starredPokemonId);
+        if (starredPokemon) {
+          // Find a random opponent (not the starred Pokemon)
+          const otherPokemon = availablePokemon.filter(p => p.id !== starredPokemonId);
+          if (otherPokemon.length > 0) {
+            const randomOpponent = otherPokemon[Math.floor(Math.random() * otherPokemon.length)];
+            console.log(`🎯 [BATTLE_CORE] Created starred battle: ${starredPokemon.name} vs ${randomOpponent.name}`);
+            return [starredPokemon, randomOpponent];
+          }
+        }
+      }
       
-      // Simple approach: try random pairs until we find one not in recent set
+      // Regular random battle logic
+      const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
+      const recentSet = new Set(recentlyUsed.slice(-5));
+      
       let attempts = 0;
-      const maxAttempts = 20; // Prevent infinite loops
+      const maxAttempts = 20;
       
       while (attempts < maxAttempts) {
-        // Pick two random Pokemon
         const shuffled = [...availablePokemon].sort(() => Math.random() - 0.5);
         const pokemon1 = shuffled[0];
         const pokemon2 = shuffled[1];
@@ -55,10 +71,8 @@ export const useBattleStarterCore = (
           const key = [pokemon1.id, pokemon2.id].sort((a, b) => a - b).join('-');
           
           if (!recentSet.has(key)) {
-            // Found a non-recent pair
-            console.log(`✅ [OPTIMIZED] Selected: ${pokemon1.name} vs ${pokemon2.name}`);
+            console.log(`🎯 [BATTLE_CORE] Selected regular battle: ${pokemon1.name} vs ${pokemon2.name}`);
             
-            // Update recent battles (keep only last 10 for memory efficiency)
             const updatedRecent = [...recentlyUsed.slice(-9), key];
             localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(updatedRecent));
             
@@ -68,9 +82,8 @@ export const useBattleStarterCore = (
         attempts++;
       }
       
-      // Fallback: just pick any two Pokemon if we can't find non-recent ones
       const fallback = availablePokemon.slice(0, 2);
-      console.log(`🔄 [OPTIMIZED] Fallback selection: ${fallback.map(p => p.name).join(' vs ')}`);
+      console.log(`🎯 [BATTLE_CORE] Fallback selection: ${fallback.map(p => p.name).join(' vs ')}`);
       return fallback;
     }
     
@@ -80,11 +93,10 @@ export const useBattleStarterCore = (
         return [];
       }
 
-      // Simple random selection for triplets
       const shuffled = [...availablePokemon].sort(() => Math.random() - 0.5);
       const selected = shuffled.slice(0, 3);
       
-      console.log(`✅ [OPTIMIZED] Selected triplets: ${selected.map(p => p.name).join(', ')}`);
+      console.log(`🎯 [BATTLE_CORE] Selected triplets: ${selected.map(p => p.name).join(', ')}`);
       return selected;
     }
 
@@ -92,7 +104,8 @@ export const useBattleStarterCore = (
   }, []);
 
   const startNewBattle = useCallback((
-    config: BattleStarterConfig
+    config: BattleStarterConfig,
+    starredPokemonId?: number
   ): Pokemon[] => {
     const {
       allPokemon,
@@ -100,6 +113,8 @@ export const useBattleStarterCore = (
       selectedGeneration,
       freezeList
     } = config;
+
+    console.log(`🎯 [BATTLE_CORE] startNewBattle called with starred Pokemon: ${starredPokemonId}`);
 
     // 1. Filter by generation
     const generationFilteredPokemon = filterPokemonByGeneration(allPokemon, selectedGeneration);
@@ -112,8 +127,8 @@ export const useBattleStarterCore = (
       return [];
     }
 
-    // 3. Select battle Pokemon using optimized algorithm
-    const battlePokemon = selectBattlePokemon(battleType, availablePokemon);
+    // 3. Select battle Pokemon, potentially using starred Pokemon
+    const battlePokemon = selectBattlePokemon(battleType, availablePokemon, starredPokemonId);
 
     return battlePokemon;
   }, [filterPokemonByGeneration, filterOutFrozenPokemon, selectBattlePokemon]);

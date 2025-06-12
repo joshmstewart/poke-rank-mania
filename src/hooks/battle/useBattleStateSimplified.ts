@@ -58,12 +58,21 @@ export const useBattleStateSimplified = (
       
       const nextRefinement = refinementQueue.getNextRefinementBattle();
       if (nextRefinement) {
-        const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-        const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+        console.log(`🎯 [REFINEMENT_SIMPLIFIED] Found starred Pokemon: ${nextRefinement.primaryPokemonId}`);
         
-        if (primary && opponent) {
-          const refinementBattle = [primary, opponent];
-          console.log(`🎯 [REFINEMENT_SIMPLIFIED] Created refinement battle: ${primary.name} vs ${opponent.name}`);
+        // Use the starred Pokemon as primary, let battle core find an opponent
+        const config = {
+          allPokemon,
+          currentRankings: getCurrentRankings(),
+          battleType: type,
+          selectedGeneration: 0,
+          freezeList: []
+        };
+        
+        const refinementBattle = startNewBattleCore(config, nextRefinement.primaryPokemonId);
+        
+        if (refinementBattle && refinementBattle.length > 0) {
+          console.log(`🎯 [REFINEMENT_SIMPLIFIED] Created refinement battle: ${refinementBattle.map(p => p.name).join(' vs ')}`);
           
           setCurrentBattle(refinementBattle);
           setSelectedPokemon([]);
@@ -73,7 +82,7 @@ export const useBattleStateSimplified = (
           
           return refinementBattle;
         } else {
-          console.warn(`🎯 [REFINEMENT_SIMPLIFIED] Pokemon not found for refinement battle, removing from queue`);
+          console.warn(`🎯 [REFINEMENT_SIMPLIFIED] Failed to create refinement battle, removing from queue`);
           refinementQueue.popRefinementBattle();
           // Continue with regular battle generation
         }
