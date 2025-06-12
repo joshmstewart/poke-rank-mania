@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -8,8 +7,6 @@ interface TrueSkillRating {
   mu: number;
   sigma: number;
   battleCount: number;
-  lastManualAdjustment?: number; // Timestamp for manual drag operations
-  manuallyAdjusted?: boolean; // Flag to indicate this was manually positioned
 }
 
 interface RefinementBattle {
@@ -96,9 +93,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             [pokemonId]: {
               mu: rating.mu,
               sigma: rating.sigma,
-              battleCount: (state.ratings[pokemonId]?.battleCount || 0),
-              lastManualAdjustment: state.ratings[pokemonId]?.lastManualAdjustment,
-              manuallyAdjusted: state.ratings[pokemonId]?.manuallyAdjusted
+              battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1
             }
           },
           localStateVersion: state.localStateVersion + 1
@@ -164,7 +159,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
 
       forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
-        console.log(`🔄 [SYNC_PHASE2] ForceScoreBetweenNeighbors called for Pokemon ${pokemonId} - MANUAL DRAG OPERATION`);
+        console.log(`🔒 [SIMPLIFIED] ForceScoreBetweenNeighbors called for Pokemon ${pokemonId} - MANUAL DRAG OPERATION`);
         const state = get();
         const higherNeighborScore = higherNeighborId ? state.ratings[higherNeighborId]?.mu : undefined;
         const lowerNeighborScore = lowerNeighborId ? state.ratings[lowerNeighborId]?.mu : undefined;
@@ -181,7 +176,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           targetScore = 25.0; // Default TrueSkill rating
         }
         
-        console.log(`🔄 [SYNC_PHASE2] Setting manual score for ${pokemonId}: ${targetScore.toFixed(2)} (manually adjusted)`);
+        console.log(`🔒 [SIMPLIFIED] Setting manual score for ${pokemonId}: ${targetScore.toFixed(2)}`);
         
         const newRating = new Rating(targetScore, 8.333); // Use default sigma
         set((state) => ({
@@ -190,15 +185,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             [pokemonId]: {
               mu: newRating.mu,
               sigma: newRating.sigma,
-              battleCount: state.ratings[pokemonId]?.battleCount || 0,
-              lastManualAdjustment: Date.now(),
-              manuallyAdjusted: true
+              battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1
             }
           },
           localStateVersion: state.localStateVersion + 1
         }));
         
-        console.log(`🔄 [SYNC_PHASE2] Triggering IMMEDIATE syncToCloud from manual drag operation`);
+        console.log(`🔒 [SIMPLIFIED] Triggering immediate syncToCloud from manual drag operation`);
         get().syncToCloud();
       },
 
@@ -275,10 +268,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             // New local rating, use it
             merged[pokemonId] = localRating;
             console.log(`🔄 [SYNC_PHASE2] Using new local rating for ${pokemonId}`);
-          } else if (localRating.manuallyAdjusted && localRating.lastManualAdjustment) {
-            // Local was manually adjusted, prefer it
-            merged[pokemonId] = localRating;
-            console.log(`🔄 [SYNC_PHASE2] Using manually adjusted local rating for ${pokemonId}`);
           } else if (localRating.battleCount > cloudRating.battleCount) {
             // Local has more battles, prefer it
             merged[pokemonId] = localRating;
