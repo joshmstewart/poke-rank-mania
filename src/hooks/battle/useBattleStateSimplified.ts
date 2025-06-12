@@ -42,7 +42,7 @@ export const useBattleStateSimplified = (
   
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   
-  // Optimized battle creation with refinement queue integration
+  // CRITICAL FIX: Completely rewritten battle creation with direct starred Pokemon handling
   const startNewBattle = useCallback((type: BattleType = battleType): Pokemon[] => {
     console.log(`🚀 [SIMPLIFIED] Starting new ${type} battle`);
     console.log(`🎯 [REFINEMENT_SIMPLIFIED] Checking refinement queue: ${refinementQueue.refinementBattleCount} battles`);
@@ -52,33 +52,33 @@ export const useBattleStateSimplified = (
       return [];
     }
     
-    // Check for refinement battles first (starred Pokemon)
+    // CRITICAL FIX: Check for refinement battles first and get the actual starred Pokemon ID
     if (refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
       console.log(`🎯 [REFINEMENT_SIMPLIFIED] Processing refinement battle`);
       
       const nextRefinement = refinementQueue.getNextRefinementBattle();
-      if (nextRefinement) {
-        console.log(`🎯 [REFINEMENT_SIMPLIFIED] Found starred Pokemon: ${nextRefinement.primaryPokemonId}`);
+      if (nextRefinement && nextRefinement.primaryPokemonId !== -1) {
+        console.log(`🎯 [REFINEMENT_SIMPLIFIED] Found starred Pokemon ID: ${nextRefinement.primaryPokemonId}`);
         
-        // Use the starred Pokemon as primary, let battle core find an opponent
+        // CRITICAL FIX: Use the starred Pokemon ID directly in battle core
         const config = {
           allPokemon,
           currentRankings: getCurrentRankings(),
           battleType: type,
-          selectedGeneration: 0,
+          selectedGeneration: 0, // Don't filter by generation for starred Pokemon
           freezeList: []
         };
         
         const refinementBattle = startNewBattleCore(config, nextRefinement.primaryPokemonId);
         
-        if (refinementBattle && refinementBattle.length > 0) {
-          console.log(`🎯 [REFINEMENT_SIMPLIFIED] Created refinement battle: ${refinementBattle.map(p => p.name).join(' vs ')}`);
+        if (refinementBattle && refinementBattle.length >= 2) {
+          console.log(`🎯 [REFINEMENT_SIMPLIFIED] ✅ SUCCESS! Created refinement battle: ${refinementBattle.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
           
           setCurrentBattle(refinementBattle);
           setSelectedPokemon([]);
           
-          // Consume the refinement battle from the queue
-          refinementQueue.popRefinementBattle();
+          // CRITICAL: Don't consume the refinement battle until it's actually completed
+          // refinementQueue.popRefinementBattle(); // This will be called when battle is completed
           
           return refinementBattle;
         } else {
@@ -86,10 +86,14 @@ export const useBattleStateSimplified = (
           refinementQueue.popRefinementBattle();
           // Continue with regular battle generation
         }
+      } else {
+        console.warn(`🎯 [REFINEMENT_SIMPLIFIED] Invalid refinement battle data:`, nextRefinement);
+        refinementQueue.popRefinementBattle();
       }
     }
     
     // Regular battle generation when no refinement battles
+    console.log(`🎯 [REFINEMENT_SIMPLIFIED] No refinement battles, creating regular battle`);
     const config = {
       allPokemon,
       currentRankings: getCurrentRankings(),
@@ -99,7 +103,7 @@ export const useBattleStateSimplified = (
     };
     
     const result = startNewBattleCore(config);
-    console.log(`🚀 [SIMPLIFIED] Battle created:`, result?.map(p => p.name).join(' vs ') || 'none');
+    console.log(`🚀 [SIMPLIFIED] Regular battle created:`, result?.map(p => p.name).join(' vs ') || 'none');
     
     if (result && result.length > 0) {
       setCurrentBattle(result);
@@ -119,7 +123,7 @@ export const useBattleStateSimplified = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
   
-  // CRITICAL FIX: Process battle results and increment counter
+  // CRITICAL FIX: Process battle results and increment counter + pop refinement battle
   const processBattleResult = useCallback((selectedPokemonIds: number[]) => {
     console.log(`🏆 [BATTLE_RESULT_FIX] Processing battle result with selected Pokemon:`, selectedPokemonIds);
     
@@ -146,6 +150,15 @@ export const useBattleStateSimplified = (
         // CRITICAL FIX: Increment the TrueSkill battle counter
         incrementTotalBattles();
         console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
+        
+        // CRITICAL FIX: Pop refinement battle if this was a starred Pokemon battle
+        if (refinementQueue.hasRefinementBattles) {
+          const nextRefinement = refinementQueue.getNextRefinementBattle();
+          if (nextRefinement && currentBattle.some(p => p.id === nextRefinement.primaryPokemonId)) {
+            console.log(`🎯 [REFINEMENT_COMPLETION] This was a starred Pokemon battle, removing from queue`);
+            refinementQueue.popRefinementBattle();
+          }
+        }
         
         return battle;
       }
@@ -177,7 +190,7 @@ export const useBattleStateSimplified = (
     }
     
     return null;
-  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles]);
+  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue]);
   
   // Optimized handlers - no delays
   const handlePokemonSelect = useCallback((pokemonId: number) => {

@@ -32,7 +32,7 @@ export const useBattleStarterCore = (
     return pokemonList.filter(pokemon => !freezeList.includes(pokemon.id));
   }, []);
 
-  // Enhanced battle selection that can handle starred Pokemon
+  // CRITICAL FIX: Enhanced battle selection that GUARANTEES starred Pokemon are used
   const selectBattlePokemon = useCallback((
     battleType: BattleType,
     availablePokemon: Pokemon[],
@@ -41,21 +41,37 @@ export const useBattleStarterCore = (
     console.log(`🎯 [BATTLE_CORE] selectBattlePokemon called with starred: ${starredPokemonId}`);
     
     if (battleType === "pairs") {
-      // If we have a starred Pokemon, use it as primary
+      // CRITICAL FIX: If we have a starred Pokemon, find it in ALL Pokemon (not just available)
       if (starredPokemonId) {
-        const starredPokemon = availablePokemon.find(p => p.id === starredPokemonId);
+        const starredPokemon = allPokemon.find(p => p.id === starredPokemonId);
+        console.log(`🎯 [BATTLE_CORE] Looking for starred Pokemon ${starredPokemonId} in all Pokemon:`, !!starredPokemon);
+        
         if (starredPokemon) {
-          // Find a random opponent (not the starred Pokemon)
+          // Find a random opponent from available Pokemon (excluding the starred one)
           const otherPokemon = availablePokemon.filter(p => p.id !== starredPokemonId);
+          console.log(`🎯 [BATTLE_CORE] Available opponents: ${otherPokemon.length}`);
+          
           if (otherPokemon.length > 0) {
             const randomOpponent = otherPokemon[Math.floor(Math.random() * otherPokemon.length)];
-            console.log(`🎯 [BATTLE_CORE] Created starred battle: ${starredPokemon.name} vs ${randomOpponent.name}`);
+            console.log(`🎯 [BATTLE_CORE] ✅ Created starred battle: ${starredPokemon.name} vs ${randomOpponent.name}`);
             return [starredPokemon, randomOpponent];
+          } else {
+            // If no other Pokemon available, use any Pokemon from all Pokemon
+            const allOtherPokemon = allPokemon.filter(p => p.id !== starredPokemonId);
+            if (allOtherPokemon.length > 0) {
+              const randomOpponent = allOtherPokemon[Math.floor(Math.random() * allOtherPokemon.length)];
+              console.log(`🎯 [BATTLE_CORE] ✅ Created starred battle with any opponent: ${starredPokemon.name} vs ${randomOpponent.name}`);
+              return [starredPokemon, randomOpponent];
+            }
           }
+        } else {
+          console.error(`🎯 [BATTLE_CORE] ❌ Starred Pokemon ${starredPokemonId} not found in allPokemon!`);
         }
       }
       
-      // Regular random battle logic
+      // Regular random battle logic when no starred Pokemon or starred Pokemon failed
+      console.log(`🎯 [BATTLE_CORE] Using regular battle logic with ${availablePokemon.length} available Pokemon`);
+      
       const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
       const recentSet = new Set(recentlyUsed.slice(-5));
       
@@ -101,7 +117,7 @@ export const useBattleStarterCore = (
     }
 
     return [];
-  }, []);
+  }, [allPokemon]);
 
   const startNewBattle = useCallback((
     config: BattleStarterConfig,
@@ -116,20 +132,23 @@ export const useBattleStarterCore = (
 
     console.log(`🎯 [BATTLE_CORE] startNewBattle called with starred Pokemon: ${starredPokemonId}`);
 
-    // 1. Filter by generation
+    // 1. Filter by generation (but we'll handle starred Pokemon separately)
     const generationFilteredPokemon = filterPokemonByGeneration(allPokemon, selectedGeneration);
 
     // 2. Filter out frozen Pokemon
     const availablePokemon = filterOutFrozenPokemon(generationFilteredPokemon, freezeList);
 
-    if (availablePokemon.length < (battleType === "pairs" ? 2 : 3)) {
+    console.log(`🎯 [BATTLE_CORE] Available Pokemon after filtering: ${availablePokemon.length}`);
+
+    if (availablePokemon.length < (battleType === "pairs" ? 2 : 3) && !starredPokemonId) {
       console.warn(`Not enough Pokemon available for ${battleType} battle`);
       return [];
     }
 
-    // 3. Select battle Pokemon, potentially using starred Pokemon
+    // 3. Select battle Pokemon, with special handling for starred Pokemon
     const battlePokemon = selectBattlePokemon(battleType, availablePokemon, starredPokemonId);
 
+    console.log(`🎯 [BATTLE_CORE] Final battle Pokemon: ${battlePokemon.map(p => p.name).join(' vs ')}`);
     return battlePokemon;
   }, [filterPokemonByGeneration, filterOutFrozenPokemon, selectBattlePokemon]);
 
