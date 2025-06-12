@@ -14,8 +14,22 @@ const BattleProgress: React.FC<BattleProgressProps> = ({
   getMilestoneProgress,
   getNextMilestone
 }) => {
-  const nextMilestone = getNextMilestone();
-  const progressPercentage = getMilestoneProgress();
+  // CRITICAL FIX: Calculate next milestone based on every 25 battles pattern
+  const calculateNextMilestone = () => {
+    const currentMilestone = Math.floor(battlesCompleted / 25) * 25;
+    return currentMilestone + 25;
+  };
+
+  // CRITICAL FIX: Calculate progress based on every 25 battles pattern  
+  const calculateMilestoneProgress = () => {
+    const currentMilestone = Math.floor(battlesCompleted / 25) * 25;
+    const nextMilestone = currentMilestone + 25;
+    const progressInCurrentRange = battlesCompleted - currentMilestone;
+    return (progressInCurrentRange / 25) * 100;
+  };
+
+  const nextMilestone = calculateNextMilestone();
+  const progressPercentage = calculateMilestoneProgress();
   const battlesUntilMilestone = nextMilestone - battlesCompleted;
   
   return (
