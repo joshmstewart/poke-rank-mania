@@ -13,7 +13,7 @@ export const useBattleResultProcessor = (
   freezePokemonForTier?: any,
   trackLowerTierLoss?: any
 ) => {
-  const { getRating, updateRating, incrementBattleCount } = useTrueSkillStore();
+  const { getRating, updateRating, incrementBattleCount, syncToCloud } = useTrueSkillStore();
   const { safelyRemovePendingAfterBattle } = useBattleFlowSafety();
 
   const processBattleForTrueSkill = useCallback(async (battlePokemon: Pokemon[], winnerIds: number[]) => {
@@ -99,19 +99,23 @@ export const useBattleResultProcessor = (
 
       console.log(`🎯🎯🎯 [${battleId}] ✅ TrueSkill processing complete for battle`);
       
+      // PHASE 4: Ensure immediate sync after battle processing
+      console.log(`🎯🎯🎯 [${battleId}] Forcing immediate cloud sync after TrueSkill updates`);
+      await syncToCloud();
+      
       // CRITICAL FIX: Remove ALL participating Pokemon from pending after successful TrueSkill update
       const participatingIds = battlePokemon.map(p => p.id);
       console.log(`🎯🎯🎯 [${battleId}] Now removing participating Pokemon from pending:`, participatingIds);
       
       await safelyRemovePendingAfterBattle(participatingIds);
       
-      console.log(`🎯🎯🎯 [${battleId}] ✅ Battle processing and pending removal complete`);
+      console.log(`🎯🎯🎯 [${battleId}] ✅ Battle processing, sync, and pending removal complete`);
       
     } catch (error) {
       console.error(`🎯🎯🎯 [${battleId}] ❌ Error processing TrueSkill battle:`, error);
       throw error;
     }
-  }, [getRating, updateRating, incrementBattleCount, safelyRemovePendingAfterBattle]);
+  }, [getRating, updateRating, incrementBattleCount, safelyRemovePendingAfterBattle, syncToCloud]);
 
   // Create the processResult function that other files expect
   const processResult = useCallback((
@@ -126,7 +130,7 @@ export const useBattleResultProcessor = (
     console.log(`🎯🎯🎯 [${resultId}] Battle type:`, battleType);
     console.log(`🎯🎯🎯 [${resultId}] Current battle:`, currentBattle.map(p => `${p.name}(${p.id})`));
 
-    // Call the TrueSkill processor which will also handle pending removal
+    // Call the TrueSkill processor which will also handle pending removal and sync
     processBattleForTrueSkill(currentBattle, selectedPokemonIds);
 
     // Return a battle result object for compatibility
