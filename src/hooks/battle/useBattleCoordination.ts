@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -61,10 +60,10 @@ export const useBattleCoordination = (
     contextPokemon
   );
 
-  // CRITICAL FIX: Filter Pokemon only once and memoize
+  // SIMPLIFIED: Filter Pokemon only once and memoize
   const filteredPokemon = useMemo(() => {
     if (!contextPokemon || contextPokemon.length === 0) {
-      console.log(`🔍 [COORDINATION_FIX] No context Pokemon available`);
+      console.log(`🔍 [COORDINATION_SIMPLIFIED] No context Pokemon available`);
       return [];
     }
     
@@ -75,20 +74,20 @@ export const useBattleCoordination = (
       return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
     });
     
-    console.log(`🔍 [COORDINATION_FIX] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
+    console.log(`🔍 [COORDINATION_SIMPLIFIED] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
     return filtered;
   }, [contextPokemon, selectedGeneration]);
 
-  // CRITICAL FIX: Initialize refs properly
+  // SIMPLIFIED: Initialize refs properly
   const initialBattleStartedRef = useRef(false);
   const autoTriggerDisabledRef = useRef(false);
   const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initializationCompleteRef = useRef(false);
 
-  // CRITICAL FIX: Reset initialization when Pokemon data changes
+  // SIMPLIFIED: Reset initialization when Pokemon data changes
   useEffect(() => {
     if (filteredPokemon.length === 0) {
-      console.log(`🔍 [COORDINATION_FIX] No filtered Pokemon - resetting initialization state`);
+      console.log(`🔍 [COORDINATION_SIMPLIFIED] No filtered Pokemon - resetting initialization state`);
       initialBattleStartedRef.current = false;
       initializationCompleteRef.current = false;
       if (initializationTimerRef.current) {
@@ -98,7 +97,7 @@ export const useBattleCoordination = (
     }
   }, [filteredPokemon.length]);
 
-  // FIXED: Create wrapper function to handle the signature mismatch
+  // SIMPLIFIED: Create wrapper function for markSuggestionUsed
   const markSuggestionUsedWrapper = (pokemonId: number) => {
     const pokemon = allRankedPokemon.find(p => p.id === pokemonId);
     if (pokemon) {
@@ -106,9 +105,8 @@ export const useBattleCoordination = (
     }
   };
 
-  // SIMPLIFIED: Use only battle starter integration for battle creation functions
+  // SIMPLIFIED: Use battle starter integration
   const { 
-    battleStarter, 
     startNewBattle,
     resetSuggestionPriority,
     refinementQueue
@@ -129,9 +127,9 @@ export const useBattleCoordination = (
     startNewBattleCallbackRef.current = startNewBattle;
   }, [startNewBattle]);
 
-  // CRITICAL FIX: Only initialize battle starter events when we have stable Pokemon data
+  // SIMPLIFIED: Only use battle starter events when we have stable Pokemon data
   useBattleStarterEvents(
-    filteredPokemon, // Pass the filtered Pokemon directly
+    filteredPokemon,
     currentBattle,
     initialBattleStartedRef,
     autoTriggerDisabledRef,
@@ -168,7 +166,6 @@ export const useBattleCoordination = (
     getSnapshotForMilestone,
     milestoneRankings,
     hitMilestones,
-    battleStarter,
     startNewBattle,
     resetSuggestionPriority,
     refinementQueue,
