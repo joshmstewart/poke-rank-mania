@@ -1,7 +1,6 @@
 
 import React from "react";
 import BattleControls from "./BattleControls";
-import { BattleSyncStatus } from "./BattleSyncStatus";
 import { BattleType } from "@/hooks/battle/types";
 import { SingleBattle } from "@/hooks/battle/types";
 
@@ -25,10 +24,7 @@ const BattleContentHeader: React.FC<BattleContentHeaderProps> = ({
   setBattleResults
 }) => {
   return (
-    <div className="space-y-4">
-      {/* Cloud Sync Status - Only shows when authenticated */}
-      <BattleSyncStatus />
-      
+    <div>
       {/* Main Battle Controls */}
       <BattleControls
         selectedGeneration={selectedGeneration}
