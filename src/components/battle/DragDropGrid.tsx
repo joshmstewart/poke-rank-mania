@@ -4,7 +4,6 @@ import {
   SortableContext,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
 
@@ -27,27 +26,13 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  // Set up a droppable zone that accepts available Pokemon
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'rankings-grid-drop-zone',
-    data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  });
+  // Only include ranked Pokemon IDs for sortable context - remove collision placeholders and available Pokemon
+  const sortableItems = displayRankings.map(p => p.id);
 
-  // Include ranked Pokemon IDs AND available Pokemon IDs for proper collision detection
-  const sortableItems = [
-    ...displayRankings.map(p => p.id),
-    ...availablePokemon.map(p => `available-${p.id}`),
-    ...Array.from({length: 10}, (_, i) => `collision-placeholder-${i}`)
-  ];
+  console.log(`🔧 [DRAG_FIX] DragDropGrid sortable items: ${sortableItems.join(', ')}`);
 
   return (
-    <div 
-      ref={setNodeRef}
-      className={`transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`}
-    >
+    <div className="transition-colors">
       <SortableContext 
         items={sortableItems}
         strategy={rectSortingStrategy}
