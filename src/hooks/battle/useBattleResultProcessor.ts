@@ -3,8 +3,15 @@ import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { Rating, rate } from "ts-trueskill";
+import { BattleType, SingleBattle } from "./types";
 
-export const useBattleResultProcessor = () => {
+export const useBattleResultProcessor = (
+  battleResults?: SingleBattle[],
+  setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>,
+  activeTier?: any,
+  freezePokemonForTier?: any,
+  trackLowerTierLoss?: any
+) => {
   const { getRating, updateRating, incrementBattleCount } = useTrueSkillStore();
 
   const processBattleForTrueSkill = useCallback(async (battlePokemon: Pokemon[], winnerIds: number[]) => {
@@ -93,7 +100,32 @@ export const useBattleResultProcessor = () => {
     }
   }, [getRating, updateRating, incrementBattleCount]);
 
+  // Create the processResult function that other files expect
+  const processResult = useCallback((
+    selectedPokemonIds: number[],
+    battleType: BattleType,
+    currentBattle: Pokemon[]
+  ) => {
+    console.log(`🎯 [BATTLE_RESULT_PROCESSOR] Processing battle result:`, {
+      selectedPokemonIds,
+      battleType,
+      currentBattle: currentBattle.map(p => `${p.name}(${p.id})`)
+    });
+
+    // Call the TrueSkill processor
+    processBattleForTrueSkill(currentBattle, selectedPokemonIds);
+
+    // Return a battle result object for compatibility
+    return {
+      battleType,
+      pokemonIds: currentBattle.map(p => p.id),
+      selectedPokemonIds,
+      timestamp: new Date().toISOString()
+    };
+  }, [processBattleForTrueSkill]);
+
   return {
-    processBattleForTrueSkill
+    processBattleForTrueSkill,
+    processResult
   };
 };

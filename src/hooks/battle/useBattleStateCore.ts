@@ -52,10 +52,7 @@ export const useBattleStateCore = (
   const refinementQueue = useSharedRefinementQueue();
 
   // CRITICAL: Add battle result processor
-  const { processResult: processBattleResult } = useBattleResultProcessor(
-    battleResults,
-    setBattleResults
-  );
+  const { processResult } = useBattleResultProcessor();
 
   // ENHANCED: Save battle count whenever it changes
   useEffect(() => {
@@ -230,7 +227,7 @@ export const useBattleStateCore = (
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Battle type: ${battleType}`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Current battle Pokemon: ${currentBattle.map(p => `${p.name}(${p.id})`).join(', ')}`);
       
-      const battleResult = processBattleResult(newSelection, battleType, currentBattle);
+      const battleResult = processResult(newSelection, battleType, currentBattle);
       
       if (battleResult) {
         console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ✅ Battle result processed successfully`);
@@ -273,7 +270,7 @@ export const useBattleStateCore = (
         console.error(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ❌ Battle result processing failed`);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processBattleResult]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processResult]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
@@ -285,7 +282,7 @@ export const useBattleStateCore = (
       addToRecentlyUsed(currentBattle);
       
       // Process triplet battle result
-      const battleResult = processBattleResult(selectedPokemon, battleType, currentBattle);
+      const battleResult = processResult(selectedPokemon, battleType, currentBattle);
       
       if (battleResult) {
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
@@ -307,7 +304,7 @@ export const useBattleStateCore = (
         }
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processBattleResult]);
+  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processResult]);
 
   // CRITICAL FIX: Listen for refinement queue updates and force new battles
   useEffect(() => {
