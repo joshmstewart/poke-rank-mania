@@ -51,7 +51,7 @@ export const useBattleStateCore = (
   // CRITICAL FIX: Get shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
 
-  // CRITICAL: Add battle result processor
+  // CRITICAL: Add battle result processor with pending removal
   const { processResult } = useBattleResultProcessor();
 
   // ENHANCED: Save battle count whenever it changes
@@ -221,8 +221,9 @@ export const useBattleStateCore = (
       // Add current battle Pokemon to recently used IMMEDIATELY
       addToRecentlyUsed(currentBattle);
       
-      // CRITICAL: Process battle result using the proper processor
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ===== CALLING BATTLE PROCESSOR =====`);
+      // CRITICAL: Process battle result using the safe processor that handles pending removal
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ===== CALLING SAFE BATTLE PROCESSOR =====`);
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] This will update TrueSkill AND remove pending Pokemon`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Selections: ${newSelection}`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Battle type: ${battleType}`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Current battle Pokemon: ${currentBattle.map(p => `${p.name}(${p.id})`).join(', ')}`);
@@ -231,6 +232,7 @@ export const useBattleStateCore = (
       
       if (battleResult) {
         console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ✅ Battle result processed successfully`);
+        console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] TrueSkill updated AND pending Pokemon removed`);
         
         // Update state
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
@@ -281,7 +283,7 @@ export const useBattleStateCore = (
       
       addToRecentlyUsed(currentBattle);
       
-      // Process triplet battle result
+      // Process triplet battle result with safe pending removal
       const battleResult = processResult(selectedPokemon, battleType, currentBattle);
       
       if (battleResult) {
