@@ -22,6 +22,7 @@ interface TrueSkillStore {
   sessionId: string;
   isHydrated: boolean;
   lastSyncTime: number;
+  lastSyncTimestamp: string; // Human readable timestamp
   syncInProgress: boolean;
   totalBattles: number;
   initiatePendingBattle: boolean;
@@ -80,6 +81,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       sessionId: generateSessionId(),
       isHydrated: false,
       lastSyncTime: 0,
+      lastSyncTimestamp: '',
       syncInProgress: false,
       totalBattles: 0,
       initiatePendingBattle: false,
@@ -475,12 +477,17 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
 
           if (result.success) {
-            set({ lastSyncTime: Date.now() });
-            console.log(`🔄 [SYNC_PHASE3] ✅ Immediate sync successful!`);
+            const now = Date.now();
+            const timestamp = new Date().toLocaleString();
+            set({ 
+              lastSyncTime: now,
+              lastSyncTimestamp: timestamp
+            });
+            console.log(`🔄 [SYNC_PHASE3] ✅ Immediate sync successful at ${timestamp}!`);
             
             // PHASE 4: Visual confirmation of successful sync
             if (ratingsBeforeSync > 0 || pendingBeforeSync > 0) {
-              console.log(`🔄 [SYNC_PHASE4] Sync confirmed - data persisted to cloud`);
+              console.log(`🔄 [SYNC_PHASE4] Sync confirmed - data persisted to cloud at ${timestamp}`);
             }
           } else {
             throw new Error(result.error || 'Unknown sync error');

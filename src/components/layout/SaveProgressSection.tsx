@@ -1,36 +1,36 @@
 
-import React from 'react';
-import { CloudSyncButton } from '@/components/auth/CloudSyncButton';
-import { AuthenticatedUserDisplay } from '@/components/auth/AuthenticatedUserDisplay';
-import { useAuth } from '@/contexts/auth/useAuth';
-import { useCloudSync } from '@/hooks/useCloudSync';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { useCloudSync } from "@/hooks/useCloudSync";
+import { Button } from "@/components/ui/button";
+import { Save, RefreshCw } from "lucide-react";
+import SyncStatus from "./SyncStatus";
 
-export const SaveProgressSection = () => {
-  const { user, session } = useAuth();
-  const { triggerManualSync } = useCloudSync();
+export const SaveProgressSection: React.FC = () => {
+  const { triggerManualSync, isAuthenticated } = useCloudSync();
 
-  // Simple auth check using context only - no additional API calls
-  const isAuthenticated = !!(user || session?.user);
-  const currentUser = user || session?.user;
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-gray-500">Sign in to sync</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-4">
-      {isAuthenticated ? (
-        <>
-          <AuthenticatedUserDisplay currentUser={currentUser} />
-          <Button 
-            onClick={triggerManualSync}
-            variant="outline"
-            size="sm"
-            className="bg-blue-100 border-blue-400 text-blue-800 hover:bg-blue-200"
-          >
-            🔧 Manual Sync
-          </Button>
-        </>
-      ) : (
-        <CloudSyncButton />
-      )}
+      {/* Sync Status Display */}
+      <SyncStatus />
+      
+      {/* Manual Sync Button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={triggerManualSync}
+        className="flex items-center gap-2 h-8 text-sm px-4"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Manual Sync
+      </Button>
     </div>
   );
 };
