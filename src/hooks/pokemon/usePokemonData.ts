@@ -7,7 +7,7 @@ import { useTrueSkillSync } from "@/hooks/ranking/useTrueSkillSync";
 
 // CRITICAL FIX: This hook no longer consumes PokemonContext to break the circular dependency
 export const usePokemonData = (contextPokemon: Pokemon[]) => {
-  const { localRankings } = useTrueSkillSync();
+  const { rankedPokemon: localRankings } = useTrueSkillSync();
 
   // Deterministic data processing with validation
   const getPokemonData = useCallback(async (

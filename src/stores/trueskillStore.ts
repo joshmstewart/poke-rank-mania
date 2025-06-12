@@ -181,24 +181,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           if (!state.pendingBattles.includes(pokemonId)) {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Adding Pokemon ${pokemonId} to pending battles`);
             const newPendingBattles = [...state.pendingBattles, pokemonId];
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] New pending battles array:`, newPendingBattles);
             return { pendingBattles: newPendingBattles };
           }
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Pokemon ${pokemonId} already in pending battles`);
           return state;
         });
-        
-        // Sync to cloud immediately
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from addPendingBattle`);
-        get().syncToCloud();
       },
 
       removePendingBattle: (pokemonId: number) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] RemovePendingBattle called for Pokemon ${pokemonId}`);
-        set((state) => ({
-          pendingBattles: state.pendingBattles.filter(id => id !== pokemonId)
-        }));
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Current pending before remove:`, get().pendingBattles);
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from removePendingBattle`);
-        get().syncToCloud();
+        set((state) => {
+          const newPendingBattles = state.pendingBattles.filter(id => id !== pokemonId);
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] New pending battles after remove:`, newPendingBattles);
+          return { pendingBattles: newPendingBattles };
+        });
+        
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Final pending after remove:`, get().pendingBattles);
       },
 
       clearAllPendingBattles: () => {
@@ -209,11 +210,15 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
 
       isPokemonPending: (pokemonId: number) => {
-        return get().pendingBattles.includes(pokemonId);
+        const pending = get().pendingBattles.includes(pokemonId);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] isPokemonPending(${pokemonId}): ${pending}`);
+        return pending;
       },
 
       getAllPendingBattles: () => {
-        return get().pendingBattles;
+        const pending = get().pendingBattles;
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] getAllPendingBattles returning:`, pending);
+        return pending;
       },
 
       queueBattlesForReorder: (primaryPokemonId: number, opponentIds: number[], priority: number) => {
@@ -298,7 +303,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
           try {
             const ratingsBeforeSync = Object.keys(state.ratings).length;
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting sync - ${ratingsBeforeSync} ratings, ${state.totalBattles} battles`);
+            const pendingBeforeSync = state.pendingBattles.length;
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting sync - ${ratingsBeforeSync} ratings, ${state.totalBattles} battles, ${pendingBeforeSync} pending`);
             
             const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/sync-trueskill', {
               method: 'POST',
@@ -330,32 +336,34 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               console.error(`🚨🚨🚨 [SYNC_AUDIT] Failed to parse JSON: ${raw}`);
               toast({
                 title: 'Sync Error',
-                description: 'Unexpected response from the server.',
+                description: 'Failed to parse cloud response',
                 variant: 'destructive'
               });
               return;
             }
 
-            if (result.success) {
-              set({ lastSyncTime: Date.now() });
-              console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync successful!`);
-            } else {
-              throw new Error(result.error || 'Unknown sync error');
-            }
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Sync successful:`, result);
+            set({ lastSyncTime: Date.now() });
+
           } catch (error) {
-            console.error(`🚨🚨🚨 [SYNC_AUDIT] Sync failed:`, error);
+            console.error(`🚨🚨🚨 [SYNC_AUDIT] ❌ Sync failed:`, error);
+            toast({
+              title: 'Cloud Sync Failed',
+              description: 'Failed to sync data to cloud. Changes may not persist.',
+              variant: 'destructive'
+            });
           } finally {
             set({ syncInProgress: false });
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync operation complete`);
           }
         }, SYNC_DEBOUNCE_DELAY);
       },
 
       loadFromCloud: async () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== LOAD FROM CLOUD CALLED =====`);
+        const state = get();
+        
         try {
-          const ratingsBeforeLoad = Object.keys(get().ratings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Loading from cloud - current ratings: ${ratingsBeforeLoad}`);
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Loading for session: ${state.sessionId}`);
           
           const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
             method: 'POST',
@@ -363,32 +371,38 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               'Content-Type': 'application/json',
               'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
             },
-            body: JSON.stringify({ sessionId: get().sessionId })
+            body: JSON.stringify({
+              sessionId: state.sessionId
+            })
           });
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Load response status: ${response.status}`);
-          
-          if (!response.ok) {
-            throw new Error(`Load failed: ${response.status}`);
-          }
-          
+
           const result = await response.json();
-          if (result.success && result.ratings) {
-            const cloudRatingsCount = Object.keys(result.ratings).length;
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Loaded ${cloudRatingsCount} ratings from cloud`);
-            
-            set({
-              ratings: result.ratings,
-              totalBattles: result.totalBattles || 0,
-              pendingBattles: result.pendingBattles || [],
-              refinementQueue: result.refinementQueue || [],
-              isHydrated: true
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Load response:`, result);
+
+          if (response.ok && result.data) {
+            const cloudData = result.data;
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Loading cloud data:`, {
+              ratings: Object.keys(cloudData.ratings || {}).length,
+              totalBattles: cloudData.totalBattles || 0,
+              pendingBattles: cloudData.pendingBattles?.length || 0
             });
             
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Load complete - hydration flag set`);
+            set({
+              ratings: cloudData.ratings || {},
+              totalBattles: cloudData.totalBattles || 0,
+              pendingBattles: cloudData.pendingBattles || [],
+              refinementQueue: cloudData.refinementQueue || [],
+              isHydrated: true,
+              lastSyncTime: Date.now()
+            });
+          } else {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] No cloud data found, using defaults`);
+            set({ isHydrated: true });
           }
+
         } catch (error) {
-          console.error(`🚨🚨🚨 [SYNC_AUDIT] Load from cloud failed:`, error);
+          console.error(`🚨🚨🚨 [SYNC_AUDIT] ❌ Load failed:`, error);
+          set({ isHydrated: true });
         }
       },
 
@@ -396,129 +410,22 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SMART SYNC CALLED =====`);
         const state = get();
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync checking - sync in progress: ${state.syncInProgress}`);
-        
-        if (state.syncInProgress) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync aborting - sync already in progress`);
-          return;
-        }
-
-        set({ syncInProgress: true });
-        
-        const ratingsBeforeSmartSync = Object.keys(state.ratings).length;
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync starting - current ratings: ${ratingsBeforeSmartSync}`);
-
-        try {
-          const localState = {
-            ratings: state.ratings,
-            totalBattles: state.totalBattles,
-            pendingBattles: state.pendingBattles,
-            refinementQueue: state.refinementQueue,
-          };
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Local state - ${Object.keys(localState.ratings).length} ratings`);
-
-          const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
-            },
-            body: JSON.stringify({ sessionId: state.sessionId }),
-          });
-
-          let cloudState = {
-            ratings: {},
-            totalBattles: 0,
-            pendingBattles: [],
-            refinementQueue: [],
-          };
-
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              cloudState = {
-                ratings: result.ratings || {},
-                totalBattles: result.totalBattles || 0,
-                pendingBattles: result.pendingBattles || [],
-                refinementQueue: result.refinementQueue || [],
-              };
-            }
-          } else {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state. Using local state only.`);
-          }
-          
-          const cloudRatingCount = Object.keys(cloudState.ratings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud state - ${cloudRatingCount} ratings`);
-
-          // Merge logic
-          const mergedRatings: Record<string, TrueSkillRating> = {};
-          
-          const allPokemonIds = new Set([
-            ...Object.keys(localState.ratings),
-            ...Object.keys(cloudState.ratings)
-          ]);
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Merging ${allPokemonIds.size} unique Pokemon`);
-          
-          allPokemonIds.forEach(pokemonId => {
-            const localRating = localState.ratings[pokemonId];
-            const cloudRating = cloudState.ratings[pokemonId];
-            
-            if (localRating && cloudRating) {
-              const useLocal = localRating.battleCount >= cloudRating.battleCount;
-              mergedRatings[pokemonId] = useLocal ? localRating : cloudRating;
-            } else if (localRating) {
-              mergedRatings[pokemonId] = localRating;
-            } else if (cloudRating) {
-              mergedRatings[pokemonId] = cloudRating;
-            }
-          });
-
-          const mergedPending = [...new Set([...localState.pendingBattles, ...cloudState.pendingBattles])];
-          const mergedRefinements = [...localState.refinementQueue, ...cloudState.refinementQueue];
-          const mergedTotalBattles = Math.max(localState.totalBattles, cloudState.totalBattles);
-          
-          const finalRatingCount = Object.keys(mergedRatings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Merge complete - final count: ${finalRatingCount}`);
-          
-          set({
-            ratings: mergedRatings,
-            totalBattles: mergedTotalBattles,
-            pendingBattles: mergedPending,
-            refinementQueue: mergedRefinements,
-            isHydrated: true
-          });
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync complete - hydration flag set`);
-          
-          // Sync the final merged state back to the cloud
+        if (!state.isHydrated) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Not hydrated yet, loading from cloud first`);
+          await get().loadFromCloud();
+        } else {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Already hydrated, syncing to cloud`);
           await get().syncToCloud();
-
-        } catch (error) {
-          console.error(`🚨🚨🚨 [SYNC_AUDIT] Smart sync failed:`, error);
-          set({ isHydrated: true }); // Ensure app doesn't hang
-        } finally {
-          set({ syncInProgress: false });
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync operation complete`);
         }
       },
 
-      waitForHydration: () => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] WaitForHydration called`);
-        return new Promise((resolve) => {
-          if (get().isHydrated) {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Already hydrated`);
-            resolve();
-            return;
-          }
-          
+      waitForHydration: async () => {
+        return new Promise<void>((resolve) => {
           const checkHydration = () => {
             if (get().isHydrated) {
-              console.log(`🚨🚨🚨 [SYNC_AUDIT] Hydration complete`);
               resolve();
             } else {
-              setTimeout(checkHydration, 10);
+              setTimeout(checkHydration, 100);
             }
           };
           checkHydration();
@@ -526,28 +433,80 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
 
       restoreSessionFromCloud: async (userId: string) => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== RESTORE SESSION CALLED =====`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== RESTORE SESSION FROM CLOUD =====`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] User ID: ${userId}`);
+        
         try {
-          const ratingsBeforeRestore = Object.keys(get().ratings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Restoring session for user: ${userId} - current ratings: ${ratingsBeforeRestore}`);
-          
-          await get().smartSync();
-          
-          const ratingsAfterRestore = Object.keys(get().ratings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Session restore complete - final ratings: ${ratingsAfterRestore}`);
+          const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
+            },
+            body: JSON.stringify({
+              userId: userId
+            })
+          });
+
+          const result = await response.json();
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Restore response:`, result);
+
+          if (response.ok && result.data) {
+            const cloudData = result.data;
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Restoring user session:`, {
+              sessionId: cloudData.sessionId,
+              ratings: Object.keys(cloudData.ratings || {}).length,
+              totalBattles: cloudData.totalBattles || 0,
+              pendingBattles: cloudData.pendingBattles?.length || 0
+            });
+            
+            set({
+              sessionId: cloudData.sessionId || generateSessionId(),
+              ratings: cloudData.ratings || {},
+              totalBattles: cloudData.totalBattles || 0,
+              pendingBattles: cloudData.pendingBattles || [],
+              refinementQueue: cloudData.refinementQueue || [],
+              isHydrated: true,
+              lastSyncTime: Date.now()
+            });
+          } else {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] No user session found, creating new one`);
+            set({ 
+              sessionId: generateSessionId(),
+              isHydrated: true 
+            });
+          }
+
         } catch (error) {
-          console.error(`🚨🚨🚨 [SYNC_AUDIT] Session restoration failed:`, error);
+          console.error(`🚨🚨🚨 [SYNC_AUDIT] ❌ Restore failed:`, error);
+          set({ 
+            sessionId: generateSessionId(),
+            isHydrated: true 
+          });
         }
-      }
+      },
     }),
     {
-      name: 'trueskill-storage',
+      name: 'trueskill-store',
       onRehydrateStorage: () => (state) => {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== ZUSTAND REHYDRATION =====`);
         if (state) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Rehydrated with:`, {
+            ratings: Object.keys(state.ratings || {}).length,
+            totalBattles: state.totalBattles || 0,
+            pendingBattles: state.pendingBattles?.length || 0,
+            sessionId: state.sessionId
+          });
+          
           state.isHydrated = true;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete`);
+          
+          // Load from cloud to get latest data
+          setTimeout(() => {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering loadFromCloud after rehydration`);
+            state.loadFromCloud();
+          }, 100);
         }
-      }
+      },
     }
   )
 );
