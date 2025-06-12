@@ -6,6 +6,7 @@ import { useBattleStarterCore } from "./useBattleStarterCore";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useBattleMilestones } from "./useBattleMilestones";
+import { useBattleRankings } from "./useBattleRankings";
 
 export const useBattleStateSimplified = (
   allPokemon: Pokemon[],
@@ -46,18 +47,17 @@ export const useBattleStateSimplified = (
   // CRITICAL FIX: Add milestone detection
   const { milestones, checkForMilestone } = useBattleMilestones();
   
+  // CRITICAL FIX: Add real ranking generation for milestones
+  const { generateRankingsFromBattleHistory } = useBattleRankings();
+  
   // Simple battle creation - no complex orchestration
   const getCurrentRankings = useCallback(() => {
-    return allPokemon.map(pokemon => ({
-      ...pokemon,
-      score: 0,
-      count: 0,
-      confidence: 0,
-      wins: 0,
-      losses: 0,
-      winRate: 0
-    }));
-  }, [allPokemon]);
+    console.log(`📊 [SIMPLIFIED_RANKINGS] Getting current rankings for milestone`);
+    // CRITICAL FIX: Use real ranking generation instead of mock data
+    const realRankings = generateRankingsFromBattleHistory(battleHistory);
+    console.log(`📊 [SIMPLIFIED_RANKINGS] Generated ${realRankings.length} real rankings`);
+    return realRankings;
+  }, [generateRankingsFromBattleHistory, battleHistory]);
   
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   
@@ -177,8 +177,10 @@ export const useBattleStateSimplified = (
         const isMilestone = checkForMilestone(newBattleCount);
         if (isMilestone) {
           console.log(`🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
-          // Update rankings before showing milestone
-          setFinalRankings(getCurrentRankings());
+          // CRITICAL FIX: Update rankings with real data before showing milestone
+          const realRankings = getCurrentRankings();
+          console.log(`🏆 [MILESTONE_TRIGGERED] Generated ${realRankings.length} real rankings for milestone`);
+          setFinalRankings(realRankings);
           setRankingGenerated(true);
           setShowingMilestone(true);
         }
@@ -224,8 +226,10 @@ export const useBattleStateSimplified = (
         const isMilestone = checkForMilestone(newBattleCount);
         if (isMilestone) {
           console.log(`🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
-          // Update rankings before showing milestone
-          setFinalRankings(getCurrentRankings());
+          // CRITICAL FIX: Update rankings with real data before showing milestone
+          const realRankings = getCurrentRankings();
+          console.log(`🏆 [MILESTONE_TRIGGERED] Generated ${realRankings.length} real rankings for milestone`);
+          setFinalRankings(realRankings);
           setRankingGenerated(true);
           setShowingMilestone(true);
         }
