@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { usePersistentPendingState } from './usePersistentPendingState';
+import { useTrueSkillStore } from '@/stores/trueskillStore';
 
 export interface RefinementBattle {
   primaryPokemonId: number;
@@ -11,10 +11,19 @@ export interface RefinementBattle {
 export const useRefinementQueue = () => {
   console.log(`🎯 [REFINEMENT_QUEUE_CORE] Hook initialized`);
   
-  // Use the pending Pokemon system as the source of truth
-  const { pendingPokemon, removePendingPokemon, hasPendingPokemon } = usePersistentPendingState();
+  // CRITICAL FIX: Use TrueSkill store as the single source of truth
+  const { 
+    getAllPendingBattles, 
+    removePendingBattle, 
+    isPokemonPending,
+    addPendingBattle,
+    clearAllPendingBattles
+  } = useTrueSkillStore();
   
   const [queue, setQueue] = useState<RefinementBattle[]>([]);
+
+  // Get pending Pokemon from TrueSkill store
+  const pendingPokemon = getAllPendingBattles();
 
   // Convert pending Pokemon into refinement battles
   const refinementQueue = pendingPokemon.map(pokemonId => ({
@@ -24,7 +33,7 @@ export const useRefinementQueue = () => {
   }));
 
   const refinementBattleCount = pendingPokemon.length;
-  const hasRefinementBattles = hasPendingPokemon;
+  const hasRefinementBattles = pendingPokemon.length > 0;
 
   console.log(`🎯 [REFINEMENT_QUEUE_CORE] Current state:`, {
     pendingPokemon,
@@ -34,8 +43,9 @@ export const useRefinementQueue = () => {
 
   const addValidationBattle = useCallback((primaryPokemonId: number, opponentPokemonId: number) => {
     console.log(`🎯 [REFINEMENT_QUEUE_CORE] addValidationBattle called: ${primaryPokemonId} vs ${opponentPokemonId}`);
-    // This is handled by the pending system when starring
-  }, []);
+    // Add to TrueSkill store
+    addPendingBattle(primaryPokemonId);
+  }, [addPendingBattle]);
 
   const queueBattlesForReorder = useCallback(() => {
     console.log(`🎯 [REFINEMENT_QUEUE_CORE] queueBattlesForReorder called`);
@@ -67,17 +77,15 @@ export const useRefinementQueue = () => {
     if (pendingPokemon.length > 0) {
       const pokemonId = pendingPokemon[0];
       console.log(`🎯 [REFINEMENT_QUEUE_CORE] Removing Pokemon ${pokemonId} from pending`);
-      removePendingPokemon(pokemonId);
+      removePendingBattle(pokemonId);
     }
-  }, [pendingPokemon, removePendingPokemon]);
+  }, [pendingPokemon, removePendingBattle]);
 
   const clearRefinementQueue = useCallback(() => {
     console.log(`🎯 [REFINEMENT_QUEUE_CORE] clearRefinementQueue called`);
-    // Clear all pending Pokemon
-    pendingPokemon.forEach(pokemonId => {
-      removePendingPokemon(pokemonId);
-    });
-  }, [pendingPokemon, removePendingPokemon]);
+    // Clear all pending Pokemon from TrueSkill store
+    clearAllPendingBattles();
+  }, [clearAllPendingBattles]);
 
   return {
     queue,
