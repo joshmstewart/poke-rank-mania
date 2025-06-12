@@ -61,3 +61,4 @@ export * from "./useMilestoneHandlers";
 export * from "./useBattleStateSetup";
 export * from "./useBattleStateOrchestrator";
 export * from "./useBattleStateReturn";
+export * from "./useBattleStateSimplified"; // New simplified hook
