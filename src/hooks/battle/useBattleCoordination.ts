@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -61,25 +60,44 @@ export const useBattleCoordination = (
     contextPokemon
   );
 
+  // CRITICAL FIX: Filter Pokemon only once and memoize
   const filteredPokemon = useMemo(() => {
-    const filtered = (contextPokemon || []).filter(pokemon => {
+    if (!contextPokemon || contextPokemon.length === 0) {
+      console.log(`🔍 [COORDINATION_FIX] No context Pokemon available`);
+      return [];
+    }
+    
+    const filtered = contextPokemon.filter(pokemon => {
       if (selectedGeneration === 0) {
         return true;
       }
       return pokemon.hasOwnProperty('generation') && (pokemon as any).generation === selectedGeneration;
     });
     
-    console.log(`🔍 [DEBUG_COORDINATION] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
-    console.log(`🔍 [DEBUG_COORDINATION] allRankedPokemon: ${allRankedPokemon.length} ranked Pokemon available`);
+    console.log(`🔍 [COORDINATION_FIX] Filtered Pokemon: ${filtered.length} for generation ${selectedGeneration}`);
     return filtered;
-  }, [contextPokemon, selectedGeneration, allRankedPokemon.length]);
+  }, [contextPokemon, selectedGeneration]);
 
-  // CRITICAL FIX: Create refs for battle starter events
+  // CRITICAL FIX: Initialize refs properly
   const initialBattleStartedRef = useRef(false);
   const autoTriggerDisabledRef = useRef(false);
   const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initializationCompleteRef = useRef(false);
 
+  // CRITICAL FIX: Reset initialization when Pokemon data changes
+  useEffect(() => {
+    if (filteredPokemon.length === 0) {
+      console.log(`🔍 [COORDINATION_FIX] No filtered Pokemon - resetting initialization state`);
+      initialBattleStartedRef.current = false;
+      initializationCompleteRef.current = false;
+      if (initializationTimerRef.current) {
+        clearTimeout(initializationTimerRef.current);
+        initializationTimerRef.current = null;
+      }
+    }
+  }, [filteredPokemon.length]);
+
+  // SIMPLIFIED: Use only battle starter integration for battle creation functions
   const { 
     battleStarter, 
     startNewBattle,
@@ -92,25 +110,19 @@ export const useBattleCoordination = (
     stableSetSelectedPokemon,
     markSuggestionUsed,
     currentBattle,
-    initialBattleStartedRef // <-- CRITICAL FIX: Pass the ref down
+    initialBattleStartedRef
   );
 
   const startNewBattleCallbackRef = useRef(startNewBattle);
 
-  // CRITICAL FIX: Update the callback ref immediately when startNewBattle changes
+  // Keep the callback ref updated
   useEffect(() => {
-    console.log(`🔍 [DEBUG_COORDINATION] Updating startNewBattleCallbackRef`);
-    console.log(`🔍 [DEBUG_COORDINATION] - Previous callback: ${!!startNewBattleCallbackRef.current}`);
-    console.log(`🔍 [DEBUG_COORDINATION] - New callback: ${!!startNewBattle}`);
-    
     startNewBattleCallbackRef.current = startNewBattle;
-    
-    console.log(`🔍 [DEBUG_COORDINATION] - Updated callback: ${!!startNewBattleCallbackRef.current}`);
   }, [startNewBattle]);
 
-  // CRITICAL FIX: Initialize battle starter events to handle auto-battle generation AND pending Pokemon
+  // CRITICAL FIX: Only initialize battle starter events when we have stable Pokemon data
   useBattleStarterEvents(
-    filteredPokemon,
+    filteredPokemon, // Pass the filtered Pokemon directly
     currentBattle,
     initialBattleStartedRef,
     autoTriggerDisabledRef,
@@ -120,9 +132,6 @@ export const useBattleCoordination = (
     stableSetCurrentBattle,
     stableSetSelectedPokemon
   );
-
-  // REMOVED: The competing refinement queue effect that was causing race conditions
-  // This was the final rogue effect trying to start battles based on refinement queue detection
 
   return {
     contextPokemon,
