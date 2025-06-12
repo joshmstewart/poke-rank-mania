@@ -2,8 +2,6 @@
 import { useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
 export const useBattleStarterEvents = (
   allPokemon: Pokemon[],
@@ -17,48 +15,39 @@ export const useBattleStarterEvents = (
   setSelectedPokemon: (pokemon: number[]) => void
 ) => {
   const battleCreationInProgressRef = useRef(false);
-  
-  const { initiatePendingBattle, setInitiatePendingBattle } = useTrueSkillStore();
-  const { getAllPendingIds, removePendingPokemon } = useCloudPendingBattles();
 
-  // SIMPLIFIED: Single battle creator that runs once when conditions are met
+  // Optimized battle creator - runs immediately when conditions are met
   useEffect(() => {
     // Prevent multiple simultaneous battle creation attempts
     if (battleCreationInProgressRef.current) {
-      console.log(`🔒 [BATTLE_CREATOR_SIMPLIFIED] Battle creation already in progress - skipping`);
       return;
     }
 
     // Only create battles when we have Pokemon data and no current battle
     if (!allPokemon || allPokemon.length === 0) {
-      console.log(`🔒 [BATTLE_CREATOR_SIMPLIFIED] No Pokemon data available yet`);
       return;
     }
 
     if (currentBattle.length > 0) {
-      console.log(`🔒 [BATTLE_CREATOR_SIMPLIFIED] Battle already exists - skipping`);
       return;
     }
 
     if (initialBattleStartedRef.current) {
-      console.log(`🔒 [BATTLE_CREATOR_SIMPLIFIED] Initial battle already started - skipping`);
       return;
     }
 
-    console.log(`🚀 [BATTLE_CREATOR_SIMPLIFIED] Creating initial battle with ${allPokemon.length} Pokemon`);
+    console.log(`🚀 [OPTIMIZED_EVENTS] Creating initial battle with ${allPokemon.length} Pokemon`);
     battleCreationInProgressRef.current = true;
     
     try {
-      // SIMPLIFIED: Just create a random battle without complex pending logic
+      // Create battle immediately - no complex pending logic
       if (startNewBattleCallbackRef.current) {
         const newBattle = startNewBattleCallbackRef.current("pairs");
         if (newBattle && newBattle.length > 0) {
           setCurrentBattle(newBattle);
           setSelectedPokemon([]);
           initialBattleStartedRef.current = true;
-          console.log(`✅ [BATTLE_CREATOR_SIMPLIFIED] Created battle: ${newBattle.map(p => p.name).join(' vs ')}`);
-        } else {
-          console.error(`❌ [BATTLE_CREATOR_SIMPLIFIED] Failed to create battle`);
+          console.log(`✅ [OPTIMIZED_EVENTS] Created battle: ${newBattle.map(p => p.name).join(' vs ')}`);
         }
       }
       
@@ -67,7 +56,7 @@ export const useBattleStarterEvents = (
     }
     
   }, [
-    allPokemon.length > 0 ? allPokemon : null, // Only depend on Pokemon when we have them
+    allPokemon.length > 0 ? allPokemon : null,
     currentBattle.length,
     initialBattleStartedRef.current,
     setCurrentBattle,
@@ -78,7 +67,6 @@ export const useBattleStarterEvents = (
   // Reset refs when Pokemon data changes
   useEffect(() => {
     if (allPokemon.length === 0) {
-      console.log(`🔄 [BATTLE_CREATOR_SIMPLIFIED] Pokemon data cleared - resetting refs`);
       initialBattleStartedRef.current = false;
       initializationCompleteRef.current = false;
       battleCreationInProgressRef.current = false;

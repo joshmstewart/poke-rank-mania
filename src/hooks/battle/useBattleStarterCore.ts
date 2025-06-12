@@ -31,146 +31,60 @@ export const useBattleStarterCore = (
     return pokemonList.filter(pokemon => !freezeList.includes(pokemon.id));
   }, []);
 
+  // Optimized battle selection - much faster algorithm
   const selectBattlePokemon = useCallback((
     battleType: BattleType,
-    availablePokemon: Pokemon[],
-    recentlyUsed: string[]
+    availablePokemon: Pokemon[]
   ): Pokemon[] => {
-    const battleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
-    
-    // IMMEDIATE ANALYSIS: Extract and display the exact stored battle sequence
-    const storedSequence = JSON.parse(localStorage.getItem('pokemon-battle-sequence') || '[]');
-    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== COMPLETE BATTLE SEQUENCE ANALYSIS =====`);
-    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Total battles in sequence: ${storedSequence.length}`);
-    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Current battle count: ${battleCount + 1}`);
-    
-    // Display ALL battles with their numbers and keys
-    storedSequence.forEach((battle, index) => {
-      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Battle #${battle.battleNumber}: ${battle.pokemonNames} (Key: ${battle.battleKey})`);
-    });
-    
-    // Check for ANY duplicates in the sequence
-    const battleKeys = storedSequence.map(b => b.battleKey);
-    const duplicates = [];
-    for (let i = 0; i < battleKeys.length; i++) {
-      for (let j = i + 1; j < battleKeys.length; j++) {
-        if (battleKeys[i] === battleKeys[j]) {
-          duplicates.push({
-            key: battleKeys[i],
-            battle1: storedSequence[i].battleNumber,
-            battle2: storedSequence[j].battleNumber,
-            names: storedSequence[i].pokemonNames
-          });
-        }
-      }
-    }
-    
-    if (duplicates.length > 0) {
-      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== DUPLICATES FOUND =====`);
-      duplicates.forEach(dup => {
-        console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] DUPLICATE: Battle #${dup.battle1} and #${dup.battle2} both used "${dup.names}" (Key: ${dup.key})`);
-      });
-    } else {
-      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] No duplicates found in stored sequence`);
-    }
-    
-    // Specifically check battles 10-14
-    const criticalBattles = storedSequence.filter(b => b.battleNumber >= 10 && b.battleNumber <= 14);
-    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== BATTLES 10-14 ANALYSIS =====`);
-    criticalBattles.forEach(battle => {
-      console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Battle #${battle.battleNumber}: ${battle.pokemonNames} (Key: ${battle.battleKey})`);
-    });
-    
-    // Check for consecutive duplicates in 10-14 range
-    for (let i = 0; i < criticalBattles.length - 1; i++) {
-      const current = criticalBattles[i];
-      const next = criticalBattles[i + 1];
-      if (current.battleKey === next.battleKey) {
-        console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] CONSECUTIVE DUPLICATE FOUND: Battle #${current.battleNumber} and #${next.battleNumber} are identical!`);
-        console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] Repeated pair: ${current.pokemonNames} (Key: ${current.battleKey})`);
-      }
-    }
-    
-    console.log(`🚨🚨🚨 [SEQUENCE_ANALYSIS] ===== END SEQUENCE ANALYSIS =====`);
-    
-    
     if (battleType === "pairs") {
-      // Get all possible pairs
-      const allPairs: Array<{pokemon1: Pokemon, pokemon2: Pokemon, key: string}> = [];
-      for (let i = 0; i < availablePokemon.length; i++) {
-        for (let j = i + 1; j < availablePokemon.length; j++) {
-          const pokemon1 = availablePokemon[i];
-          const pokemon2 = availablePokemon[j];
+      // Get recent battles for quick lookup (only last 5 for performance)
+      const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
+      const recentSet = new Set(recentlyUsed.slice(-5)); // Only check last 5 battles
+      
+      // Simple approach: try random pairs until we find one not in recent set
+      let attempts = 0;
+      const maxAttempts = 20; // Prevent infinite loops
+      
+      while (attempts < maxAttempts) {
+        // Pick two random Pokemon
+        const shuffled = [...availablePokemon].sort(() => Math.random() - 0.5);
+        const pokemon1 = shuffled[0];
+        const pokemon2 = shuffled[1];
+        
+        if (pokemon1 && pokemon2) {
           const key = [pokemon1.id, pokemon2.id].sort((a, b) => a - b).join('-');
-          allPairs.push({ pokemon1, pokemon2, key });
-        }
-      }
-      
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Total possible pairs: ${allPairs.length}`);
-      
-      // CRITICAL FIX: Filter out the last 5 battles from recently used to prevent immediate repetition
-      const lastFiveBattles = recentlyUsed.slice(-5);
-      let unusedPairs = allPairs.filter(pair => !lastFiveBattles.includes(pair.key));
-      console.log(`🔧 [REPETITION_FIX] Excluding last 5 battles: [${lastFiveBattles.join(', ')}]`);
-      console.log(`🔧 [REPETITION_FIX] Pairs after excluding last 5: ${unusedPairs.length}`);
-      
-      if (unusedPairs.length === 0) {
-        console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ❌ NO UNUSED PAIRS after excluding last 5! Using last 10 exclusion`);
-        
-        // Exclude last 10 battles instead
-        const lastTenBattles = recentlyUsed.slice(-10);
-        unusedPairs = allPairs.filter(pair => !lastTenBattles.includes(pair.key));
-        console.log(`🔧 [REPETITION_FIX] Excluding last 10 battles: [${lastTenBattles.join(', ')}]`);
-        console.log(`🔧 [REPETITION_FIX] Pairs after excluding last 10: ${unusedPairs.length}`);
-        
-        if (unusedPairs.length === 0) {
-          console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Still no unused pairs - clearing half of recently used`);
           
-          const halfSize = Math.floor(recentlyUsed.length / 2);
-          const remainingUsed = recentlyUsed.slice(halfSize);
-          localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(remainingUsed));
-          
-          unusedPairs = allPairs.filter(pair => !remainingUsed.includes(pair.key));
-          console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] After partial clear - unused pairs: ${unusedPairs.length}`);
-          
-          if (unusedPairs.length === 0) {
-            // Last resort: pick random pair
-            unusedPairs = [allPairs[Math.floor(Math.random() * allPairs.length)]];
-            console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Last resort - random pair selected`);
+          if (!recentSet.has(key)) {
+            // Found a non-recent pair
+            console.log(`✅ [OPTIMIZED] Selected: ${pokemon1.name} vs ${pokemon2.name}`);
+            
+            // Update recent battles (keep only last 10 for memory efficiency)
+            const updatedRecent = [...recentlyUsed.slice(-9), key];
+            localStorage.setItem('pokemon-battle-recently-used', JSON.stringify(updatedRecent));
+            
+            return [pokemon1, pokemon2];
           }
         }
+        attempts++;
       }
       
-      // Select random unused pair
-      const randomIndex = Math.floor(Math.random() * unusedPairs.length);
-      const selectedPair = unusedPairs[randomIndex];
-      const result = [selectedPair.pokemon1, selectedPair.pokemon2];
-      
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] ===== BATTLE #${battleCount + 1} SELECTED =====`);
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected: ${result[0].name} (${result[0].id}) vs ${result[1].name} (${result[1].id})`);
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected key: ${selectedPair.key}`);
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Was this pair in last 5 battles? ${lastFiveBattles.includes(selectedPair.key)}`);
-      
-      return result;
+      // Fallback: just pick any two Pokemon if we can't find non-recent ones
+      const fallback = availablePokemon.slice(0, 2);
+      console.log(`🔄 [OPTIMIZED] Fallback selection: ${fallback.map(p => p.name).join(' vs ')}`);
+      return fallback;
     }
     
     if (battleType === "triplets") {
       if (availablePokemon.length < 3) {
-        console.warn("Not enough Pokémon available for a triplets battle.  Returning empty array.");
+        console.warn("Not enough Pokémon available for a triplets battle.");
         return [];
       }
 
-      const selected: Pokemon[] = [];
-      const availableIndices = Array.from({ length: availablePokemon.length }, (_, i) => i);
-
-      while (selected.length < 3 && availableIndices.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableIndices.length);
-        const pokemonIndex = availableIndices[randomIndex];
-        selected.push(availablePokemon[pokemonIndex]);
-        availableIndices.splice(randomIndex, 1);
-      }
-
-      console.log(`🎯🎯🎯 [BATTLE_SEQUENCE_TRACKER] Selected triplets: ${selected.map(p => p.name).join(', ')}`);
+      // Simple random selection for triplets
+      const shuffled = [...availablePokemon].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, 3);
+      
+      console.log(`✅ [OPTIMIZED] Selected triplets: ${selected.map(p => p.name).join(', ')}`);
       return selected;
     }
 
@@ -182,7 +96,6 @@ export const useBattleStarterCore = (
   ): Pokemon[] => {
     const {
       allPokemon,
-      currentRankings,
       battleType,
       selectedGeneration,
       freezeList
@@ -190,19 +103,17 @@ export const useBattleStarterCore = (
 
     // 1. Filter by generation
     const generationFilteredPokemon = filterPokemonByGeneration(allPokemon, selectedGeneration);
-    console.log(`Generation filter: ${generationFilteredPokemon.length} Pokemon of generation ${selectedGeneration}`);
 
     // 2. Filter out frozen Pokemon
     const availablePokemon = filterOutFrozenPokemon(generationFilteredPokemon, freezeList);
-    console.log(`Freeze filter: ${availablePokemon.length} available Pokemon after removing frozen`);
 
-    // 3. Get recently used battles
-    const recentlyUsed = JSON.parse(localStorage.getItem('pokemon-battle-recently-used') || '[]');
-    console.log(`Recently used battles: ${recentlyUsed.length} entries`);
+    if (availablePokemon.length < (battleType === "pairs" ? 2 : 3)) {
+      console.warn(`Not enough Pokemon available for ${battleType} battle`);
+      return [];
+    }
 
-    // 4. Select battle Pokemon
-    const battlePokemon = selectBattlePokemon(battleType, availablePokemon, recentlyUsed);
-    console.log(`Selected battle: ${battlePokemon.length} Pokemon for a ${battleType} battle`);
+    // 3. Select battle Pokemon using optimized algorithm
+    const battlePokemon = selectBattlePokemon(battleType, availablePokemon);
 
     return battlePokemon;
   }, [filterPokemonByGeneration, filterOutFrozenPokemon, selectBattlePokemon]);

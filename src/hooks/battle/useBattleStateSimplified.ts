@@ -38,7 +38,7 @@ export const useBattleStateSimplified = (
   
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   
-  // Simple, direct battle creation
+  // Optimized battle creation - no delays, simplified logic
   const startNewBattle = useCallback((type: BattleType = battleType): Pokemon[] => {
     console.log(`🚀 [SIMPLIFIED] Starting new ${type} battle`);
     
@@ -76,7 +76,7 @@ export const useBattleStateSimplified = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
   
-  // Simple handlers
+  // Optimized handlers - no delays
   const handlePokemonSelect = useCallback((pokemonId: number) => {
     console.log(`🚀 [SIMPLIFIED] Pokemon selected: ${pokemonId}`);
     
@@ -99,8 +99,8 @@ export const useBattleStateSimplified = (
         setBattleResults(prev => [...prev, battle]);
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: [pokemonId] }]);
         
-        // Start next battle
-        setTimeout(() => startNewBattle(), 500);
+        // Start next battle immediately - no delay
+        startNewBattle();
       }
     } else {
       // For triplets, collect selections
@@ -126,8 +126,8 @@ export const useBattleStateSimplified = (
             setBattleResults(prev => [...prev, battle]);
             setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
             
-            // Start next battle
-            setTimeout(() => startNewBattle(), 500);
+            // Start next battle immediately - no delay
+            startNewBattle();
           }
         }
         
@@ -150,12 +150,10 @@ export const useBattleStateSimplified = (
     setBattleHistory([]);
     initializedRef.current = false;
     
-    // Restart after reset
-    setTimeout(() => {
-      if (allPokemon.length >= 2) {
-        startNewBattle();
-      }
-    }, 100);
+    // Restart immediately after reset - no delay
+    if (allPokemon.length >= 2) {
+      startNewBattle();
+    }
   }, [allPokemon.length, startNewBattle]);
   
   // Simple milestone reset function
