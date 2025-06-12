@@ -9,7 +9,7 @@ export interface RefinementBattle {
 }
 
 export const useRefinementQueue = () => {
-  console.log(`🎯 [REFINEMENT_QUEUE_CORE] Hook initialized`);
+  console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Hook initialized`);
   
   // CRITICAL FIX: Use TrueSkill store as the single source of truth
   const { 
@@ -17,7 +17,8 @@ export const useRefinementQueue = () => {
     removePendingBattle, 
     isPokemonPending,
     addPendingBattle,
-    clearAllPendingBattles
+    clearAllPendingBattles,
+    smartSync
   } = useTrueSkillStore();
   
   const [queue, setQueue] = useState<RefinementBattle[]>([]);
@@ -35,29 +36,29 @@ export const useRefinementQueue = () => {
   const refinementBattleCount = pendingPokemon.length;
   const hasRefinementBattles = pendingPokemon.length > 0;
 
-  console.log(`🎯 [REFINEMENT_QUEUE_CORE] Current state:`, {
+  console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Current state:`, {
     pendingPokemon,
     refinementBattleCount,
     hasRefinementBattles
   });
 
   const addValidationBattle = useCallback((primaryPokemonId: number, opponentPokemonId: number) => {
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] addValidationBattle called: ${primaryPokemonId} vs ${opponentPokemonId}`);
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] addValidationBattle called: ${primaryPokemonId} vs ${opponentPokemonId}`);
     // Add to TrueSkill store
     addPendingBattle(primaryPokemonId);
   }, [addPendingBattle]);
 
   const queueBattlesForReorder = useCallback(() => {
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] queueBattlesForReorder called`);
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] queueBattlesForReorder called`);
     // No-op for now
   }, []);
 
   const getNextRefinementBattle = useCallback((): RefinementBattle | null => {
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] getNextRefinementBattle called`);
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] Available pending Pokemon:`, pendingPokemon);
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] getNextRefinementBattle called`);
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Available pending Pokemon:`, pendingPokemon);
     
     if (pendingPokemon.length === 0) {
-      console.log(`🎯 [REFINEMENT_QUEUE_CORE] No pending Pokemon available`);
+      console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] No pending Pokemon available`);
       return null;
     }
 
@@ -67,22 +68,38 @@ export const useRefinementQueue = () => {
       reason: 'starred'
     };
 
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] Returning next battle:`, nextBattle);
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Returning next battle:`, nextBattle);
     return nextBattle;
   }, [pendingPokemon]);
 
-  const popRefinementBattle = useCallback(() => {
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] popRefinementBattle called`);
+  const popRefinementBattle = useCallback(async () => {
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] ===== POP REFINEMENT BATTLE CALLED =====`);
     
     if (pendingPokemon.length > 0) {
       const pokemonId = pendingPokemon[0];
-      console.log(`🎯 [REFINEMENT_QUEUE_CORE] Removing Pokemon ${pokemonId} from pending`);
+      console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] REMOVING Pokemon ${pokemonId} from pending list`);
+      console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Before removal - pending count: ${pendingPokemon.length}`);
+      
+      // CRITICAL FIX: Remove from TrueSkill store and ensure it persists
       removePendingBattle(pokemonId);
+      
+      // CRITICAL FIX: Force immediate sync to cloud to persist the removal
+      try {
+        console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Triggering immediate cloud sync for persistence`);
+        await smartSync();
+        console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] ✅ Cloud sync successful - removal persisted`);
+      } catch (error) {
+        console.error(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] ❌ Cloud sync failed:`, error);
+      }
+      
+      console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] Pokemon ${pokemonId} removal complete`);
+    } else {
+      console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] No pending Pokemon to remove`);
     }
-  }, [pendingPokemon, removePendingBattle]);
+  }, [pendingPokemon, removePendingBattle, smartSync]);
 
   const clearRefinementQueue = useCallback(() => {
-    console.log(`🎯 [REFINEMENT_QUEUE_CORE] clearRefinementQueue called`);
+    console.log(`🎯🔧🔧🔧 [REFINEMENT_QUEUE_MEGA_FIX] clearRefinementQueue called`);
     // Clear all pending Pokemon from TrueSkill store
     clearAllPendingBattles();
   }, [clearAllPendingBattles]);
