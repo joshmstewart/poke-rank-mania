@@ -257,20 +257,20 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       mergeRatingsState: (cloudRatings: Record<string, TrueSkillRating>, localRatings: Record<string, TrueSkillRating>) => {
         const mergeId = `MERGE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log(`🔍🔍🔍 [${mergeId}] ===== DETAILED MERGE ANALYSIS START =====`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] ===== DETAILED MERGE ANALYSIS START =====`);
         
         const cloudCount = Object.keys(cloudRatings).length;
         const localCount = Object.keys(localRatings).length;
-        console.log(`🔍🔍🔍 [${mergeId}] INPUT COUNTS - Cloud: ${cloudCount}, Local: ${localCount}`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] INPUT COUNTS - Cloud: ${cloudCount}, Local: ${localCount}`);
         
         // Log sample Pokemon from each source
         const cloudSample = Object.keys(cloudRatings).slice(0, 5);
         const localSample = Object.keys(localRatings).slice(0, 5);
-        console.log(`🔍🔍🔍 [${mergeId}] Cloud sample Pokemon:`, cloudSample.map(id => `${id}(battles:${cloudRatings[id]?.battleCount})`));
-        console.log(`🔍🔍🔍 [${mergeId}] Local sample Pokemon:`, localSample.map(id => `${id}(battles:${localRatings[id]?.battleCount})`));
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] Cloud sample Pokemon:`, cloudSample.map(id => `${id}(battles:${cloudRatings[id]?.battleCount})`));
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] Local sample Pokemon:`, localSample.map(id => `${id}(battles:${localRatings[id]?.battleCount})`));
         
         const merged: Record<string, TrueSkillRating> = { ...cloudRatings };
-        console.log(`🔍🔍🔍 [${mergeId}] Starting with cloud data as base: ${Object.keys(merged).length} Pokemon`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] Starting with cloud data as base: ${Object.keys(merged).length} Pokemon`);
         
         let newLocalCount = 0;
         let localPreferredCount = 0;
@@ -285,23 +285,23 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             // New local rating, use it
             merged[pokemonId] = localRating;
             newLocalCount++;
-            console.log(`🔍🔍🔍 [${mergeId}] NEW LOCAL: Pokemon ${pokemonId} (battles: ${localRating.battleCount})`);
+            console.log(`🔍 MERGE_ANALYSIS [${mergeId}] NEW LOCAL: Pokemon ${pokemonId} (battles: ${localRating.battleCount})`);
           } else if (localRating.battleCount > cloudRating.battleCount) {
             // Local has more battles, prefer it
             merged[pokemonId] = localRating;
             localPreferredCount++;
-            console.log(`🔍🔍🔍 [${mergeId}] LOCAL PREFERRED: Pokemon ${pokemonId} (local: ${localRating.battleCount} vs cloud: ${cloudRating.battleCount})`);
+            console.log(`🔍 MERGE_ANALYSIS [${mergeId}] LOCAL PREFERRED: Pokemon ${pokemonId} (local: ${localRating.battleCount} vs cloud: ${cloudRating.battleCount})`);
           } else {
             // Use cloud rating
             cloudPreferredCount++;
-            console.log(`🔍🔍🔍 [${mergeId}] CLOUD PREFERRED: Pokemon ${pokemonId} (local: ${localRating.battleCount} vs cloud: ${cloudRating.battleCount})`);
+            console.log(`🔍 MERGE_ANALYSIS [${mergeId}] CLOUD PREFERRED: Pokemon ${pokemonId} (local: ${localRating.battleCount} vs cloud: ${cloudRating.battleCount})`);
           }
         });
         
         // Check for Pokemon that exist in cloud but not in local (potential drops)
         Object.keys(cloudRatings).forEach(pokemonId => {
           if (!localRatings[pokemonId]) {
-            console.log(`🔍🔍🔍 [${mergeId}] CLOUD ONLY: Pokemon ${pokemonId} (battles: ${cloudRatings[pokemonId].battleCount})`);
+            console.log(`🔍 MERGE_ANALYSIS [${mergeId}] CLOUD ONLY: Pokemon ${pokemonId} (battles: ${cloudRatings[pokemonId].battleCount})`);
           }
         });
         
@@ -309,26 +309,26 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         Object.keys(localRatings).forEach(pokemonId => {
           if (!merged[pokemonId]) {
             droppedPokemon.push(pokemonId);
-            console.log(`🔍🔍🔍 [${mergeId}] DROPPED: Pokemon ${pokemonId} was in local but not in merged result!`);
+            console.log(`🔍 MERGE_ANALYSIS [${mergeId}] DROPPED: Pokemon ${pokemonId} was in local but not in merged result!`);
           }
         });
         
         const finalCount = Object.keys(merged).length;
-        console.log(`🔍🔍🔍 [${mergeId}] MERGE STATISTICS:`);
-        console.log(`🔍🔍🔍 [${mergeId}] - New from local: ${newLocalCount}`);
-        console.log(`🔍🔍🔍 [${mergeId}] - Local preferred: ${localPreferredCount}`);
-        console.log(`🔍🔍🔍 [${mergeId}] - Cloud preferred: ${cloudPreferredCount}`);
-        console.log(`🔍🔍🔍 [${mergeId}] - Dropped Pokemon: ${droppedPokemon.length} - ${droppedPokemon.join(', ')}`);
-        console.log(`🔍🔍🔍 [${mergeId}] FINAL COUNT: ${finalCount} (was cloud: ${cloudCount}, local: ${localCount})`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] MERGE STATISTICS:`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] - New from local: ${newLocalCount}`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] - Local preferred: ${localPreferredCount}`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] - Cloud preferred: ${cloudPreferredCount}`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] - Dropped Pokemon: ${droppedPokemon.length} - ${droppedPokemon.join(', ')}`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] FINAL COUNT: ${finalCount} (was cloud: ${cloudCount}, local: ${localCount})`);
         
         if (finalCount !== Math.max(cloudCount, localCount)) {
-          console.error(`🔍🔍🔍 [${mergeId}] ❌ COUNT MISMATCH! Expected ${Math.max(cloudCount, localCount)}, got ${finalCount}`);
-          console.error(`🔍🔍🔍 [${mergeId}] This is where the count drop happens!`);
+          console.error(`🔍 MERGE_ANALYSIS [${mergeId}] ❌ COUNT MISMATCH! Expected ${Math.max(cloudCount, localCount)}, got ${finalCount}`);
+          console.error(`🔍 MERGE_ANALYSIS [${mergeId}] This is where the count drop happens!`);
         } else {
-          console.log(`🔍🔍🔍 [${mergeId}] ✅ Count preserved correctly`);
+          console.log(`🔍 MERGE_ANALYSIS [${mergeId}] ✅ Count preserved correctly`);
         }
         
-        console.log(`🔍🔍🔍 [${mergeId}] ===== DETAILED MERGE ANALYSIS END =====`);
+        console.log(`🔍 MERGE_ANALYSIS [${mergeId}] ===== DETAILED MERGE ANALYSIS END =====`);
         return merged;
       },
 
@@ -502,13 +502,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       loadFromCloud: async () => {
         const loadId = `LOAD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log(`🔍🔍🔍 [${loadId}] ===== LOAD FROM CLOUD WITH DETAILED LOGGING =====`);
+        console.log(`🔍 MERGE_ANALYSIS [${loadId}] ===== LOAD FROM CLOUD WITH DETAILED LOGGING =====`);
         
         try {
           const currentState = get();
           const ratingsBeforeLoad = Object.keys(currentState.ratings).length;
           const pendingBeforeLoad = currentState.pendingBattles.length;
-          console.log(`🔍🔍🔍 [${loadId}] BEFORE LOAD - Local state: ${ratingsBeforeLoad} ratings, ${pendingBeforeLoad} pending`);
+          console.log(`🔍 MERGE_ANALYSIS [${loadId}] BEFORE LOAD - Local state: ${ratingsBeforeLoad} ratings, ${pendingBeforeLoad} pending`);
           
           const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
             method: 'POST',
@@ -519,41 +519,41 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             body: JSON.stringify({ sessionId: currentState.sessionId })
           });
           
-          console.log(`🔍🔍🔍 [${loadId}] Cloud response status: ${response.status}`);
+          console.log(`🔍 MERGE_ANALYSIS [${loadId}] Cloud response status: ${response.status}`);
           
           if (!response.ok) {
             throw new Error(`Load failed: ${response.status}`);
           }
           
           const raw = await response.text();
-          console.log(`🔍🔍🔍 [${loadId}] Raw cloud response length: ${raw.length} characters`);
+          console.log(`🔍 MERGE_ANALYSIS [${loadId}] Raw cloud response length: ${raw.length} characters`);
           
           const result = await JSON.parse(raw);
-          console.log(`🔍🔍🔍 [${loadId}] Cloud response parsed successfully`);
+          console.log(`🔍 MERGE_ANALYSIS [${loadId}] Cloud response parsed successfully`);
           
           if (result.success && result.ratings) {
             const cloudRatingsCount = Object.keys(result.ratings).length;
             const cloudPendingCount = (result.pendingBattles || []).length;
-            console.log(`🔍🔍🔍 [${loadId}] RAW CLOUD DATA - ${cloudRatingsCount} ratings, ${cloudPendingCount} pending, ${result.totalBattles || 0} total battles`);
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] RAW CLOUD DATA - ${cloudRatingsCount} ratings, ${cloudPendingCount} pending, ${result.totalBattles || 0} total battles`);
             
             // Log sample cloud data
             const cloudSample = Object.keys(result.ratings).slice(0, 5);
-            console.log(`🔍🔍🔍 [${loadId}] Cloud sample Pokemon:`, cloudSample.map(id => `${id}(battles:${result.ratings[id]?.battleCount})`));
-            console.log(`🔍🔍🔍 [${loadId}] Cloud pending battles:`, result.pendingBattles || []);
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] Cloud sample Pokemon:`, cloudSample.map(id => `${id}(battles:${result.ratings[id]?.battleCount})`));
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] Cloud pending battles:`, result.pendingBattles || []);
             
             // PHASE 2: Smart state merging instead of overwriting
-            console.log(`🔍🔍🔍 [${loadId}] Starting merge process...`);
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] Starting merge process...`);
             const mergedRatings = get().mergeRatingsState(result.ratings || {}, currentState.ratings);
             const mergedPending = get().mergePendingState(result.pendingBattles || [], currentState.pendingBattles);
             
             const finalRatingsCount = Object.keys(mergedRatings).length;
             const finalPendingCount = mergedPending.length;
-            console.log(`🔍🔍🔍 [${loadId}] AFTER MERGE - ${finalRatingsCount} ratings, ${finalPendingCount} pending`);
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] AFTER MERGE - ${finalRatingsCount} ratings, ${finalPendingCount} pending`);
             
             if (finalRatingsCount !== Math.max(cloudRatingsCount, ratingsBeforeLoad)) {
-              console.error(`🔍🔍🔍 [${loadId}] ❌ RATING COUNT CHANGED DURING MERGE!`);
-              console.error(`🔍🔍🔍 [${loadId}] Expected: ${Math.max(cloudRatingsCount, ratingsBeforeLoad)}, Got: ${finalRatingsCount}`);
-              console.error(`🔍🔍🔍 [${loadId}] Cloud had: ${cloudRatingsCount}, Local had: ${ratingsBeforeLoad}`);
+              console.error(`🔍 MERGE_ANALYSIS [${loadId}] ❌ RATING COUNT CHANGED DURING MERGE!`);
+              console.error(`🔍 MERGE_ANALYSIS [${loadId}] Expected: ${Math.max(cloudRatingsCount, ratingsBeforeLoad)}, Got: ${finalRatingsCount}`);
+              console.error(`🔍 MERGE_ANALYSIS [${loadId}] Cloud had: ${cloudRatingsCount}, Local had: ${ratingsBeforeLoad}`);
             }
             
             set({
@@ -564,15 +564,15 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               isHydrated: true
             });
             
-            console.log(`🔍🔍🔍 [${loadId}] ✅ State updated with merged data`);
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] ✅ State updated with merged data`);
           } else {
-            console.log(`🔍🔍🔍 [${loadId}] No valid data in cloud response`);
+            console.log(`🔍 MERGE_ANALYSIS [${loadId}] No valid data in cloud response`);
           }
         } catch (error) {
-          console.error(`🔍🔍🔍 [${loadId}] ❌ Load from cloud failed:`, error);
+          console.error(`🔍 MERGE_ANALYSIS [${loadId}] ❌ Load from cloud failed:`, error);
         }
         
-        console.log(`🔍🔍🔍 [${loadId}] ===== LOAD FROM CLOUD COMPLETE =====`);
+        console.log(`🔍 MERGE_ANALYSIS [${loadId}] ===== LOAD FROM CLOUD COMPLETE =====`);
       },
 
       smartSync: async () => {
