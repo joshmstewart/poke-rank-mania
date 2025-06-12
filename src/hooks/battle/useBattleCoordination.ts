@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonContext } from "@/contexts/PokemonContext";
@@ -97,6 +98,14 @@ export const useBattleCoordination = (
     }
   }, [filteredPokemon.length]);
 
+  // FIXED: Create wrapper function to handle the signature mismatch
+  const markSuggestionUsedWrapper = (pokemonId: number) => {
+    const pokemon = allRankedPokemon.find(p => p.id === pokemonId);
+    if (pokemon) {
+      markSuggestionUsed(pokemon, true);
+    }
+  };
+
   // SIMPLIFIED: Use only battle starter integration for battle creation functions
   const { 
     battleStarter, 
@@ -108,7 +117,7 @@ export const useBattleCoordination = (
     finalRankings || [],
     stableSetCurrentBattle,
     stableSetSelectedPokemon,
-    markSuggestionUsed,
+    markSuggestionUsedWrapper,
     currentBattle,
     initialBattleStartedRef
   );

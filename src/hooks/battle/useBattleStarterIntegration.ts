@@ -40,7 +40,7 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // Simple random selection for now - let the core battle starter handle complexity
+    // FIXED: Pass proper BattleType instead of string
     const result = startNewBattleCore(battleType);
     console.log(`🚀 [INTEGRATION_FIX] Generated battle:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
     
@@ -50,8 +50,6 @@ export const useBattleStarterIntegration = (
   const resetSuggestionPriority = useCallback(() => {
     console.log(`🔧 [INTEGRATION_FIX] Suggestion priority reset`);
   }, []);
-
-  // REMOVED: All competing battle creation logic that was causing race conditions
 
   return {
     battleStarter: { startNewBattle },

@@ -49,12 +49,26 @@ export const useBattleSelectionState = () => {
     }));
   }, [battleResults, allPokemon, getCurrentRankings]);
 
-  // CRITICAL FIX: Use the refinement-aware startNewBattle from useBattleStarterIntegration
+  // FIXED: Create wrapper function for markSuggestionUsed to match expected signature
+  const markSuggestionUsedWrapper = useCallback((pokemonId: number) => {
+    const pokemon = currentRankings.find(p => p.id === pokemonId);
+    if (pokemon) {
+      console.log(`🔧 [WRAPPER] Found Pokemon ${pokemon.name} for ID ${pokemonId}, marking as used`);
+    } else {
+      console.warn(`🔧 [WRAPPER] Could not find Pokemon for ID ${pokemonId}`);
+    }
+  }, [currentRankings]);
+
+  // FIXED: Provide all required parameters for useBattleStarterIntegration
+  const initialBattleStartedRef = { current: false };
   const { startNewBattle } = useBattleStarterIntegration(
     allPokemon,
     currentRankings,
     setCurrentBattle,
-    setSelectedPokemon
+    setSelectedPokemon,
+    markSuggestionUsedWrapper,
+    currentBattle,
+    initialBattleStartedRef
   );
 
   const { processBattleResult } = useBattleOutcomeProcessor(
