@@ -1,9 +1,9 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleStarterCore } from "./useBattleStarterCore";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleStateSimplified = (
   allPokemon: Pokemon[],
@@ -23,6 +23,9 @@ export const useBattleStateSimplified = (
   // TrueSkill integration
   const { totalBattles } = useTrueSkillStore();
   
+  // Refinement queue integration
+  const refinementQueue = useSharedRefinementQueue();
+  
   // Simple battle creation - no complex orchestration
   const getCurrentRankings = useCallback(() => {
     return allPokemon.map(pokemon => ({
@@ -38,15 +41,45 @@ export const useBattleStateSimplified = (
   
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   
-  // Optimized battle creation - no delays, simplified logic
+  // Optimized battle creation with refinement queue integration
   const startNewBattle = useCallback((type: BattleType = battleType): Pokemon[] => {
     console.log(`🚀 [SIMPLIFIED] Starting new ${type} battle`);
+    console.log(`🎯 [REFINEMENT_SIMPLIFIED] Checking refinement queue: ${refinementQueue.refinementBattleCount} battles`);
     
     if (!allPokemon || allPokemon.length < 2) {
       console.log(`🚀 [SIMPLIFIED] Not enough Pokemon for battle`);
       return [];
     }
     
+    // Check for refinement battles first (starred Pokemon)
+    if (refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
+      console.log(`🎯 [REFINEMENT_SIMPLIFIED] Processing refinement battle`);
+      
+      const nextRefinement = refinementQueue.getNextRefinementBattle();
+      if (nextRefinement) {
+        const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+        const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+        
+        if (primary && opponent) {
+          const refinementBattle = [primary, opponent];
+          console.log(`🎯 [REFINEMENT_SIMPLIFIED] Created refinement battle: ${primary.name} vs ${opponent.name}`);
+          
+          setCurrentBattle(refinementBattle);
+          setSelectedPokemon([]);
+          
+          // Consume the refinement battle from the queue
+          refinementQueue.popRefinementBattle();
+          
+          return refinementBattle;
+        } else {
+          console.warn(`🎯 [REFINEMENT_SIMPLIFIED] Pokemon not found for refinement battle, removing from queue`);
+          refinementQueue.popRefinementBattle();
+          // Continue with regular battle generation
+        }
+      }
+    }
+    
+    // Regular battle generation when no refinement battles
     const config = {
       allPokemon,
       currentRankings: getCurrentRankings(),
@@ -64,7 +97,7 @@ export const useBattleStateSimplified = (
     }
     
     return result || [];
-  }, [allPokemon, battleType, startNewBattleCore, getCurrentRankings]);
+  }, [allPokemon, battleType, startNewBattleCore, getCurrentRankings, refinementQueue]);
   
   // Initialize first battle when Pokemon are available
   const initializedRef = useRef(false);

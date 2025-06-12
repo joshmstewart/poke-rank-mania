@@ -6,6 +6,7 @@ import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateSimplified } from "@/hooks/battle/useBattleStateSimplified";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { RefinementQueueProvider } from "./RefinementQueueProvider";
 
 interface BattleModeContainerProps {
   allPokemon: Pokemon[];
@@ -23,6 +24,49 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   console.log(`🚀 [CONTAINER_SIMPLIFIED] Rendering with ${allPokemon.length} Pokemon`);
   
   const [selectedGeneration, setSelectedGeneration] = useState(0);
+  const { totalBattles } = useTrueSkillStore();
+
+  const handleGenerationChange = useCallback((gen: number) => {
+    console.log(`🚀 [CONTAINER_SIMPLIFIED] Generation changed to: ${gen}`);
+    setSelectedGeneration(gen);
+  }, []);
+
+  const handleBattleTypeChange = useCallback((type: BattleType) => {
+    console.log(`🚀 [CONTAINER_SIMPLIFIED] Battle type changed to: ${type}`);
+  }, []);
+
+  return (
+    <RefinementQueueProvider>
+      <BattleModeContainerContent
+        allPokemon={allPokemon}
+        initialBattleType={initialBattleType}
+        selectedGeneration={selectedGeneration}
+        setBattlesCompleted={setBattlesCompleted}
+        setBattleResults={setBattleResults}
+        handleGenerationChange={handleGenerationChange}
+        handleBattleTypeChange={handleBattleTypeChange}
+      />
+    </RefinementQueueProvider>
+  );
+};
+
+const BattleModeContainerContent: React.FC<{
+  allPokemon: Pokemon[];
+  initialBattleType: BattleType;
+  selectedGeneration: number;
+  setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
+  setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
+  handleGenerationChange: (gen: number) => void;
+  handleBattleTypeChange: (type: BattleType) => void;
+}> = ({
+  allPokemon,
+  initialBattleType,
+  selectedGeneration,
+  setBattlesCompleted,
+  setBattleResults,
+  handleGenerationChange,
+  handleBattleTypeChange
+}) => {
   const { totalBattles } = useTrueSkillStore();
 
   // Use the simplified battle state hook
@@ -46,16 +90,15 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
     }
   }, [battleState.battleResults, setBattleResults]);
 
-  const handleGenerationChange = useCallback((gen: number) => {
-    console.log(`🚀 [CONTAINER_SIMPLIFIED] Generation changed to: ${gen}`);
-    setSelectedGeneration(gen);
+  const wrappedHandleGenerationChange = useCallback((gen: number) => {
+    handleGenerationChange(gen);
     battleState.setSelectedGeneration(gen);
-  }, [battleState]);
+  }, [handleGenerationChange, battleState]);
 
-  const handleBattleTypeChange = useCallback((type: BattleType) => {
-    console.log(`🚀 [CONTAINER_SIMPLIFIED] Battle type changed to: ${type}`);
+  const wrappedHandleBattleTypeChange = useCallback((type: BattleType) => {
+    handleBattleTypeChange(type);
     battleState.setBattleType(type);
-  }, [battleState]);
+  }, [handleBattleTypeChange, battleState]);
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -63,8 +106,8 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
         <BattleContentHeader
           selectedGeneration={selectedGeneration}
           battleType={battleState.battleType}
-          onGenerationChange={handleGenerationChange}
-          setBattleType={handleBattleTypeChange}
+          onGenerationChange={wrappedHandleGenerationChange}
+          setBattleType={wrappedHandleBattleTypeChange}
           performFullBattleReset={battleState.performFullBattleReset}
           setBattlesCompleted={setBattlesCompleted}
           setBattleResults={setBattleResults}
@@ -83,8 +126,8 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
           milestones={battleState.milestones}
           rankingGenerated={battleState.rankingGenerated}
           isAnyProcessing={battleState.isAnyProcessing}
-          setSelectedGeneration={setSelectedGeneration}
-          setBattleType={battleState.setBattleType}
+          setSelectedGeneration={wrappedHandleGenerationChange}
+          setBattleType={wrappedHandleBattleTypeChange}
           setShowingMilestone={battleState.setShowingMilestone}
           setActiveTier={battleState.setActiveTier}
           handlePokemonSelect={battleState.handlePokemonSelect}
