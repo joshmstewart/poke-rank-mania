@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -37,8 +38,8 @@ export const useBattleStateSimplified = (
     }));
   });
   
-  // TrueSkill integration - CRITICAL FIX: Get the increment function AND smartSync for persistence
-  const { totalBattles, incrementTotalBattles, smartSync } = useTrueSkillStore();
+  // TrueSkill integration - CRITICAL FIX: Get all necessary functions
+  const { totalBattles, incrementTotalBattles, smartSync, removePendingBattle } = useTrueSkillStore();
   
   // Refinement queue integration
   const refinementQueue = useSharedRefinementQueue();
@@ -141,15 +142,20 @@ export const useBattleStateSimplified = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
   
-  // CRITICAL FIX: Process battle results with proper persistence
+  // CRITICAL FIX: Process battle results with proper persistence and debugging
   const processBattleResult = useCallback((selectedPokemonIds: number[]) => {
-    console.log(`🏆 [BATTLE_RESULT_FIX] Processing battle result with selected Pokemon:`, selectedPokemonIds);
+    console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] ===== PROCESSING BATTLE RESULT =====`);
+    console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] Selected Pokemon IDs:`, selectedPokemonIds);
+    console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] Current battle:`, currentBattle.map(p => `${p.name}(${p.id})`));
+    console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] Battle type:`, battleType);
     
     if (battleType === "pairs") {
       const winner = currentBattle.find(p => selectedPokemonIds.includes(p.id));
       const loser = currentBattle.find(p => !selectedPokemonIds.includes(p.id));
       
       if (winner && loser) {
+        console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] Winner: ${winner.name}(${winner.id}), Loser: ${loser.name}(${loser.id})`);
+        
         const battle: SingleBattle = {
           battleType,
           generation: selectedGeneration,
@@ -160,43 +166,56 @@ export const useBattleStateSimplified = (
           loser
         };
         
-        console.log(`🏆 [BATTLE_RESULT_FIX] Created battle result:`, battle);
-        
         setBattleResults(prev => [...prev, battle]);
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
         
         // CRITICAL FIX: Increment the TrueSkill battle counter
         incrementTotalBattles();
-        console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
+        console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] ✅ Incremented total battles in TrueSkill store`);
         
         // CRITICAL FIX: Check for milestone after incrementing battles
         const newBattleCount = totalBattles + 1; // totalBattles hasn't updated yet, so add 1
-        console.log(`🏆 [MILESTONE_CHECK] Checking milestone for battle count: ${newBattleCount}`);
+        console.log(`🏆🏆🏆 [MILESTONE_CHECK] Checking milestone for battle count: ${newBattleCount}`);
         
         const isMilestone = checkForMilestone(newBattleCount);
         if (isMilestone) {
-          console.log(`🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
+          console.log(`🏆🏆🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
           // CRITICAL FIX: Update rankings with real data before showing milestone
           const realRankings = getCurrentRankings();
-          console.log(`🏆 [MILESTONE_TRIGGERED] Generated ${realRankings.length} real rankings for milestone`);
+          console.log(`🏆🏆🏆 [MILESTONE_TRIGGERED] Generated ${realRankings.length} real rankings for milestone`);
           setFinalRankings(realRankings);
           setRankingGenerated(true);
           setShowingMilestone(true);
         }
         
-        // CRITICAL FIX: Properly handle refinement battle completion with persistence
+        // CRITICAL FIX: PROPERLY HANDLE PENDING POKEMON REMOVAL WITH DEBUGGING
         if (refinementQueue.hasRefinementBattles) {
           const nextRefinement = refinementQueue.getNextRefinementBattle();
+          console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Next refinement:`, nextRefinement);
+          console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Current battle Pokemon IDs:`, currentBattle.map(p => p.id));
+          
           if (nextRefinement && currentBattle.some(p => p.id === nextRefinement.primaryPokemonId)) {
-            console.log(`🎯 [REFINEMENT_COMPLETION] This was a starred Pokemon battle, removing from queue`);
+            const pokemonToRemove = nextRefinement.primaryPokemonId;
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] ===== REMOVING PENDING POKEMON ${pokemonToRemove} =====`);
+            
+            // CRITICAL FIX: Remove from BOTH places - queue AND TrueSkill store
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Step 1: Removing from refinement queue`);
             refinementQueue.popRefinementBattle();
             
-            // CRITICAL FIX: Trigger cloud sync to persist the removal
-            console.log(`🎯 [REFINEMENT_COMPLETION] Triggering cloud sync to persist pending Pokemon removal`);
-            smartSync().catch(error => {
-              console.error(`🎯 [REFINEMENT_COMPLETION] Failed to sync pending Pokemon removal:`, error);
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Step 2: Removing from TrueSkill store`);
+            removePendingBattle(pokemonToRemove);
+            
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Step 3: Triggering cloud sync to persist removal`);
+            smartSync().then(() => {
+              console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] ✅ Cloud sync successful`);
+            }).catch(error => {
+              console.error(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] ❌ Cloud sync failed:`, error);
             });
+          } else {
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] No matching pending Pokemon to remove`);
           }
+        } else {
+          console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] No refinement battles in queue`);
         }
         
         return battle;
@@ -207,6 +226,8 @@ export const useBattleStateSimplified = (
       const loser = currentBattle.find(p => !selectedPokemonIds.includes(p.id));
       
       if (winners.length === 2 && loser) {
+        console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] Triplet - Winners: ${winners.map(p => `${p.name}(${p.id})`).join(', ')}, Loser: ${loser.name}(${loser.id})`);
+        
         const battle: SingleBattle = {
           battleType,
           generation: selectedGeneration,
@@ -215,25 +236,23 @@ export const useBattleStateSimplified = (
           timestamp: new Date().toISOString()
         };
         
-        console.log(`🏆 [BATTLE_RESULT_FIX] Created triplet battle result:`, battle);
-        
         setBattleResults(prev => [...prev, battle]);
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemonIds }]);
         
         // CRITICAL FIX: Increment the TrueSkill battle counter
         incrementTotalBattles();
-        console.log(`🏆 [BATTLE_RESULT_FIX] ✅ Incremented total battles in TrueSkill store`);
+        console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] ✅ Incremented total battles in TrueSkill store`);
         
         // CRITICAL FIX: Check for milestone after incrementing battles
         const newBattleCount = totalBattles + 1; // totalBattles hasn't updated yet, so add 1
-        console.log(`🏆 [MILESTONE_CHECK] Checking milestone for battle count: ${newBattleCount}`);
+        console.log(`🏆🏆🏆 [MILESTONE_CHECK] Checking milestone for battle count: ${newBattleCount}`);
         
         const isMilestone = checkForMilestone(newBattleCount);
         if (isMilestone) {
-          console.log(`🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
+          console.log(`🏆🏆🏆 [MILESTONE_TRIGGERED] ✅ Milestone detected! Showing milestone view`);
           // CRITICAL FIX: Update rankings with real data before showing milestone
           const realRankings = getCurrentRankings();
-          console.log(`🏆 [MILESTONE_TRIGGERED] Generated ${realRankings.length} real rankings for milestone`);
+          console.log(`🏆🏆🏆 [MILESTONE_TRIGGERED] Generated ${realRankings.length} real rankings for milestone`);
           setFinalRankings(realRankings);
           setRankingGenerated(true);
           setShowingMilestone(true);
@@ -242,24 +261,40 @@ export const useBattleStateSimplified = (
         // CRITICAL FIX: Handle refinement battle completion with persistence for triplets too
         if (refinementQueue.hasRefinementBattles) {
           const nextRefinement = refinementQueue.getNextRefinementBattle();
+          console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Next refinement:`, nextRefinement);
+          console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Current battle Pokemon IDs:`, currentBattle.map(p => p.id));
+          
           if (nextRefinement && currentBattle.some(p => p.id === nextRefinement.primaryPokemonId)) {
-            console.log(`🎯 [REFINEMENT_COMPLETION] This was a starred Pokemon battle, removing from queue`);
+            const pokemonToRemove = nextRefinement.primaryPokemonId;
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] ===== REMOVING PENDING POKEMON ${pokemonToRemove} =====`);
+            
+            // CRITICAL FIX: Remove from BOTH places - queue AND TrueSkill store
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Step 1: Removing from refinement queue`);
             refinementQueue.popRefinementBattle();
             
-            // CRITICAL FIX: Trigger cloud sync to persist the removal
-            console.log(`🎯 [REFINEMENT_COMPLETION] Triggering cloud sync to persist pending Pokemon removal`);
-            smartSync().catch(error => {
-              console.error(`🎯 [REFINEMENT_COMPLETION] Failed to sync pending Pokemon removal:`, error);
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Step 2: Removing from TrueSkill store`);
+            removePendingBattle(pokemonToRemove);
+            
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] Step 3: Triggering cloud sync to persist removal`);
+            smartSync().then(() => {
+              console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] ✅ Cloud sync successful`);
+            }).catch(error => {
+              console.error(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] ❌ Cloud sync failed:`, error);
             });
+          } else {
+            console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] No matching pending Pokemon to remove`);
           }
+        } else {
+          console.log(`🎯🎯🎯 [PENDING_REMOVAL_MEGA_FIX] No refinement battles in queue`);
         }
         
         return battle;
       }
     }
     
+    console.log(`🏆🏆🏆 [BATTLE_RESULT_MEGA_FIX] ❌ Battle result processing failed - invalid selection`);
     return null;
-  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue, totalBattles, checkForMilestone, getCurrentRankings, smartSync]);
+  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue, totalBattles, checkForMilestone, getCurrentRankings, smartSync, removePendingBattle]);
   
   // Optimized handlers - no delays
   const handlePokemonSelect = useCallback((pokemonId: number) => {
@@ -312,6 +347,33 @@ export const useBattleStateSimplified = (
     startNewBattle();
   }, [startNewBattle]);
   
+  // CRITICAL FIX: Fix the back button functionality
+  const goBack = useCallback(() => {
+    console.log(`🔙🔙🔙 [BACK_BUTTON_FIX] Back button clicked`);
+    console.log(`🔙🔙🔙 [BACK_BUTTON_FIX] Battle history length: ${battleHistory.length}`);
+    
+    if (battleHistory.length === 0) {
+      console.log(`🔙🔙🔙 [BACK_BUTTON_FIX] No history to go back to`);
+      return;
+    }
+
+    // Go back to the previous battle
+    const newHistory = [...battleHistory];
+    const lastBattle = newHistory.pop();
+    console.log(`🔙🔙🔙 [BACK_BUTTON_FIX] Restoring battle:`, lastBattle?.battle.map(p => p.name));
+    
+    setBattleHistory(newHistory);
+
+    if (lastBattle) {
+      setCurrentBattle(lastBattle.battle);
+      setSelectedPokemon([]);
+    }
+
+    // Decrement battles completed
+    console.log(`🔙🔙🔙 [BACK_BUTTON_FIX] Decrementing battle count`);
+    // Note: We don't decrement totalBattles from TrueSkill store as that's persistent
+  }, [battleHistory]);
+  
   // Simple reset
   const performFullBattleReset = useCallback(() => {
     console.log(`🚀 [SIMPLIFIED] Performing full reset`);
@@ -362,7 +424,7 @@ export const useBattleStateSimplified = (
     setActiveTier: () => {},
     handlePokemonSelect,
     handleTripletSelectionComplete,
-    goBack: () => {},
+    goBack,
     handleContinueBattles,
     performFullBattleReset,
     handleSaveRankings: () => {},
