@@ -1,4 +1,5 @@
 
+
 import { useCallback } from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -57,6 +58,7 @@ export const useEnhancedManualReorder = (
     try {
       // Create a working copy of the rankings
       const workingRankings = [...finalRankings];
+      console.log(`🐛 [REORDER_DEBUG] Working with ${workingRankings.length} rankings`);
       
       // Handle new Pokemon being added (sourceIndex === -1)
       if (sourceIndex === -1) {
@@ -64,6 +66,8 @@ export const useEnhancedManualReorder = (
         
         const allRatings = getAllRatings();
         const pokemonRating = allRatings[draggedPokemonId.toString()];
+        
+        console.log(`🐛 [REORDER_DEBUG] Pokemon rating from store: ${pokemonRating ? `mu=${pokemonRating.mu}, sigma=${pokemonRating.sigma}` : 'NOT FOUND'}`);
         
         if (!pokemonRating) {
           console.error(`🎯 [ENHANCED_MANUAL_REORDER] ❌ No rating found for Pokemon ${draggedPokemonId}`);
@@ -123,6 +127,9 @@ export const useEnhancedManualReorder = (
         // Handle reordering existing Pokemon
         console.log(`🎯 [ENHANCED_MANUAL_REORDER] Reordering existing Pokemon`);
         
+        const pokemonToMove = workingRankings[sourceIndex];
+        console.log(`🐛 [REORDER_DEBUG] Pokemon to move: ${pokemonToMove?.name} (score: ${pokemonToMove?.score})`);
+        
         // Remove from source position
         const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
         console.log(`🎯 [ENHANCED_MANUAL_REORDER] Removed ${movedPokemon.name} from position ${sourceIndex}`);
@@ -136,12 +143,17 @@ export const useEnhancedManualReorder = (
       const higherNeighbor = destinationIndex > 0 ? workingRankings[destinationIndex - 1] : undefined;
       const lowerNeighbor = destinationIndex < workingRankings.length - 1 ? workingRankings[destinationIndex + 1] : undefined;
       
+      console.log(`🐛 [REORDER_DEBUG] Neighbors for score calculation:`);
+      console.log(`🐛 [REORDER_DEBUG] Higher neighbor: ${higherNeighbor ? `${higherNeighbor.name} (score: ${higherNeighbor.score})` : 'NONE'}`);
+      console.log(`🐛 [REORDER_DEBUG] Lower neighbor: ${lowerNeighbor ? `${lowerNeighbor.name} (score: ${lowerNeighbor.score})` : 'NONE'}`);
+      
       const targetScore = calculateScoreBetweenNeighbors(
         higherNeighbor?.score,
         lowerNeighbor?.score
       );
       
       console.log(`🎯 [ENHANCED_MANUAL_REORDER] Setting exact score ${targetScore} for Pokemon ${draggedPokemonId}`);
+      console.log(`🐛 [REORDER_DEBUG] ABOUT TO CALL forceScoreBetweenNeighbors`);
       
       // Force the score in TrueSkill store
       forceScoreBetweenNeighbors(
@@ -150,8 +162,11 @@ export const useEnhancedManualReorder = (
         lowerNeighbor?.id.toString()
       );
 
+      console.log(`🐛 [REORDER_DEBUG] forceScoreBetweenNeighbors COMPLETED`);
+
       // Update the score in the working rankings
       workingRankings[destinationIndex].score = targetScore;
+      console.log(`🐛 [REORDER_DEBUG] Updated working rankings with new score: ${targetScore}`);
 
       // Update ranks for all Pokemon (add rank property here for display purposes)
       const finalRankingsWithRanks = workingRankings.map((pokemon, index) => ({
@@ -161,9 +176,19 @@ export const useEnhancedManualReorder = (
 
       console.log(`🎯 [ENHANCED_MANUAL_REORDER] ✅ Manual reorder completed successfully`);
       console.log(`🎯 [ENHANCED_MANUAL_REORDER] Final rankings length: ${finalRankingsWithRanks.length}`);
+      console.log(`🐛 [REORDER_DEBUG] Pokemon ${draggedPokemonId} final score in rankings: ${finalRankingsWithRanks[destinationIndex]?.score}`);
       
       // Update the rankings
+      console.log(`🐛 [REORDER_DEBUG] CALLING onRankingsUpdate with new rankings`);
       onRankingsUpdate(finalRankingsWithRanks);
+      console.log(`🐛 [REORDER_DEBUG] onRankingsUpdate COMPLETED`);
+      
+      // Verify the score persisted after a delay
+      setTimeout(() => {
+        const allRatingsAfter = getAllRatings();
+        const finalRating = allRatingsAfter[draggedPokemonId.toString()];
+        console.log(`🐛 [REORDER_DEBUG] VERIFICATION: Score in TrueSkill store after delay: ${finalRating?.mu || 'NOT FOUND'}`);
+      }, 200);
       
     } catch (error) {
       console.error(`🎯 [ENHANCED_MANUAL_REORDER] ❌ Error during manual reorder:`, error);

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
@@ -16,7 +17,7 @@ export const useEnhancedRankingDragDrop = (
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
   const [sourceCardProps, setSourceCardProps] = useState<any>(null);
-  const { updateRating } = useTrueSkillStore();
+  const { updateRating, getAllRatings } = useTrueSkillStore();
 
   // Optimized sensors for enhanced ranking drag drop
   const sensors = useSensors(
@@ -39,7 +40,10 @@ export const useEnhancedRankingDragDrop = (
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    console.log(`🐛 [DRAG_DEBUG] ===== DRAG START =====`);
     const activeId = event.active.id.toString();
+    console.log(`🐛 [DRAG_DEBUG] Active ID: ${activeId}`);
+    
     let draggedPokemon = null;
     let sourceInfo = { fromAvailable: false, isRanked: false };
     let cardProps = null;
@@ -48,6 +52,8 @@ export const useEnhancedRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
       sourceInfo = { fromAvailable: true, isRanked: draggedPokemon?.isRanked || false };
+      
+      console.log(`🐛 [DRAG_DEBUG] Dragging from available - Pokemon ${pokemonId}, isRanked: ${draggedPokemon?.isRanked}`);
       
       const index = enhancedAvailablePokemon.findIndex(p => p.id === pokemonId);
       cardProps = {
@@ -64,6 +70,11 @@ export const useEnhancedRankingDragDrop = (
       draggedPokemon = localRankings.find(p => p.id === pokemonId);
       sourceInfo = { fromAvailable: false, isRanked: true };
       
+      console.log(`🐛 [DRAG_DEBUG] Dragging from rankings - Pokemon ${pokemonId}`);
+      if (draggedPokemon) {
+        console.log(`🐛 [DRAG_DEBUG] Current score before drag: ${draggedPokemon.score}`);
+      }
+      
       const index = localRankings.findIndex(p => p.id === pokemonId);
       cardProps = {
         pokemon: draggedPokemon,
@@ -79,9 +90,13 @@ export const useEnhancedRankingDragDrop = (
     setActiveDraggedPokemon(draggedPokemon);
     setDragSourceInfo(sourceInfo);
     setSourceCardProps(cardProps);
+    
+    console.log(`🐛 [DRAG_DEBUG] Drag start complete for Pokemon: ${draggedPokemon?.name || 'Unknown'}`);
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    console.log(`🐛 [DRAG_DEBUG] ===== DRAG END =====`);
+    
     setActiveDraggedPokemon(null);
     setDragSourceInfo(null);
     setSourceCardProps(null);
@@ -89,15 +104,19 @@ export const useEnhancedRankingDragDrop = (
     const { active, over } = event;
     
     if (!over) {
+      console.log(`🐛 [DRAG_DEBUG] No drop target - exiting`);
       return;
     }
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
+    
+    console.log(`🐛 [DRAG_DEBUG] Active ID: ${activeId}, Over ID: ${overId}`);
 
     // Handle drag from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
+      console.log(`🐛 [DRAG_DEBUG] Processing available Pokemon ${pokemonId} drop`);
       
       // Check for valid drop targets
       const isValidDropTarget = (
@@ -112,10 +131,13 @@ export const useEnhancedRankingDragDrop = (
          localRankings.some(p => p.id === parseInt(overId)))
       );
       
+      console.log(`🐛 [DRAG_DEBUG] Valid drop target: ${isValidDropTarget}`);
+      
       if (isValidDropTarget) {
         const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
         if (pokemon) {
           const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
+          console.log(`🐛 [DRAG_DEBUG] Pokemon ${pokemonId} already in rankings: ${isActuallyInRankings}`);
           
           // Determine insertion position
           let insertionPosition = localRankings.length;
@@ -128,11 +150,26 @@ export const useEnhancedRankingDragDrop = (
               insertionPosition = targetIndex;
             }
           }
+          
+          console.log(`🐛 [DRAG_DEBUG] Insertion position: ${insertionPosition}`);
 
           if (isActuallyInRankings) {
             // CASE A: Pokemon is already in rankings - this is a REORDER
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
+            console.log(`🐛 [DRAG_DEBUG] REORDER: Moving from position ${currentIndex} to ${insertionPosition}`);
+            console.log(`🐛 [DRAG_DEBUG] Current score before reorder: ${pokemon.score}`);
+            
             handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
+            
+            // Log score after a delay to see if it changed
+            setTimeout(() => {
+              const allRatings = getAllRatings();
+              const updatedRating = allRatings[pokemonId.toString()];
+              console.log(`🐛 [DRAG_DEBUG] Score after reorder (delay): ${updatedRating?.mu || 'Not found'}`);
+              
+              const updatedPokemonInRankings = localRankings.find(p => p.id === pokemonId);
+              console.log(`🐛 [DRAG_DEBUG] Pokemon in local rankings after reorder: score=${updatedPokemonInRankings?.score || 'Not found'}`);
+            }, 100);
             
             toast({
               title: "Pokemon Reordered",
@@ -142,16 +179,28 @@ export const useEnhancedRankingDragDrop = (
             
           } else {
             // CASE B: Pokemon is not in rankings - add as new
+            console.log(`🐛 [DRAG_DEBUG] ADD NEW: Adding Pokemon ${pokemonId} at position ${insertionPosition}`);
+            
             // Add default rating to TrueSkill store if it doesn't exist
             const defaultRating = new Rating(25.0, 8.333);
             updateRating(pokemonId.toString(), defaultRating);
+            
+            console.log(`🐛 [DRAG_DEBUG] Added default rating: mu=${defaultRating.mu}, sigma=${defaultRating.sigma}`);
             
             // Remove from available list BEFORE calling the reorder to prevent bounce-back
             setAvailablePokemon(prev => prev.filter(p => p.id !== pokemonId));
             
             // Use a small delay to ensure the removal is processed before the reorder
             setTimeout(() => {
+              console.log(`🐛 [DRAG_DEBUG] Calling handleEnhancedManualReorder for new Pokemon`);
               handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
+              
+              // Log the result after another delay
+              setTimeout(() => {
+                const allRatings = getAllRatings();
+                const newRating = allRatings[pokemonId.toString()];
+                console.log(`🐛 [DRAG_DEBUG] New Pokemon rating after add: ${newRating?.mu || 'Not found'}`);
+              }, 100);
             }, 10);
             
             toast({
@@ -172,20 +221,37 @@ export const useEnhancedRankingDragDrop = (
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
       
+      console.log(`🐛 [DRAG_DEBUG] RANKING REORDER: ${activePokemonId} to ${overPokemonId} position`);
+      
       const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
+      console.log(`🐛 [DRAG_DEBUG] Old index: ${oldIndex}, New index: ${newIndex}`);
+      
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const draggedPokemon = localRankings[oldIndex];
+        console.log(`🐛 [DRAG_DEBUG] Score before ranking reorder: ${draggedPokemon.score}`);
+        
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        
+        // Log result after delay
+        setTimeout(() => {
+          const allRatings = getAllRatings();
+          const updatedRating = allRatings[activePokemonId.toString()];
+          console.log(`🐛 [DRAG_DEBUG] Score after ranking reorder (delay): ${updatedRating?.mu || 'Not found'}`);
+        }, 100);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon, getAllRatings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
     destinationIndex: number
   ) => {
+    console.log(`🐛 [DRAG_DEBUG] ===== MANUAL REORDER CALLED =====`);
+    console.log(`🐛 [DRAG_DEBUG] Pokemon ${draggedPokemonId}: ${sourceIndex} → ${destinationIndex}`);
+    
     handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
   }, [handleEnhancedManualReorder]);
 

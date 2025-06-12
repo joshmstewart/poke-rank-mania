@@ -110,6 +110,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       updateRating: (pokemonId: string, rating: Rating) => {
         console.log(`🚀 [PERF_SYNC] UpdateRating called for Pokemon ${pokemonId} - mu: ${rating.mu.toFixed(2)}`);
+        console.log(`🐛 [STORE_DEBUG] BEFORE updateRating - existing rating: ${JSON.stringify(get().ratings[pokemonId])}`);
+        
         set((state) => ({
           ratings: {
             ...state.ratings,
@@ -126,6 +128,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
         }));
         
+        console.log(`🐛 [STORE_DEBUG] AFTER updateRating - new rating: ${JSON.stringify(get().ratings[pokemonId])}`);
         console.log(`🚀 [PERF_SYNC] Triggering batched sync for rating update`);
         get().batchedSync();
       },
@@ -196,40 +199,66 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
         console.log(`🚀 [PERF_SYNC] ForceScoreBetweenNeighbors called for Pokemon ${pokemonId} - MANUAL DRAG OPERATION`);
+        console.log(`🐛 [STORE_DEBUG] ===== FORCE SCORE DEBUG START =====`);
+        
         const state = get();
+        
+        console.log(`🐛 [STORE_DEBUG] Current rating BEFORE force: ${JSON.stringify(state.ratings[pokemonId])}`);
+        
         const higherNeighborScore = higherNeighborId ? state.ratings[higherNeighborId]?.mu : undefined;
         const lowerNeighborScore = lowerNeighborId ? state.ratings[lowerNeighborId]?.mu : undefined;
+        
+        console.log(`🐛 [STORE_DEBUG] Higher neighbor ${higherNeighborId} score: ${higherNeighborScore}`);
+        console.log(`🐛 [STORE_DEBUG] Lower neighbor ${lowerNeighborId} score: ${lowerNeighborScore}`);
         
         let targetScore: number;
         
         if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
           targetScore = (higherNeighborScore + lowerNeighborScore) / 2;
+          console.log(`🐛 [STORE_DEBUG] Calculated midpoint score: ${targetScore}`);
         } else if (higherNeighborScore !== undefined) {
           targetScore = higherNeighborScore + 1.0;
+          console.log(`🐛 [STORE_DEBUG] Calculated above highest score: ${targetScore}`);
         } else if (lowerNeighborScore !== undefined) {
           targetScore = lowerNeighborScore - 1.0;
+          console.log(`🐛 [STORE_DEBUG] Calculated below lowest score: ${targetScore}`);
         } else {
           targetScore = 25.0; // Default TrueSkill rating
+          console.log(`🐛 [STORE_DEBUG] Using default score: ${targetScore}`);
         }
         
         console.log(`🚀 [PERF_SYNC] Setting manual score for ${pokemonId}: ${targetScore.toFixed(2)}`);
         
         const newRating = new Rating(targetScore, 8.333); // Use default sigma
-        set((state) => ({
-          ratings: {
+        
+        console.log(`🐛 [STORE_DEBUG] ABOUT TO SET STATE with new rating: mu=${newRating.mu}, sigma=${newRating.sigma}`);
+        
+        set((state) => {
+          const updatedRatings = {
             ...state.ratings,
             [pokemonId]: {
               mu: newRating.mu,
               sigma: newRating.sigma,
               battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1
             }
-          },
-          localStateVersion: state.localStateVersion + 1,
-          changeTracker: {
-            ...state.changeTracker,
-            changedRatings: new Set([...state.changeTracker.changedRatings, pokemonId])
-          }
-        }));
+          };
+          
+          console.log(`🐛 [STORE_DEBUG] STATE UPDATE: Pokemon ${pokemonId} rating set to: ${JSON.stringify(updatedRatings[pokemonId])}`);
+          
+          return {
+            ratings: updatedRatings,
+            localStateVersion: state.localStateVersion + 1,
+            changeTracker: {
+              ...state.changeTracker,
+              changedRatings: new Set([...state.changeTracker.changedRatings, pokemonId])
+            }
+          };
+        });
+        
+        // Verify the update happened
+        const updatedState = get();
+        console.log(`🐛 [STORE_DEBUG] VERIFICATION: Pokemon ${pokemonId} rating after set: ${JSON.stringify(updatedState.ratings[pokemonId])}`);
+        console.log(`🐛 [STORE_DEBUG] ===== FORCE SCORE DEBUG END =====`);
         
         console.log(`🚀 [PERF_SYNC] Triggering batched sync for manual drag`);
         get().batchedSync();
