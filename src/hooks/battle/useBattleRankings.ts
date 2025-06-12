@@ -13,7 +13,8 @@ export const useBattleRankings = () => {
     console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== GENERATING MILESTONE RANKINGS =====`);
     console.log(`📊 [BATTLE_RANKINGS_FIXED] Battle history length: ${battleHistory?.length || 0}`);
     
-    // Get all TrueSkill ratings from the centralized store
+    // CRITICAL FIX: Always use TrueSkill store data instead of battle history
+    // This ensures milestone rankings match Manual mode exactly
     const allRatings = getAllRatings();
     const ratedPokemonIds = Object.keys(allRatings).map(Number);
     

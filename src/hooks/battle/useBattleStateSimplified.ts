@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -38,8 +37,8 @@ export const useBattleStateSimplified = (
     }));
   });
   
-  // TrueSkill integration - CRITICAL FIX: Get the increment function
-  const { totalBattles, incrementTotalBattles } = useTrueSkillStore();
+  // TrueSkill integration - CRITICAL FIX: Get the increment function AND smartSync for persistence
+  const { totalBattles, incrementTotalBattles, smartSync } = useTrueSkillStore();
   
   // Refinement queue integration
   const refinementQueue = useSharedRefinementQueue();
@@ -142,7 +141,7 @@ export const useBattleStateSimplified = (
     }
   }, [allPokemon.length, currentBattle.length, startNewBattle]);
   
-  // CRITICAL FIX: Process battle results and increment counter + pop refinement battle + check for milestones
+  // CRITICAL FIX: Process battle results with proper persistence
   const processBattleResult = useCallback((selectedPokemonIds: number[]) => {
     console.log(`🏆 [BATTLE_RESULT_FIX] Processing battle result with selected Pokemon:`, selectedPokemonIds);
     
@@ -185,12 +184,18 @@ export const useBattleStateSimplified = (
           setShowingMilestone(true);
         }
         
-        // CRITICAL FIX: Pop refinement battle if this was a starred Pokemon battle
+        // CRITICAL FIX: Properly handle refinement battle completion with persistence
         if (refinementQueue.hasRefinementBattles) {
           const nextRefinement = refinementQueue.getNextRefinementBattle();
           if (nextRefinement && currentBattle.some(p => p.id === nextRefinement.primaryPokemonId)) {
             console.log(`🎯 [REFINEMENT_COMPLETION] This was a starred Pokemon battle, removing from queue`);
             refinementQueue.popRefinementBattle();
+            
+            // CRITICAL FIX: Trigger cloud sync to persist the removal
+            console.log(`🎯 [REFINEMENT_COMPLETION] Triggering cloud sync to persist pending Pokemon removal`);
+            smartSync().catch(error => {
+              console.error(`🎯 [REFINEMENT_COMPLETION] Failed to sync pending Pokemon removal:`, error);
+            });
           }
         }
         
@@ -234,12 +239,27 @@ export const useBattleStateSimplified = (
           setShowingMilestone(true);
         }
         
+        // CRITICAL FIX: Handle refinement battle completion with persistence for triplets too
+        if (refinementQueue.hasRefinementBattles) {
+          const nextRefinement = refinementQueue.getNextRefinementBattle();
+          if (nextRefinement && currentBattle.some(p => p.id === nextRefinement.primaryPokemonId)) {
+            console.log(`🎯 [REFINEMENT_COMPLETION] This was a starred Pokemon battle, removing from queue`);
+            refinementQueue.popRefinementBattle();
+            
+            // CRITICAL FIX: Trigger cloud sync to persist the removal
+            console.log(`🎯 [REFINEMENT_COMPLETION] Triggering cloud sync to persist pending Pokemon removal`);
+            smartSync().catch(error => {
+              console.error(`🎯 [REFINEMENT_COMPLETION] Failed to sync pending Pokemon removal:`, error);
+            });
+          }
+        }
+        
         return battle;
       }
     }
     
     return null;
-  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue, totalBattles, checkForMilestone, getCurrentRankings]);
+  }, [currentBattle, battleType, selectedGeneration, incrementTotalBattles, refinementQueue, totalBattles, checkForMilestone, getCurrentRankings, smartSync]);
   
   // Optimized handlers - no delays
   const handlePokemonSelect = useCallback((pokemonId: number) => {
