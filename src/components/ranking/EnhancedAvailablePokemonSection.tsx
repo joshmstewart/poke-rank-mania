@@ -1,110 +1,31 @@
-
-import React, { useState, useEffect } from "react";
-import { LoadingType } from "@/hooks/pokemon/types";
 import { usePokemonGroupingMemo } from "@/hooks/pokemon/usePokemonGroupingMemo";
-import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
-import { useAvailablePokemonGenerations } from "@/hooks/pokemon/useAvailablePokemonGenerations";
-import { useSearchMatches } from "@/hooks/pokemon/useSearchMatches";
-import { AvailablePokemonHeader } from "./AvailablePokemonHeader";
-import { AvailablePokemonControls } from "./AvailablePokemonControls";
-import { EnhancedAvailablePokemonContent } from "./EnhancedAvailablePokemonContent";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import EnhancedAvailablePokemonContent from "./EnhancedAvailablePokemonContent";
+import React from 'react';
 
 interface EnhancedAvailablePokemonSectionProps {
-  enhancedAvailablePokemon: any[];
-  isLoading: boolean;
-  selectedGeneration: number;
-  loadingType: LoadingType;
-  currentPage: number;
-  totalPages: number;
-  loadingRef: React.RefObject<HTMLDivElement>;
-  handlePageChange: (page: number) => void;
-  getPageRange: () => number[];
-  allRankedPokemon?: any[];
+  availablePokemon: Pokemon[];
+  rankedPokemon: (Pokemon | RankedPokemon)[];
 }
 
-export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionProps> = ({
-  enhancedAvailablePokemon,
-  isLoading,
-  selectedGeneration,
-  loadingType,
-  currentPage,
-  totalPages,
-  loadingRef,
-  handlePageChange,
-  getPageRange,
-  allRankedPokemon = []
+const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionProps> = ({
+  availablePokemon,
+  rankedPokemon,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-
-  // Calculate unranked Pokemon count
-  const unrankedCount = enhancedAvailablePokemon.filter(p => !p.isRanked).length;
-
-  // Get all possible generations from the available Pokemon
-  const availableGenerations = useAvailablePokemonGenerations(enhancedAvailablePokemon);
-
-  const { expandedGenerations, toggleGeneration, isGenerationExpanded, expandAll, collapseAll, expandGenerations } = useGenerationExpansion();
-
-  // Get generations that have search matches
-  const generationsWithMatches = useSearchMatches(enhancedAvailablePokemon, searchTerm);
-
-  // Auto-expand generations with search matches
-  useEffect(() => {
-    if (searchTerm.trim() && generationsWithMatches.length > 0) {
-      expandGenerations(generationsWithMatches);
-    }
-  }, [searchTerm, generationsWithMatches, expandGenerations]);
-
-  // Create a modified isGenerationExpanded function that always shows expanded when searching
-  const isGenerationExpandedForDisplay = (genId: number) => {
-    if (searchTerm.trim() && generationsWithMatches.includes(genId)) {
-      return true;
-    }
-    return isGenerationExpanded(genId);
-  };
-
-  // FIXED: Call the hook at the top level of the component, not inside useMemo
-  const { items, showGenerationHeaders } = usePokemonGroupingMemo({
-    pokemon: enhancedAvailablePokemon,
-    searchTerm,
-    isRankingArea: false,
-    isGenerationExpanded: isGenerationExpandedForDisplay
-  });
-
-  const allExpanded = expandedGenerations.size === availableGenerations.length && availableGenerations.length > 0;
+  // CORRECTED: Call the hook at the top level of the component.
+  const { items: groupedAvailablePokemon, showHeaders } = usePokemonGroupingMemo(
+    availablePokemon,
+    rankedPokemon.map(p => p.id)
+  );
 
   return (
-    <div className="flex flex-col h-full">
-      <AvailablePokemonHeader 
-        availablePokemonCount={enhancedAvailablePokemon.length}
-        unrankedCount={unrankedCount}
-      />
-      
-      <AvailablePokemonControls
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        allExpanded={allExpanded}
-        onExpandAll={() => expandAll(availableGenerations)}
-        onCollapseAll={collapseAll}
-      />
-
+    <div className="h-full flex flex-col">
       <EnhancedAvailablePokemonContent
-        items={items}
-        showGenerationHeaders={showGenerationHeaders}
-        viewMode={viewMode}
-        isGenerationExpanded={isGenerationExpandedForDisplay}
-        onToggleGeneration={toggleGeneration}
-        isLoading={isLoading}
-        loadingRef={loadingRef}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        allRankedPokemon={allRankedPokemon}
+        groupedPokemon={groupedAvailablePokemon}
+        showHeaders={showHeaders}
       />
     </div>
   );
 };
 
-// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
 export default React.memo(EnhancedAvailablePokemonSection);
