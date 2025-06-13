@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
+import { usePokemonLoader } from '@/hooks/battle/usePokemonLoader';
 
 interface SplashLoaderState {
   isLoading: boolean;
@@ -16,43 +17,64 @@ export const useSplashLoader = () => {
   });
   
   const { loading } = useAuth();
+  const { allPokemon, isLoading: pokemonLoading, loadPokemon } = usePokemonLoader();
   const startTime = useRef(Date.now());
-  const minDisplayTime = 2000; // Reduced to 2 seconds for faster loading
-  const progressTimerRef = useRef<NodeJS.Timeout>();
+  const minDisplayTime = 2000;
+  const pokemonLoadStarted = useRef(false);
 
   useEffect(() => {
-    // SIMPLIFIED SPLASH: Just show a nice loading sequence without depending on Pokemon data
     const runSplashSequence = async () => {
-      console.log('🔄 [SPLASH_LOADER] Starting simplified splash sequence');
+      console.log('🔄 [SPLASH_LOADER] Starting splash sequence with Pokemon loading');
       
       // Phase 1: Initial setup
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Loading authentication...', 
-        progress: 20 
+        progress: 10 
       }));
       
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Phase 2: Auth check
+      // Phase 2: Start Pokemon loading
       setState(prev => ({ 
         ...prev, 
-        loadingStatus: 'Preparing application...', 
-        progress: 50 
+        loadingStatus: 'Loading Pokemon dataset...', 
+        progress: 30 
       }));
       
-      await new Promise(resolve => setTimeout(resolve, 400));
+      // Start Pokemon loading if not already started
+      if (!pokemonLoadStarted.current && allPokemon.length === 0) {
+        pokemonLoadStarted.current = true;
+        console.log('🔄 [SPLASH_LOADER] Starting Pokemon load during splash');
+        try {
+          await loadPokemon(0, true);
+        } catch (error) {
+          console.error('🔄 [SPLASH_LOADER] Pokemon load failed during splash:', error);
+        }
+      }
       
-      // Phase 3: Setup
+      // Phase 3: Monitor Pokemon loading progress
       setState(prev => ({ 
         ...prev, 
-        loadingStatus: 'Setting up battle system...', 
-        progress: 80 
+        loadingStatus: 'Preparing complete Pokemon dataset...', 
+        progress: 60 
       }));
       
-      await new Promise(resolve => setTimeout(resolve, 400));
+      // Wait for Pokemon to finish loading
+      while (pokemonLoading && allPokemon.length === 0) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       
-      // Phase 4: Complete
+      // Phase 4: Final setup
+      setState(prev => ({ 
+        ...prev, 
+        loadingStatus: 'Finalizing setup...', 
+        progress: 90 
+      }));
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Phase 5: Complete
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Welcome to PokeRank Mania!', 
@@ -62,11 +84,20 @@ export const useSplashLoader = () => {
       // Wait for minimum display time
       await waitForMinimumTime();
       
-      console.log('✅ [SPLASH_LOADER] Splash sequence complete');
-      setState(prev => ({ 
-        ...prev, 
-        isLoading: false 
-      }));
+      // Only finish when we have Pokemon data
+      if (allPokemon.length > 0) {
+        console.log('✅ [SPLASH_LOADER] Splash sequence complete with Pokemon loaded');
+        setState(prev => ({ 
+          ...prev, 
+          isLoading: false 
+        }));
+      } else {
+        console.log('⚠️ [SPLASH_LOADER] No Pokemon loaded, finishing splash anyway');
+        setState(prev => ({ 
+          ...prev, 
+          isLoading: false 
+        }));
+      }
     };
 
     const waitForMinimumTime = () => {
@@ -87,14 +118,7 @@ export const useSplashLoader = () => {
     if (!loading) {
       runSplashSequence();
     }
-
-    // Cleanup
-    return () => {
-      if (progressTimerRef.current) {
-        clearTimeout(progressTimerRef.current);
-      }
-    };
-  }, [loading]);
+  }, [loading, allPokemon.length, pokemonLoading, loadPokemon]);
 
   return state;
 };
