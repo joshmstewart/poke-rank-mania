@@ -37,9 +37,6 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
 
-  console.log(`🔄🔄🔄 [ENHANCED_AVAILABLE_SECTION] Rendering with ${enhancedAvailablePokemon.length} available Pokemon`);
-  console.log(`🔄🔄🔄 [ENHANCED_AVAILABLE_SECTION] Received ${allRankedPokemon.length} ranked Pokemon for context`);
-
   // Calculate unranked Pokemon count
   const unrankedCount = enhancedAvailablePokemon.filter(p => !p.isRanked).length;
 
@@ -108,3 +105,6 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     </div>
   );
 };
+
+// PERFORMANCE FIX: Wrap in React.memo to prevent unnecessary re-renders
+export default React.memo(EnhancedAvailablePokemonSection);
