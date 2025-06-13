@@ -10,15 +10,13 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ progress }) 
   const clampedProgress = Math.max(0, Math.min(100, progress));
   
   return (
-    <div className="space-y-4">
-      {/* Progress Bar */}
+    <div className="space-y-4 flex flex-col items-center">
+      {/* Progress Bar - Centered Container */}
       <div className="w-64 h-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 overflow-hidden">
         <div 
           className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-300 ease-out"
           style={{ 
-            width: `${clampedProgress}%`,
-            transform: 'translateX(0)', // Ensure no transform offset
-            transformOrigin: 'left' // Ensure it grows from the left
+            width: `${clampedProgress}%`
           }}
         />
       </div>
