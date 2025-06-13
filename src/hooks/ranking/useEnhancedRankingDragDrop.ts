@@ -12,9 +12,16 @@ export const useEnhancedRankingDragDrop = (
   triggerReRanking: (pokemonId: number) => Promise<void>,
   updateLocalRankings: (rankings: any[]) => void
 ) => {
-  const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
-  const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
-  const [sourceCardProps, setSourceCardProps] = useState<any>(null);
+  // Combine drag state into a single object to reduce re-renders
+  const [dragState, setDragState] = useState<{
+    activePokemon: any;
+    sourceInfo: { fromAvailable: boolean; isRanked: boolean } | null;
+    cardProps: any;
+  }>({
+    activePokemon: null,
+    sourceInfo: null,
+    cardProps: null,
+  });
 
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
@@ -33,7 +40,7 @@ export const useEnhancedRankingDragDrop = (
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 50,
+        delay: 20, // Reduced from 50ms for better touch responsiveness
         tolerance: 5,
       },
     }),
@@ -80,15 +87,16 @@ export const useEnhancedRankingDragDrop = (
       };
     }
     
-    setActiveDraggedPokemon(draggedPokemon);
-    setDragSourceInfo(sourceInfo);
-    setSourceCardProps(cardProps);
+    // Set all drag state in a single call to reduce re-renders
+    setDragState({
+      activePokemon: draggedPokemon,
+      sourceInfo: sourceInfo,
+      cardProps: cardProps,
+    });
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
-    setActiveDraggedPokemon(null);
-    setDragSourceInfo(null);
-    setSourceCardProps(null);
+    setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     
     const { active, over } = event;
     
@@ -195,9 +203,9 @@ export const useEnhancedRankingDragDrop = (
 
   return {
     sensors,
-    activeDraggedPokemon,
-    dragSourceInfo,
-    sourceCardProps,
+    activeDraggedPokemon: dragState.activePokemon,
+    dragSourceInfo: dragState.sourceInfo,
+    sourceCardProps: dragState.cardProps,
     handleDragStart,
     handleDragEnd,
     handleManualReorder
