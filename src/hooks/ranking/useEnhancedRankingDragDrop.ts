@@ -1,9 +1,7 @@
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { Rating } from "ts-trueskill";
-import { toast } from "@/hooks/use-toast";
+import { usePokemonMovement } from './usePokemonMovement';
 
 export const useEnhancedRankingDragDrop = (
   enhancedAvailablePokemon: any[],
@@ -16,7 +14,12 @@ export const useEnhancedRankingDragDrop = (
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
   const [sourceCardProps, setSourceCardProps] = useState<any>(null);
-  const { updateRating } = useTrueSkillStore();
+
+  // Use the atomic Pokemon movement hook
+  const { moveFromAvailableToRankings } = usePokemonMovement(
+    setAvailablePokemon,
+    handleEnhancedManualReorder
+  );
 
   // Optimized sensors for enhanced ranking drag drop
   const sensors = useSensors(
@@ -133,32 +136,10 @@ export const useEnhancedRankingDragDrop = (
             // CASE A: Pokemon is already in rankings - this is a REORDER
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
             handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
-            
-            toast({
-              title: "Pokemon Reordered",
-              description: `${pokemon.name} moved to position ${insertionPosition + 1}!`,
-              duration: 3000
-            });
-            
           } else {
-            // CASE B: Pokemon is not in rankings - add as new
-            // Add default rating to TrueSkill store if it doesn't exist
-            const defaultRating = new Rating(25.0, 8.333);
-            updateRating(pokemonId.toString(), defaultRating);
-            
-            // Remove from available list BEFORE calling the reorder to prevent bounce-back
-            setAvailablePokemon(prev => prev.filter(p => p.id !== pokemonId));
-            
-            // Use a small delay to ensure the removal is processed before the reorder
-            setTimeout(() => {
-              handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
-            }, 10);
-            
-            toast({
-                title: "Pokemon Added",
-                description: `${pokemon.name} has been added to rankings at position ${insertionPosition + 1}!`,
-                duration: 3000
-            });
+            // CASE B: Pokemon is not in rankings - use atomic move operation
+            console.log(`🔄 [DRAG_DROP] Using atomic move for Pokemon ${pokemonId}`);
+            await moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
           }
           
           return;
@@ -179,7 +160,7 @@ export const useEnhancedRankingDragDrop = (
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
