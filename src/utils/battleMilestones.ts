@@ -40,3 +40,23 @@ export const getMilestoneProgress = (battleCount: number): { current: number; ne
     progress: Math.min(100, Math.max(0, progress))
   };
 };
+
+/**
+ * Generates a dynamic list of milestones based on the 25-battle interval.
+ * @param battlesCompleted The number of battles already completed.
+ * @param interval The interval for milestones (default: 25).
+ * @param lookahead How many upcoming milestones to generate (default: 40).
+ * @returns An array of milestone numbers.
+ */
+export const generateMilestones = (battlesCompleted: number, interval = 25, lookahead = 40): number[] => {
+  const milestones: number[] = [];
+  
+  // Generate milestones from the interval up to battlesCompleted + (lookahead * interval)
+  const maxMilestone = battlesCompleted + (lookahead * interval);
+  
+  for (let i = interval; i <= maxMilestone; i += interval) {
+    milestones.push(i);
+  }
+  
+  return milestones;
+};

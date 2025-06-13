@@ -2,14 +2,17 @@
 import { useBattleProgressionMilestone } from "./useBattleProgressionMilestone";
 import { useBattleProgressionIncrement } from "./useBattleProgressionIncrement";
 import { useBattleProgressionReset } from "./useBattleProgressionReset";
+import { generateMilestones } from "@/utils/battleMilestones";
 
 export const useBattleProgression = (
   battlesCompleted: number,
   setBattlesCompleted: React.Dispatch<React.SetStateAction<number>>,
   setShowingMilestone: (value: boolean) => void,
-  milestones: number[],
   generateRankings: (results: any[]) => void
 ) => {
+  // Generate dynamic milestones based on current battle count
+  const milestones = generateMilestones(battlesCompleted);
+
   const {
     checkMilestone,
     isBattleGenerationBlocked,
