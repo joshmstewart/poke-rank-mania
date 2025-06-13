@@ -15,7 +15,7 @@ export const useSplashLoader = () => {
     progress: 0
   });
   
-  const { isHydrated } = useAuth();
+  const { loading } = useAuth();
   const startTime = useRef(Date.now());
   const minDisplayTime = 2500; // Minimum 2.5 seconds for visual impact
 
@@ -76,8 +76,11 @@ export const useSplashLoader = () => {
       }));
     };
 
-    updateProgress();
-  }, [isHydrated]);
+    // Wait for auth to finish loading before starting the splash sequence
+    if (!loading) {
+      updateProgress();
+    }
+  }, [loading]);
 
   return state;
 };
