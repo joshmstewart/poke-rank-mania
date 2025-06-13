@@ -1,22 +1,8 @@
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { usePokemonMovement } from './usePokemonMovement';
-
-// A simple debounce helper function
-function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-
-  const debounced = (...args: Parameters<F>) => {
-    if (timeout !== null) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(() => func(...args), waitFor);
-  };
-
-  return debounced;
-}
 
 export const useEnhancedRankingDragDrop = (
   enhancedAvailablePokemon: any[],
@@ -99,12 +85,6 @@ export const useEnhancedRankingDragDrop = (
     setSourceCardProps(cardProps);
   }, [enhancedAvailablePokemon, localRankings]);
 
-  // Create a debounced version of the reorder handler
-  const debouncedHandleEnhancedManualReorder = useMemo(
-    () => debounce(handleEnhancedManualReorder, 500),
-    [handleEnhancedManualReorder]
-  );
-
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     setActiveDraggedPokemon(null);
     setDragSourceInfo(null);
@@ -157,8 +137,10 @@ export const useEnhancedRankingDragDrop = (
             const newRankings = arrayMove(localRankings, currentIndex, insertionPosition);
             updateLocalRankings(newRankings);
             
-            // DEBOUNCED CALCULATION: Update TrueSkill in background
-            debouncedHandleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
+            // ASYNCHRONOUS CALCULATION: Update TrueSkill in background
+            setTimeout(() => {
+              handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
+            }, 0);
           } else {
             // OPTIMISTIC UI UPDATE: Add to rankings immediately
             const newRankings = [...localRankings];
@@ -170,7 +152,9 @@ export const useEnhancedRankingDragDrop = (
             updateLocalRankings(newRankings);
             
             // BACKGROUND OPERATION: Move from available (includes TrueSkill update)
-            moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
+            setTimeout(() => {
+              moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
+            }, 0);
           }
           
           return;
@@ -192,18 +176,20 @@ export const useEnhancedRankingDragDrop = (
         const newOrder = arrayMove(localRankings, oldIndex, newIndex);
         updateLocalRankings(newOrder);
         
-        // DEBOUNCED CALCULATION: Update TrueSkill scores in background
-        debouncedHandleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        // ASYNCHRONOUS CALCULATION: Update TrueSkill scores in background
+        setTimeout(() => {
+          handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        }, 0);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, debouncedHandleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
     destinationIndex: number
   ) => {
-    // For manual reorder calls, use immediate update (no debounce)
+    // For manual reorder calls, use immediate update (no setTimeout)
     handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
   }, [handleEnhancedManualReorder]);
 
