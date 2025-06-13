@@ -1,0 +1,191 @@
+
+/* Liquid Glass Splash Styles */
+
+.logo-container {
+  animation: logoFloat 6s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(1deg); }
+}
+
+.glass-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+/* Liquid Blob Animations */
+.liquid-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  mix-blend-mode: screen;
+  animation: liquidFlow 20s ease-in-out infinite;
+}
+
+.liquid-blob-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.6), rgba(147, 51, 234, 0.4));
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.liquid-blob-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.5), rgba(236, 72, 153, 0.3));
+  top: 60%;
+  right: 10%;
+  animation-delay: -7s;
+}
+
+.liquid-blob-3 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.6), rgba(59, 130, 246, 0.4));
+  bottom: 20%;
+  left: 50%;
+  animation-delay: -14s;
+}
+
+@keyframes liquidFlow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translate(100px, -50px) scale(1.1) rotate(90deg);
+  }
+  50% {
+    transform: translate(-50px, 100px) scale(0.9) rotate(180deg);
+  }
+  75% {
+    transform: translate(-100px, -100px) scale(1.05) rotate(270deg);
+  }
+}
+
+/* Floating Particles */
+.particles-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: particleFloat linear infinite;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-10vh) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Grid Pattern */
+.grid-pattern {
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 30s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+/* Glass Text Effects */
+.glass-text-container {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .liquid-blob {
+    filter: blur(30px);
+  }
+  
+  .liquid-blob-1 {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .liquid-blob-2 {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .liquid-blob-3 {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .glass-card {
+    padding: 16px;
+  }
+}
+
+/* Performance Optimizations */
+.liquid-blob,
+.particle,
+.logo-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-blob,
+  .particle,
+  .logo-container,
+  .grid-pattern {
+    animation: none;
+  }
+  
+  .glass-card {
+    transform: none;
+  }
+}
