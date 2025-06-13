@@ -1,10 +1,11 @@
 
 import React from "react";
 import { useEnhancedManualReorder } from "@/hooks/battle/useEnhancedManualReorder";
-import { useEnhancedRankingDragDrop } from "@/hooks/ranking/useEnhancedRankingDragDrop";
 import { useReRankingTrigger } from "@/hooks/ranking/useReRankingTrigger";
 import { useRankingReset } from "./RankingResetHandler";
 import { EnhancedRankingLayout } from "./EnhancedRankingLayout";
+import { useOptimizedDragDrop } from "@/hooks/ranking/useOptimizedDragDrop";
+import { useBackgroundTrueSkillProcessor } from "@/hooks/ranking/useBackgroundTrueSkillProcessor";
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 
@@ -55,6 +56,9 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
   onGenerationChange,
   onReset
 }) => {
+  // Background processor for heavy TrueSkill operations
+  const { queueBackgroundOperation } = useBackgroundTrueSkillProcessor();
+
   // Enhanced manual reorder - always allow sorting
   const { handleEnhancedManualReorder } = useEnhancedManualReorder(
     localRankings,
@@ -71,27 +75,34 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     setRankedPokemon
   });
 
-  // Use the enhanced drag and drop functionality
+  // Use the optimized drag and drop with instant visual feedback
   const {
     sensors,
     activeDraggedPokemon,
     dragSourceInfo,
-    sourceCardProps,
     handleDragStart,
-    handleDragEnd,
-    handleManualReorder
-  } = useEnhancedRankingDragDrop(
+    handleDragEnd
+  } = useOptimizedDragDrop(
     enhancedAvailablePokemon,
     localRankings,
     setAvailablePokemon,
-    handleEnhancedManualReorder,
-    triggerReRanking,
-    updateLocalRankings
+    updateLocalRankings,
+    queueBackgroundOperation // Pass the background processor
   );
 
   // Handle local reordering (for DragDropGrid compatibility)
   const handleLocalReorder = (newRankings: any[]) => {
     updateLocalRankings(newRankings);
+  };
+
+  // Legacy manual reorder handler - now just queues background operation
+  const handleManualReorder = (
+    draggedPokemonId: number,
+    sourceIndex: number,
+    destinationIndex: number
+  ) => {
+    // Queue for background processing instead of blocking UI
+    queueBackgroundOperation(draggedPokemonId, sourceIndex, destinationIndex);
   };
 
   return (
@@ -109,7 +120,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
       battleType={battleType}
       activeDraggedPokemon={activeDraggedPokemon}
       dragSourceInfo={dragSourceInfo}
-      sourceCardProps={sourceCardProps}
+      sourceCardProps={null} // Simplified for performance
       filteredAvailablePokemon={filteredAvailablePokemon}
       sensors={sensors}
       handlePageChange={handlePageChange}
