@@ -2,15 +2,15 @@
 import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useGlobalPokemonCache } from "./useGlobalPokemonCache";
-import { useProgressivePokemonLoader } from "./useProgressivePokemonLoader";
-import { useSmartCache } from "./useSmartCache";
+import { usePokemonDataLoader } from "./usePokemonDataLoader";
+import { usePokemonFilterProcessor } from "./usePokemonFilterProcessor";
 
 export const usePokemonLoader = () => {
   const [isLoading, setIsLoading] = useState(false);
   const pokemonLockedRef = useRef(false);
   
   const {
-    allPokemon: globalAllPokemon,
+    allPokemon,
     rawUnfilteredPokemon,
     hasGlobalCache,
     getGlobalCache,
@@ -21,31 +21,22 @@ export const usePokemonLoader = () => {
     setLoadingState
   } = useGlobalPokemonCache();
 
-  const {
-    essentialPokemon,
-    allPokemon: progressiveAllPokemon,
-    isLoadingEssential,
-    startBackgroundLoading,
-    hasBackgroundData
-  } = useProgressivePokemonLoader();
+  const { loadPokemonData } = usePokemonDataLoader();
+  const { processFilteredPokemon } = usePokemonFilterProcessor();
 
-  const { getCachedData } = useSmartCache();
-
-  // Use progressive data or global cache data
-  const allPokemon = globalAllPokemon.length > 0 ? globalAllPokemon : progressiveAllPokemon;
-
-  const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
-    console.log(`🚀 [POKEMON_LOADER] Fast loading with progressive approach`);
+  // CRITICAL FIX: Ultra-deterministic singleton loading
+  const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
+    console.log(`🔒 [POKEMON_LOADER] ===== SINGLETON POKEMON LOAD ENTRY =====`);
     
     const loadingState = getLoadingState();
-    console.log(`🚀 [POKEMON_LOADER] Global loading lock: ${loadingState.isLoading}`);
-    console.log(`🚀 [POKEMON_LOADER] Global cache exists: ${hasGlobalCache()}`);
-    console.log(`🚀 [POKEMON_LOADER] Local Pokemon count: ${allPokemon.length}`);
+    console.log(`🔒 [POKEMON_LOADER] Global loading lock: ${loadingState.isLoading}`);
+    console.log(`🔒 [POKEMON_LOADER] Global cache exists: ${hasGlobalCache()}`);
+    console.log(`🔒 [POKEMON_LOADER] Local Pokemon count: ${allPokemon.length}`);
     
     // If we already have global cache, use it immediately
     if (hasGlobalCache()) {
       const cache = getGlobalCache();
-      console.log(`🚀 [POKEMON_LOADER] Using existing global cache: ${cache.filtered.length} filtered Pokemon`);
+      console.log(`🔒 [POKEMON_LOADER] Using existing global cache: ${cache.filtered.length} filtered, ${cache.raw.length} raw Pokemon`);
       
       useExistingCache();
       setIsLoading(false);
@@ -53,70 +44,66 @@ export const usePokemonLoader = () => {
       
       return cache.filtered;
     }
-
-    // Check smart cache for essential Pokemon
-    const cachedEssential = getCachedData('essential');
-    if (cachedEssential && cachedEssential.length > 0) {
-      console.log(`🚀 [POKEMON_LOADER] Using cached essential Pokemon: ${cachedEssential.length}`);
-      setGlobalCache(cachedEssential, cachedEssential);
-      setIsLoading(false);
-      pokemonLockedRef.current = true;
-      
-      // Start background loading for the rest
-      setTimeout(() => startBackgroundLoading(), 100);
-      
-      return cachedEssential;
+    
+    // If currently loading globally, wait for it
+    if (loadingState.isLoading && loadingState.promise) {
+      console.log(`🔒 [POKEMON_LOADER] Global load in progress - waiting...`);
+      try {
+        await loadingState.promise;
+        if (hasGlobalCache()) {
+          useExistingCache();
+          setIsLoading(false);
+          pokemonLockedRef.current = true;
+          const cache = getGlobalCache();
+          return cache.filtered;
+        }
+      } catch (error) {
+        console.error(`🔒 [POKEMON_LOADER] Error waiting for global load:`, error);
+        setLoadingState(false);
+      }
     }
     
     // If Pokemon are already locked locally, return existing data
     if (pokemonLockedRef.current && allPokemon.length > 0) {
-      console.log(`🚀 [POKEMON_LOADER] Pokemon already locked locally: ${allPokemon.length}`);
+      console.log(`🔒 [POKEMON_LOADER] Pokemon already locked locally: ${allPokemon.length}`);
       return allPokemon;
     }
 
-    // Use progressive loading approach - return essential Pokemon immediately
-    if (essentialPokemon.length > 0) {
-      console.log(`🚀 [POKEMON_LOADER] Using essential Pokemon from progressive loader: ${essentialPokemon.length}`);
-      setGlobalCache(essentialPokemon, essentialPokemon);
+    // Start new global load
+    console.log(`🔒 [POKEMON_LOADER] Starting new global load`);
+    setIsLoading(true);
+
+    try {
+      // Create the global load promise
+      const loadPromise = loadPokemonData(genId, fullRankingMode);
+      setLoadingState(true, loadPromise);
+      
+      const sortedPokemon = await loadPromise;
+      
+      // Store the raw unfiltered data BEFORE any filtering
+      console.log(`🔒 [RAW_DATA_STORAGE] Storing ${sortedPokemon.length} RAW unfiltered Pokemon separately`);
+      
+      // Apply filtering to get filtered data
+      const filteredPokemon = processFilteredPokemon(sortedPokemon);
+      
+      // Store both datasets in global cache
+      setGlobalCache(filteredPokemon, sortedPokemon);
+      console.log(`🔒 [POKEMON_LOADER] Final result: ${filteredPokemon.length} filtered, ${sortedPokemon.length} raw Pokemon`);
+      
       setIsLoading(false);
       pokemonLockedRef.current = true;
+      setLoadingState(false);
       
-      return essentialPokemon;
+      return filteredPokemon;
+      
+    } catch (error) {
+      console.error(`🔒 [POKEMON_LOADER] Load failed:`, error);
+      setLoadingState(false);
+      clearGlobalCache();
+      setIsLoading(false);
+      
+      return [];
     }
-
-    // If we reach here, we need to wait for essential Pokemon to load
-    setIsLoading(true);
-    
-    return new Promise<Pokemon[]>((resolve) => {
-      const checkForEssential = () => {
-        if (essentialPokemon.length > 0) {
-          console.log(`🚀 [POKEMON_LOADER] Essential Pokemon now available: ${essentialPokemon.length}`);
-          setGlobalCache(essentialPokemon, essentialPokemon);
-          setIsLoading(false);
-          pokemonLockedRef.current = true;
-          resolve(essentialPokemon);
-        } else if (!isLoadingEssential) {
-          // Loading failed, return empty array
-          console.warn(`⚠️ [POKEMON_LOADER] Essential Pokemon loading failed`);
-          setIsLoading(false);
-          resolve([]);
-        } else {
-          // Still loading, check again
-          setTimeout(checkForEssential, 100);
-        }
-      };
-      
-      checkForEssential();
-      
-      // Timeout after 5 seconds
-      setTimeout(() => {
-        if (isLoading) {
-          console.warn(`⚠️ [POKEMON_LOADER] Timeout waiting for essential Pokemon`);
-          setIsLoading(false);
-          resolve(essentialPokemon); // Return whatever we have
-        }
-      }, 5000);
-    });
   }, [
     allPokemon.length, 
     hasGlobalCache, 
@@ -126,20 +113,20 @@ export const usePokemonLoader = () => {
     setLoadingState, 
     setGlobalCache, 
     clearGlobalCache,
-    essentialPokemon,
-    isLoadingEssential,
-    getCachedData,
-    startBackgroundLoading
+    loadPokemonData,
+    processFilteredPokemon
   ]);
+
+  const loadPokemon = useCallback(async (genId = 0, fullRankingMode = true) => {
+    return loadInitialBatch(genId, fullRankingMode);
+  }, [loadInitialBatch]);
 
   return {
     allPokemon,
     rawUnfilteredPokemon,
-    isLoading: isLoading || isLoadingEssential,
-    isBackgroundLoading: !hasBackgroundData,
+    isLoading,
+    isBackgroundLoading: false,
     loadPokemon,
-    clearCache: clearGlobalCache,
-    hasEssentialData: essentialPokemon.length > 0,
-    backgroundProgress: hasBackgroundData ? 100 : 0
+    clearCache: clearGlobalCache
   };
 };
