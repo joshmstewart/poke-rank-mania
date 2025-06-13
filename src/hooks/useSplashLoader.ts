@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
-import { usePokemonLoader } from '@/hooks/battle/usePokemonLoader';
 
 interface SplashLoaderState {
   isLoading: boolean;
@@ -13,18 +12,17 @@ export const useSplashLoader = () => {
   const [state, setState] = useState<SplashLoaderState>({
     isLoading: true,
     loadingStatus: 'Initializing PokeRank Mania...',
-    progress: 0
+    progress: 0 // Explicitly start at 0
   });
   
   const { loading } = useAuth();
-  const { allPokemon, isLoading: pokemonLoading, loadPokemon } = usePokemonLoader();
   const startTime = useRef(Date.now());
   const minDisplayTime = 2000;
   const hasStarted = useRef(false);
   const isCompleted = useRef(false);
 
   useEffect(() => {
-    // CRITICAL FIX: Only run once when auth is ready and not already started
+    // Only run once when auth is ready and not already started
     if (loading || hasStarted.current || isCompleted.current) {
       return;
     }
@@ -34,55 +32,57 @@ export const useSplashLoader = () => {
 
     const runSplashSequence = async () => {
       try {
-        // Phase 1: Initial setup with immediate progress update
+        // IMMEDIATE START: Set progress to 0 first
+        setState(prev => ({ 
+          ...prev, 
+          progress: 0,
+          loadingStatus: 'Initializing PokeRank Mania...'
+        }));
+        console.log('🔄 [SPLASH_LOADER] Progress: 0% - Starting');
+        
+        await new Promise(resolve => setTimeout(resolve, 100)); // Brief pause to ensure 0% renders
+        
+        // Phase 1: Auth loading
         setState(prev => ({ 
           ...prev, 
           loadingStatus: 'Loading authentication...', 
-          progress: 10 
+          progress: 15 
         }));
-        console.log('🔄 [SPLASH_LOADER] Progress: 10% - Auth loading');
+        console.log('🔄 [SPLASH_LOADER] Progress: 15% - Auth loading');
         
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Phase 2: Start Pokemon loading with progress update
+        // Phase 2: Pokemon loading start
         setState(prev => ({ 
           ...prev, 
           loadingStatus: 'Loading Pokemon dataset...', 
-          progress: 30 
+          progress: 35 
         }));
-        console.log('🔄 [SPLASH_LOADER] Progress: 30% - Pokemon loading start');
+        console.log('🔄 [SPLASH_LOADER] Progress: 35% - Pokemon loading start');
         
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 400));
         
-        // Start Pokemon loading if needed (but don't wait for completion)
-        if (allPokemon.length === 0) {
-          console.log('🔄 [SPLASH_LOADER] Triggering Pokemon load during splash');
-          loadPokemon(0, true).catch(error => {
-            console.error('🔄 [SPLASH_LOADER] Pokemon load failed during splash:', error);
-          });
-        }
-        
-        // Phase 3: Monitor Pokemon loading progress with visual update
+        // Phase 3: Dataset preparation
         setState(prev => ({ 
           ...prev, 
           loadingStatus: 'Preparing complete Pokemon dataset...', 
-          progress: 60 
+          progress: 55 
         }));
-        console.log('🔄 [SPLASH_LOADER] Progress: 60% - Dataset preparation');
+        console.log('🔄 [SPLASH_LOADER] Progress: 55% - Dataset preparation');
         
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 350));
         
-        // Phase 4: Progressive loading updates (time-based, not state-dependent)
-        for (let i = 65; i <= 85; i += 5) {
-          setState(prev => ({ 
-            ...prev, 
-            progress: i 
-          }));
-          console.log(`🔄 [SPLASH_LOADER] Progress: ${i}% - Loading progress`);
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+        // Phase 4: Processing data
+        setState(prev => ({ 
+          ...prev, 
+          loadingStatus: 'Processing Pokemon data...', 
+          progress: 75 
+        }));
+        console.log('🔄 [SPLASH_LOADER] Progress: 75% - Processing');
         
-        // Phase 5: Final setup with progress update
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Phase 5: Final setup
         setState(prev => ({ 
           ...prev, 
           loadingStatus: 'Finalizing setup...', 
@@ -90,9 +90,9 @@ export const useSplashLoader = () => {
         }));
         console.log('🔄 [SPLASH_LOADER] Progress: 90% - Finalizing');
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 250));
         
-        // Phase 6: Complete with full progress
+        // Phase 6: Complete
         setState(prev => ({ 
           ...prev, 
           loadingStatus: 'Welcome to PokeRank Mania!', 
@@ -106,6 +106,9 @@ export const useSplashLoader = () => {
         // Mark as completed and finish
         isCompleted.current = true;
         console.log('✅ [SPLASH_LOADER] Splash sequence complete - transitioning to app');
+        
+        // Small delay to ensure 100% is visible before transitioning
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         setState(prev => ({ 
           ...prev, 
@@ -140,7 +143,7 @@ export const useSplashLoader = () => {
     };
 
     runSplashSequence();
-  }, [loading]); // FIXED: Only depend on stable auth loading state
+  }, [loading]); // Only depend on stable auth loading state
 
   return state;
 };

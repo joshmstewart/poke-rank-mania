@@ -6,13 +6,20 @@ interface LoadingIndicatorProps {
 }
 
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ progress }) => {
+  // Ensure progress is clamped between 0 and 100
+  const clampedProgress = Math.max(0, Math.min(100, progress));
+  
   return (
     <div className="space-y-4">
       {/* Progress Bar */}
       <div className="w-64 h-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 overflow-hidden">
         <div 
-          className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
+          className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-300 ease-out"
+          style={{ 
+            width: `${clampedProgress}%`,
+            transform: 'translateX(0)', // Ensure no transform offset
+            transformOrigin: 'left' // Ensure it grows from the left
+          }}
         />
       </div>
       
