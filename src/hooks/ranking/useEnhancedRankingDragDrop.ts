@@ -1,8 +1,22 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { usePokemonMovement } from './usePokemonMovement';
+
+// A simple debounce helper function
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  const debounced = (...args: Parameters<F>) => {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), waitFor);
+  };
+
+  return debounced;
+}
 
 export const useEnhancedRankingDragDrop = (
   enhancedAvailablePokemon: any[],
@@ -26,7 +40,7 @@ export const useEnhancedRankingDragDrop = (
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3,
+        distance: 1, // Reduced from 3 to 1 for more immediate response
         delay: 0,
         tolerance: 2,
       },
@@ -85,6 +99,12 @@ export const useEnhancedRankingDragDrop = (
     setSourceCardProps(cardProps);
   }, [enhancedAvailablePokemon, localRankings]);
 
+  // Create a debounced version of the reorder handler
+  const debouncedHandleEnhancedManualReorder = useMemo(
+    () => debounce(handleEnhancedManualReorder, 500),
+    [handleEnhancedManualReorder]
+  );
+
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     setActiveDraggedPokemon(null);
     setDragSourceInfo(null);
@@ -103,7 +123,6 @@ export const useEnhancedRankingDragDrop = (
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       
-      // Check for valid drop targets
       const isValidDropTarget = (
         overId === 'rankings-drop-zone' || 
         overId === 'rankings-grid-drop-zone' ||
@@ -121,7 +140,6 @@ export const useEnhancedRankingDragDrop = (
         if (pokemon) {
           const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
           
-          // Determine insertion position
           let insertionPosition = localRankings.length;
           if (!overId.startsWith('available-') && 
               !overId.startsWith('collision-placeholder-') &&
@@ -134,17 +152,15 @@ export const useEnhancedRankingDragDrop = (
           }
 
           if (isActuallyInRankings) {
-            // Optimistic reorder update
+            // OPTIMISTIC UI UPDATE: Update visual state immediately
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
-            const newRankings = [...localRankings];
-            const [movedPokemon] = newRankings.splice(currentIndex, 1);
-            newRankings.splice(insertionPosition, 0, movedPokemon);
+            const newRankings = arrayMove(localRankings, currentIndex, insertionPosition);
             updateLocalRankings(newRankings);
             
-            // Background update
-            handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
+            // DEBOUNCED CALCULATION: Update TrueSkill in background
+            debouncedHandleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
           } else {
-            // Optimistic move from available to rankings
+            // OPTIMISTIC UI UPDATE: Add to rankings immediately
             const newRankings = [...localRankings];
             newRankings.splice(insertionPosition, 0, {
               ...pokemon,
@@ -153,7 +169,7 @@ export const useEnhancedRankingDragDrop = (
             });
             updateLocalRankings(newRankings);
             
-            // Background atomic move operation
+            // BACKGROUND OPERATION: Move from available (includes TrueSkill update)
             moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
           }
           
@@ -172,23 +188,22 @@ export const useEnhancedRankingDragDrop = (
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        // Optimistic UI update
-        const newRankings = [...localRankings];
-        const [movedPokemon] = newRankings.splice(oldIndex, 1);
-        newRankings.splice(newIndex, 0, movedPokemon);
-        updateLocalRankings(newRankings);
+        // OPTIMISTIC UI UPDATE: Reorder visually immediately using arrayMove
+        const newOrder = arrayMove(localRankings, oldIndex, newIndex);
+        updateLocalRankings(newOrder);
         
-        // Background TrueSkill update
-        handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        // DEBOUNCED CALCULATION: Update TrueSkill scores in background
+        debouncedHandleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
+  }, [enhancedAvailablePokemon, localRankings, debouncedHandleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
     sourceIndex: number,
     destinationIndex: number
   ) => {
+    // For manual reorder calls, use immediate update (no debounce)
     handleEnhancedManualReorder(draggedPokemonId, sourceIndex, destinationIndex);
   }, [handleEnhancedManualReorder]);
 
