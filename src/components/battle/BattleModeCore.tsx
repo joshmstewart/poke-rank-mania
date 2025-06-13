@@ -7,7 +7,7 @@ import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { Button } from "@/components/ui/button";
 
 const BattleModeCore: React.FC = () => {
-  console.log('🔥 BattleModeCore: Component rendering');
+  console.log('🔥 [BATTLE_MODE_CORE] Component rendering - trusting splash screen completed loading');
   
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
   const [battlesCompleted, setBattlesCompleted] = useState(0);
@@ -25,22 +25,25 @@ const BattleModeCore: React.FC = () => {
   stableSetBattlesCompleted.current = setBattlesCompleted;
   stableSetBattleResults.current = setBattleResults;
 
-  // Load Pokemon if not already loaded (fallback)
+  // FALLBACK LOAD: Only load if no Pokemon available (emergency fallback)
   useEffect(() => {
-    const attemptLoadIfNeeded = async () => {
+    const attemptEmergencyLoad = async () => {
+      // Only attempt emergency load if we have no Pokemon and not currently loading
       if (allPokemon.length === 0 && !isLoading) {
-        console.log(`🔥 [BATTLE_MODE_CORE] Pokemon not loaded, attempting fallback load`);
+        console.log(`🔥 [BATTLE_MODE_CORE] Emergency fallback load - no Pokemon available`);
         try {
           await loadPokemon(0, true);
           setLoadError(null);
         } catch (error) {
-          console.error(`🔥 [BATTLE_MODE_CORE] Fallback load failed:`, error);
+          console.error(`🔥 [BATTLE_MODE_CORE] Emergency load failed:`, error);
           setLoadError('Failed to load Pokemon dataset. Please try again.');
         }
+      } else if (allPokemon.length > 0) {
+        console.log(`🔥 [BATTLE_MODE_CORE] ✅ Pokemon available: ${allPokemon.length} - no emergency load needed`);
       }
     };
 
-    attemptLoadIfNeeded();
+    attemptEmergencyLoad();
   }, [allPokemon.length, isLoading, loadPokemon]);
 
   // DEBUG INFO: Log dataset completeness
@@ -74,9 +77,9 @@ const BattleModeCore: React.FC = () => {
     }
   };
 
-  // SUCCESS: Show app if we have Pokemon data
+  // SUCCESS: Show app immediately if we have Pokemon data (splash screen handled loading)
   if (allPokemon.length > 0) {
-    console.log(`✅ [BATTLE_MODE_CORE] Pokemon loaded: ${allPokemon.length}, showing app`);
+    console.log(`✅ [BATTLE_MODE_CORE] Pokemon loaded: ${allPokemon.length}, showing app (no intermediate loading)`);
     
     return (
       <BattleModeProvider allPokemon={allPokemon}>
@@ -119,10 +122,10 @@ const BattleModeCore: React.FC = () => {
     );
   }
 
-  // MINIMAL LOADING STATE: Only show if actually loading and no Pokemon yet
-  if (isLoading || isRetrying) {
-    const loadingText = isRetrying ? 'Retrying...' : 'Loading Pokémon...';
-    console.log(`⏳ [BATTLE_MODE_CORE] Showing minimal loading state: ${loadingText}`);
+  // EMERGENCY LOADING: Only show if we truly have no data and are actively loading
+  if ((isLoading || isRetrying) && allPokemon.length === 0) {
+    const loadingText = isRetrying ? 'Retrying...' : 'Emergency loading...';
+    console.log(`⚠️ [BATTLE_MODE_CORE] Emergency loading state: ${loadingText}`);
     
     return (
       <div className="flex justify-center items-center h-32 w-full">
@@ -134,14 +137,9 @@ const BattleModeCore: React.FC = () => {
     );
   }
 
-  // FALLBACK: Show ready state
-  return (
-    <div className="flex justify-center items-center h-32 w-full">
-      <div className="text-center">
-        <p className="text-gray-600">Ready to start battles</p>
-      </div>
-    </div>
-  );
+  // TRUST SPLASH: If no errors and no loading, trust that splash will handle everything
+  console.log(`🔥 [BATTLE_MODE_CORE] Trusting splash screen to handle loading - no intermediate state`);
+  return null;
 };
 
 export default BattleModeCore;

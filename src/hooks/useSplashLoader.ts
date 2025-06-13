@@ -60,10 +60,16 @@ export const useSplashLoader = () => {
         progress: 60 
       }));
       
-      // Wait for Pokemon to finish loading
-      while (pokemonLoading && allPokemon.length === 0) {
+      // IMPROVED WAITING: Wait for either Pokemon to load OR loading to stop
+      let attempts = 0;
+      const maxAttempts = 50; // 10 seconds max
+      
+      while (attempts < maxAttempts && allPokemon.length === 0 && pokemonLoading) {
         await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
       }
+      
+      console.log(`🔄 [SPLASH_LOADER] Wait complete - Pokemon: ${allPokemon.length}, loading: ${pokemonLoading}, attempts: ${attempts}`);
       
       // Phase 4: Final setup
       setState(prev => ({ 
@@ -84,20 +90,18 @@ export const useSplashLoader = () => {
       // Wait for minimum display time
       await waitForMinimumTime();
       
-      // Only finish when we have Pokemon data
-      if (allPokemon.length > 0) {
-        console.log('✅ [SPLASH_LOADER] Splash sequence complete with Pokemon loaded');
-        setState(prev => ({ 
-          ...prev, 
-          isLoading: false 
-        }));
+      // CONFIDENT FINISH: Finish regardless of exact Pokemon count (trust the cache)
+      const finalPokemonCount = allPokemon.length;
+      if (finalPokemonCount > 0) {
+        console.log(`✅ [SPLASH_LOADER] Splash sequence complete with ${finalPokemonCount} Pokemon loaded`);
       } else {
-        console.log('⚠️ [SPLASH_LOADER] No Pokemon loaded, finishing splash anyway');
-        setState(prev => ({ 
-          ...prev, 
-          isLoading: false 
-        }));
+        console.log(`⚠️ [SPLASH_LOADER] Finishing splash - trusting cache will provide Pokemon to main app`);
       }
+      
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false 
+      }));
     };
 
     const waitForMinimumTime = () => {

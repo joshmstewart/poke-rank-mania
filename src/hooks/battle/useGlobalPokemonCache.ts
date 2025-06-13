@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 
 // CRITICAL FIX: Global singleton to prevent multiple simultaneous loads
@@ -7,16 +7,40 @@ let globalLoadingLock = false;
 let globalPokemonCache: Pokemon[] | null = null;
 let globalRawPokemonCache: Pokemon[] | null = null;
 let globalLoadPromise: Promise<Pokemon[]> | null = null;
+let globalCacheReady = false; // NEW: Flag to indicate cache is ready
 
 export const useGlobalPokemonCache = () => {
-  const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
-  const [rawUnfilteredPokemon, setRawUnfilteredPokemon] = useState<Pokemon[]>([]);
+  // IMMEDIATE CACHE ACCESS: Initialize with cached data if available
+  const [allPokemon, setAllPokemon] = useState<Pokemon[]>(() => {
+    console.log(`🔧 [GLOBAL_CACHE_INIT] Initializing with cached data: ${globalPokemonCache?.length || 0} Pokemon`);
+    return globalPokemonCache || [];
+  });
+  
+  const [rawUnfilteredPokemon, setRawUnfilteredPokemon] = useState<Pokemon[]>(() => {
+    console.log(`🔧 [GLOBAL_CACHE_INIT] Initializing with raw cached data: ${globalRawPokemonCache?.length || 0} Pokemon`);
+    return globalRawPokemonCache || [];
+  });
 
-  const hasGlobalCache = useCallback(() => {
-    return globalPokemonCache && globalPokemonCache.length > 0 && globalRawPokemonCache;
+  // CACHE READY STATE: Track when cache is fully ready
+  useEffect(() => {
+    if (globalPokemonCache && globalPokemonCache.length > 0 && globalRawPokemonCache) {
+      globalCacheReady = true;
+      console.log(`✅ [GLOBAL_CACHE_READY] Cache is ready with ${globalPokemonCache.length} filtered Pokemon`);
+    }
   }, []);
 
+  const hasGlobalCache = useCallback(() => {
+    const hasCache = globalPokemonCache && globalPokemonCache.length > 0 && globalRawPokemonCache;
+    console.log(`🔧 [GLOBAL_CACHE_CHECK] Has cache: ${!!hasCache}, ready: ${globalCacheReady}`);
+    return hasCache;
+  }, []);
+
+  const isGlobalCacheReady = useCallback(() => {
+    return globalCacheReady && hasGlobalCache();
+  }, [hasGlobalCache]);
+
   const getGlobalCache = useCallback(() => {
+    console.log(`🔧 [GLOBAL_CACHE_GET] Returning cache: ${globalPokemonCache?.length || 0} filtered, ${globalRawPokemonCache?.length || 0} raw`);
     return {
       filtered: globalPokemonCache || [],
       raw: globalRawPokemonCache || []
@@ -24,8 +48,10 @@ export const useGlobalPokemonCache = () => {
   }, []);
 
   const setGlobalCache = useCallback((filtered: Pokemon[], raw: Pokemon[]) => {
+    console.log(`🔧 [GLOBAL_CACHE_SET] Setting cache: ${filtered.length} filtered, ${raw.length} raw`);
     globalPokemonCache = filtered;
     globalRawPokemonCache = raw;
+    globalCacheReady = true;
     setAllPokemon(filtered);
     setRawUnfilteredPokemon(raw);
   }, []);
@@ -33,6 +59,7 @@ export const useGlobalPokemonCache = () => {
   const useExistingCache = useCallback(() => {
     if (hasGlobalCache()) {
       const cache = getGlobalCache();
+      console.log(`🔧 [GLOBAL_CACHE_USE] Using existing cache: ${cache.filtered.length} filtered Pokemon`);
       setAllPokemon(cache.filtered);
       setRawUnfilteredPokemon(cache.raw);
       return true;
@@ -54,6 +81,7 @@ export const useGlobalPokemonCache = () => {
     globalPokemonCache = null;
     globalRawPokemonCache = null;
     globalLoadPromise = null;
+    globalCacheReady = false;
     
     setAllPokemon([]);
     setRawUnfilteredPokemon([]);
@@ -64,11 +92,13 @@ export const useGlobalPokemonCache = () => {
     return {
       isLoading: globalLoadingLock,
       hasPromise: !!globalLoadPromise,
-      promise: globalLoadPromise
+      promise: globalLoadPromise,
+      cacheReady: globalCacheReady
     };
   }, []);
 
   const setLoadingState = useCallback((loading: boolean, promise: Promise<Pokemon[]> | null = null) => {
+    console.log(`🔧 [GLOBAL_CACHE_LOADING] Setting loading state: ${loading}, promise: ${!!promise}`);
     globalLoadingLock = loading;
     globalLoadPromise = promise;
   }, []);
@@ -77,6 +107,7 @@ export const useGlobalPokemonCache = () => {
     allPokemon,
     rawUnfilteredPokemon,
     hasGlobalCache,
+    isGlobalCacheReady,
     getGlobalCache,
     setGlobalCache,
     useExistingCache,

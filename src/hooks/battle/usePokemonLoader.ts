@@ -1,18 +1,17 @@
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { useGlobalPokemonCache } from "./useGlobalPokemonCache";
 import { usePokemonDataLoader } from "./usePokemonDataLoader";
 import { usePokemonFilterProcessor } from "./usePokemonFilterProcessor";
 
 export const usePokemonLoader = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const pokemonLockedRef = useRef(false);
-  
+  // IMMEDIATE CACHE ACCESS: Start with loading=false if cache is ready
   const {
     allPokemon,
     rawUnfilteredPokemon,
     hasGlobalCache,
+    isGlobalCacheReady,
     getGlobalCache,
     setGlobalCache,
     useExistingCache,
@@ -21,35 +20,54 @@ export const usePokemonLoader = () => {
     setLoadingState
   } = useGlobalPokemonCache();
 
+  // SMART LOADING STATE: Only load if cache isn't ready
+  const [isLoading, setIsLoading] = useState(() => {
+    const cacheReady = isGlobalCacheReady();
+    console.log(`🔧 [POKEMON_LOADER_INIT] Initial loading state: ${!cacheReady}, cache ready: ${cacheReady}`);
+    return !cacheReady;
+  });
+
+  const pokemonLockedRef = useRef(false);
+  
   const { loadPokemonData } = usePokemonDataLoader();
   const { processFilteredPokemon } = usePokemonFilterProcessor();
 
-  // COMPLETE DATASET LOADING: Removed batch restrictions for full rankings
-  const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
-    console.log(`🔒 [POKEMON_LOADER] Starting COMPLETE Pokemon load - genId: ${genId}, fullRanking: ${fullRankingMode}`);
-    
-    const loadingState = getLoadingState();
-    console.log(`🔒 [POKEMON_LOADER] Current state - loading: ${loadingState.isLoading}, cache: ${hasGlobalCache()}, local: ${allPokemon.length}`);
-    
-    // QUICK RETURN: If we already have complete cache, use it immediately
-    if (hasGlobalCache()) {
-      const cache = getGlobalCache();
-      console.log(`🔒 [POKEMON_LOADER] Using existing complete cache: ${cache.filtered.length} filtered Pokemon`);
-      console.log(`📊 [CACHE_DEBUG] Cache contains: ${cache.raw.length} total Pokemon, ${cache.filtered.length} filtered`);
-      
+  // IMMEDIATE CACHE EFFECT: Use cache immediately when available
+  useEffect(() => {
+    if (isGlobalCacheReady() && !pokemonLockedRef.current) {
+      console.log(`🔧 [POKEMON_LOADER_EFFECT] Cache is ready, using immediately`);
       useExistingCache();
       setIsLoading(false);
       pokemonLockedRef.current = true;
+    }
+  }, [isGlobalCacheReady, useExistingCache]);
+
+  // COMPLETE DATASET LOADING: Removed batch restrictions for full rankings
+  const loadInitialBatch = useCallback(async (genId = 0, fullRankingMode = true) => {
+    console.log(`🔧 [POKEMON_LOADER] Starting load - genId: ${genId}, fullRanking: ${fullRankingMode}`);
+    
+    // IMMEDIATE CACHE RETURN: If cache is ready, return it immediately
+    if (isGlobalCacheReady()) {
+      const cache = getGlobalCache();
+      console.log(`🔧 [POKEMON_LOADER] ✅ Cache ready immediately: ${cache.filtered.length} filtered Pokemon`);
       
+      if (!pokemonLockedRef.current) {
+        useExistingCache();
+        pokemonLockedRef.current = true;
+      }
+      setIsLoading(false);
       return cache.filtered;
     }
     
+    const loadingState = getLoadingState();
+    console.log(`🔧 [POKEMON_LOADER] Current state - loading: ${loadingState.isLoading}, cache: ${hasGlobalCache()}, local: ${allPokemon.length}`);
+    
     // WAIT FOR EXISTING LOAD: If currently loading, wait for it
     if (loadingState.isLoading && loadingState.promise) {
-      console.log(`🔒 [POKEMON_LOADER] Complete dataset load in progress, waiting...`);
+      console.log(`🔧 [POKEMON_LOADER] Load in progress, waiting...`);
       try {
         await loadingState.promise;
-        if (hasGlobalCache()) {
+        if (isGlobalCacheReady()) {
           useExistingCache();
           setIsLoading(false);
           pokemonLockedRef.current = true;
@@ -57,20 +75,20 @@ export const usePokemonLoader = () => {
           return cache.filtered;
         }
       } catch (error) {
-        console.error(`🔒 [POKEMON_LOADER] Wait for complete load failed:`, error);
+        console.error(`🔧 [POKEMON_LOADER] Wait for load failed:`, error);
         setLoadingState(false);
       }
     }
     
     // RETURN EXISTING: If already locked and have complete data, return it
     if (pokemonLockedRef.current && allPokemon.length > 0) {
-      console.log(`🔒 [POKEMON_LOADER] Already have locked complete data: ${allPokemon.length} Pokemon`);
+      console.log(`🔧 [POKEMON_LOADER] Already have locked data: ${allPokemon.length} Pokemon`);
+      setIsLoading(false);
       return allPokemon;
     }
 
     // START NEW COMPLETE LOAD: Load full dataset for accurate rankings
-    console.log(`🔒 [POKEMON_LOADER] Starting fresh COMPLETE dataset load`);
-    console.log(`📊 [LOAD_DEBUG] Loading complete Pokemon dataset for accurate rankings`);
+    console.log(`🔧 [POKEMON_LOADER] Starting fresh complete dataset load`);
     setIsLoading(true);
 
     try {
@@ -83,14 +101,11 @@ export const usePokemonLoader = () => {
         throw new Error('No Pokemon data loaded from complete dataset');
       }
       
-      // DEBUG INFO: Log complete dataset statistics
-      console.log(`📊 [DATASET_COMPLETE] Raw data loaded: ${sortedPokemon.length} Pokemon from complete dataset`);
-      console.log(`🔒 [POKEMON_LOADER] Complete dataset loaded: ${sortedPokemon.length} Pokemon`);
+      console.log(`🔧 [POKEMON_LOADER] Complete dataset loaded: ${sortedPokemon.length} Pokemon`);
       
       // Apply filtering to complete dataset
       const filteredPokemon = processFilteredPokemon(sortedPokemon);
-      console.log(`📊 [FILTER_DEBUG] After filtering complete dataset: ${filteredPokemon.length} Pokemon available for battles`);
-      console.log(`🔒 [POKEMON_LOADER] After filtering: ${filteredPokemon.length} Pokemon ready for ranking`);
+      console.log(`🔧 [POKEMON_LOADER] After filtering: ${filteredPokemon.length} Pokemon ready`);
       
       // Store complete dataset in cache
       setGlobalCache(filteredPokemon, sortedPokemon);
@@ -99,23 +114,22 @@ export const usePokemonLoader = () => {
       pokemonLockedRef.current = true;
       setLoadingState(false);
       
-      console.log(`✅ [DATASET_SUCCESS] Complete Pokemon dataset ready: ${filteredPokemon.length} filtered, ${sortedPokemon.length} total`);
+      console.log(`✅ [POKEMON_LOADER] Complete Pokemon dataset ready: ${filteredPokemon.length} filtered, ${sortedPokemon.length} total`);
       
       return filteredPokemon;
       
     } catch (error) {
-      console.error(`🔒 [POKEMON_LOADER] Complete dataset load failed:`, error);
+      console.error(`🔧 [POKEMON_LOADER] Complete dataset load failed:`, error);
       setLoadingState(false);
       setIsLoading(false);
       
-      // DON'T clear cache on error - keep any existing data
-      console.log(`🔒 [POKEMON_LOADER] Keeping existing cache on error`);
-      
+      console.log(`🔧 [POKEMON_LOADER] Keeping existing cache on error`);
       return [];
     }
   }, [
     allPokemon.length, 
     hasGlobalCache, 
+    isGlobalCacheReady,
     getGlobalCache, 
     useExistingCache, 
     getLoadingState, 
