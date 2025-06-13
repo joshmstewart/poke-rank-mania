@@ -17,7 +17,7 @@ export const useSplashLoader = () => {
   });
   
   const { loading } = useAuth();
-  const { loadPokemon } = usePokemonLoader();
+  const { loadPokemon, allPokemon, isLoading: pokemonLoading } = usePokemonLoader();
   const startTime = useRef(Date.now());
   const minDisplayTime = 2500; // Minimum 2.5 seconds for visual impact
   const hasLoadedPokemon = useRef(false);
@@ -54,6 +54,18 @@ export const useSplashLoader = () => {
           hasLoadedPokemon.current = true;
           await loadPokemon(0, true);
           console.log('✅ [SPLASH_LOADER] Pokemon data loaded during splash');
+          
+          // Wait for Pokemon to actually be available
+          let attempts = 0;
+          while (allPokemon.length === 0 && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+          
+          if (allPokemon.length > 0) {
+            console.log(`✅ [SPLASH_LOADER] Pokemon ready: ${allPokemon.length} available`);
+          }
+          
         } catch (error) {
           console.error('❌ [SPLASH_LOADER] Failed to load Pokemon during splash:', error);
         }
@@ -75,11 +87,23 @@ export const useSplashLoader = () => {
         progress: 100 
       }));
       
-      // Ensure minimum display time
-      const elapsed = Date.now() - startTime.current;
-      const remainingTime = Math.max(0, minDisplayTime - elapsed);
+      // Wait for Pokemon data to be fully ready AND ensure minimum display time
+      let readyToHide = false;
+      while (!readyToHide) {
+        const elapsed = Date.now() - startTime.current;
+        const hasMinTime = elapsed >= minDisplayTime;
+        const hasData = allPokemon.length > 0;
+        const notLoading = !pokemonLoading;
+        
+        readyToHide = hasMinTime && hasData && notLoading;
+        
+        if (!readyToHide) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
       
-      await new Promise(resolve => setTimeout(resolve, remainingTime + 500));
+      // Extra buffer to ensure smooth transition
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       setState(prev => ({ 
         ...prev, 
@@ -91,7 +115,7 @@ export const useSplashLoader = () => {
     if (!loading) {
       updateProgress();
     }
-  }, [loading, loadPokemon]);
+  }, [loading, loadPokemon, allPokemon.length, pokemonLoading]);
 
   return state;
 };
