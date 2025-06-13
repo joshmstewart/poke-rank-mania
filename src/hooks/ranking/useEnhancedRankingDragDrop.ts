@@ -124,10 +124,7 @@ export const useEnhancedRankingDragDrop = (
         const higherNeighborId = newLocalRankings[newIndex - 1]?.id.toString();
         const lowerNeighborId = newLocalRankings[newIndex + 1]?.id.toString();
 
-        // 3. Persist the score change to the global store in the background
-        forceScoreBetweenNeighbors(pokemonId.toString(), higherNeighborId, lowerNeighborId);
-
-        // 4. Calculate the new score locally to prevent async issues
+        // 3. Calculate the new score locally to prevent async issues
         const allRatings = getAllRatings();
         const higherNeighborScore = higherNeighborId ? allRatings[higherNeighborId]?.mu : undefined;
         const lowerNeighborScore = lowerNeighborId ? allRatings[lowerNeighborId]?.mu : undefined;
@@ -136,7 +133,6 @@ export const useEnhancedRankingDragDrop = (
         if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
           targetScore = (higherNeighborScore + lowerNeighborScore) / 2;
         } else if (higherNeighborScore !== undefined) {
-          // Using the same logic as the store for consistency
           targetScore = higherNeighborScore + 1.0;
         } else if (lowerNeighborScore !== undefined) {
           targetScore = lowerNeighborScore - 1.0;
@@ -146,14 +142,19 @@ export const useEnhancedRankingDragDrop = (
 
         console.log(`🐛 [DRAG_DEBUG] Locally calculated new score for ${pokemonId}: ${targetScore}`);
 
-        // 5. Update the score on the item that was moved in our new local array.
+        // 4. Update the score on the item that was moved in our new local array.
         newLocalRankings[newIndex] = {
             ...newLocalRankings[newIndex],
             score: targetScore,
         };
         
-        // 6. Update the component's state with this new, correct array.
+        // 5. Update the component's state with this new, correct array FIRST
         updateLocalRankings(newLocalRankings);
+        
+        // 6. THEN persist the score change to the global store in the background
+        setTimeout(() => {
+          forceScoreBetweenNeighbors(pokemonId.toString(), higherNeighborId, lowerNeighborId);
+        }, 0);
         
         toast({
           title: "Pokemon Reordered",
@@ -204,12 +205,14 @@ export const useEnhancedRankingDragDrop = (
 
           if (isActuallyInRankings) {
             // CASE A: Pokemon is already in rankings - this is a REORDER
+            // USE ONLY handleReorder - DO NOT call handleEnhancedManualReorder
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
-            console.log(`🐛 [DRAG_DEBUG] REORDER: Moving from position ${currentIndex} to ${insertionPosition}`);
+            console.log(`🐛 [DRAG_DEBUG] REORDER CASE A: Moving from position ${currentIndex} to ${insertionPosition}`);
             handleReorder(pokemonId, currentIndex, insertionPosition);
           } else {
             // CASE B: Pokemon is not in rankings - add as new
-            console.log(`🐛 [DRAG_DEBUG] ADD NEW: Adding Pokemon ${pokemonId} at position ${insertionPosition}`);
+            // ONLY use handleEnhancedManualReorder for this case
+            console.log(`🐛 [DRAG_DEBUG] ADD NEW CASE B: Adding Pokemon ${pokemonId} at position ${insertionPosition}`);
             
             // Add default rating to TrueSkill store if it doesn't exist
             const defaultRating = new Rating(25.0, 8.333);
@@ -224,13 +227,6 @@ export const useEnhancedRankingDragDrop = (
             setTimeout(() => {
               console.log(`🐛 [DRAG_DEBUG] Calling handleEnhancedManualReorder for new Pokemon`);
               handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
-              
-              // Log the result after another delay
-              setTimeout(() => {
-                const allRatings = getAllRatings();
-                const newRating = allRatings[pokemonId.toString()];
-                console.log(`🐛 [DRAG_DEBUG] New Pokemon rating after add: ${newRating?.mu || 'Not found'}`);
-              }, 100);
             }, 10);
             
             toast({
@@ -259,6 +255,8 @@ export const useEnhancedRankingDragDrop = (
       console.log(`🐛 [DRAG_DEBUG] Old index: ${oldIndex}, New index: ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        // USE ONLY handleReorder - DO NOT call handleEnhancedManualReorder
+        console.log(`🐛 [DRAG_DEBUG] RANKING REORDER: Using handleReorder only`);
         handleReorder(activePokemonId, oldIndex, newIndex);
       }
     }
