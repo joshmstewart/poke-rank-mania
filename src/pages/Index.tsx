@@ -18,14 +18,21 @@ const Index = () => {
   }, [mode, getAllRatings]);
 
   const handleModeChange = (newMode: "rank" | "battle") => {
+    console.log(`🔄 [INDEX] Mode changing from ${mode} to ${newMode}`);
     setMode(newMode);
   };
+
+  console.log(`🔄 [INDEX] Current mode: ${mode}, rendering appropriate component`);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <AppHeader mode={mode} onModeChange={handleModeChange} />
       <main className="container max-w-7xl mx-auto py-6 relative z-10">
-        {mode === "rank" ? <PokemonRanker /> : <BattleMode />}
+        {mode === "rank" ? (
+          <PokemonRanker key="rank-mode" />
+        ) : (
+          <BattleMode key="battle-mode" />
+        )}
       </main>
     </div>
   );
