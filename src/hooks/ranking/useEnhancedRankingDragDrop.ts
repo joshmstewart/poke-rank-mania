@@ -96,11 +96,19 @@ export const useEnhancedRankingDragDrop = (
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    console.log('%c=== DRAG END START ===', 'color: red; font-weight: bold');
+    console.log('%cDragEnd event:', 'color: blue', { 
+      activeId: event.active.id, 
+      overId: event.over?.id,
+      localRankingsLength: localRankings.length 
+    });
+    
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     
     const { active, over } = event;
     
     if (!over) {
+      console.log('%cNo drop target, aborting', 'color: orange');
       return;
     }
 
@@ -143,6 +151,12 @@ export const useEnhancedRankingDragDrop = (
             // OPTIMISTIC UI UPDATE: Update visual state immediately
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
             const newRankings = arrayMove(localRankings, currentIndex, insertionPosition);
+            console.log('%cReordering existing Pokemon in rankings', 'color: green', {
+              pokemonId,
+              currentIndex,
+              insertionPosition,
+              newRankingsLength: newRankings.length
+            });
             updateLocalRankings(newRankings);
             
             // ASYNCHRONOUS CALCULATION: Update TrueSkill in background
@@ -156,6 +170,11 @@ export const useEnhancedRankingDragDrop = (
               ...pokemon,
               score: 25.0,
               rank: insertionPosition + 1
+            });
+            console.log('%cAdding new Pokemon to rankings', 'color: purple', {
+              pokemonId,
+              insertionPosition,
+              newRankingsLength: newRankings.length
             });
             updateLocalRankings(newRankings);
             
@@ -180,20 +199,31 @@ export const useEnhancedRankingDragDrop = (
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`%cDragEnd: moving from index ${oldIndex} to ${newIndex}`, 'color: green');
+        console.log('%cReordering within rankings', 'color: green', {
+          activePokemonId,
+          overPokemonId,
+          oldIndex,
+          newIndex,
+          localRankingsLength: localRankings.length
+        });
         
         // OPTIMISTIC UI UPDATE: Reorder visually immediately using arrayMove
         const newOrder = arrayMove(localRankings, oldIndex, newIndex);
-        console.log('%cOptimistic newOrder:', 'color: green', newOrder);
+        console.log('%cOptimistic newOrder created', 'color: green', {
+          newOrderLength: newOrder.length,
+          first3Pokemon: newOrder.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
+        });
         updateLocalRankings(newOrder);
         
         // ASYNCHRONOUS CALCULATION: Update TrueSkill scores in background
         setTimeout(() => {
-          console.log(`%cExecuting TrueSkill calculation for Pokemon ${activePokemonId}`, 'color: purple');
+          console.log('%cExecuting TrueSkill calculation', 'color: purple', { activePokemonId });
           handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
         }, 0);
       }
     }
+    
+    console.log('%c=== DRAG END COMPLETE ===', 'color: red; font-weight: bold');
   }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
