@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
@@ -21,19 +22,19 @@ export const useEnhancedRankingDragDrop = (
     handleEnhancedManualReorder
   );
 
-  // Optimized sensors for enhanced ranking drag drop
+  // Optimized sensors for maximum responsiveness
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
-        delay: 100,
-        tolerance: 5,
+        distance: 3,
+        delay: 0,
+        tolerance: 2,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
-        tolerance: 8,
+        delay: 50,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -98,7 +99,7 @@ export const useEnhancedRankingDragDrop = (
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
-    // Handle drag from available to rankings
+    // Handle drag from available to rankings with optimistic updates
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
       
@@ -133,13 +134,27 @@ export const useEnhancedRankingDragDrop = (
           }
 
           if (isActuallyInRankings) {
-            // CASE A: Pokemon is already in rankings - this is a REORDER
+            // Optimistic reorder update
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
+            const newRankings = [...localRankings];
+            const [movedPokemon] = newRankings.splice(currentIndex, 1);
+            newRankings.splice(insertionPosition, 0, movedPokemon);
+            updateLocalRankings(newRankings);
+            
+            // Background update
             handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
           } else {
-            // CASE B: Pokemon is not in rankings - use atomic move operation
-            console.log(`🔄 [DRAG_DROP] Using atomic move for Pokemon ${pokemonId}`);
-            await moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
+            // Optimistic move from available to rankings
+            const newRankings = [...localRankings];
+            newRankings.splice(insertionPosition, 0, {
+              ...pokemon,
+              score: 25.0,
+              rank: insertionPosition + 1
+            });
+            updateLocalRankings(newRankings);
+            
+            // Background atomic move operation
+            moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
           }
           
           return;
@@ -148,7 +163,7 @@ export const useEnhancedRankingDragDrop = (
       return;
     }
 
-    // Handle reordering within rankings
+    // Handle reordering within rankings with optimistic updates
     if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
@@ -157,10 +172,17 @@ export const useEnhancedRankingDragDrop = (
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        // Optimistic UI update
+        const newRankings = [...localRankings];
+        const [movedPokemon] = newRankings.splice(oldIndex, 1);
+        newRankings.splice(newIndex, 0, movedPokemon);
+        updateLocalRankings(newRankings);
+        
+        // Background TrueSkill update
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
