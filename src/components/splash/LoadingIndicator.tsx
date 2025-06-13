@@ -8,12 +8,14 @@ interface LoadingIndicatorProps {
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({ progress }) => {
   return (
     <div className="space-y-4">
-      {/* Progress Bar */}
-      <div className="w-64 h-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 overflow-hidden">
-        <div 
-          className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
-        />
+      {/* Progress Bar Container with explicit centering */}
+      <div className="flex justify-center">
+        <div className="w-64 h-2 bg-white/10 rounded-full backdrop-blur-sm border border-white/20 overflow-hidden mx-auto">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
       
       {/* Animated Dots */}
