@@ -2,34 +2,19 @@
 import React from "react";
 import { Progress } from "@/components/ui/progress";
 import { Trophy } from "lucide-react";
+import { getMilestoneProgress, getNextMilestone } from "@/utils/battleMilestones";
 
 interface BattleProgressProps {
   battlesCompleted: number;
-  getMilestoneProgress: () => number;
-  getNextMilestone: () => number;
+  getMilestoneProgress?: () => number; // Keep for compatibility but we'll use our own
+  getNextMilestone?: () => number; // Keep for compatibility but we'll use our own
 }
 
 const BattleProgress: React.FC<BattleProgressProps> = ({
-  battlesCompleted,
-  getMilestoneProgress,
-  getNextMilestone
+  battlesCompleted
 }) => {
-  // CRITICAL FIX: Calculate next milestone based on every 25 battles pattern
-  const calculateNextMilestone = () => {
-    const currentMilestone = Math.floor(battlesCompleted / 25) * 25;
-    return currentMilestone + 25;
-  };
-
-  // CRITICAL FIX: Calculate progress based on every 25 battles pattern  
-  const calculateMilestoneProgress = () => {
-    const currentMilestone = Math.floor(battlesCompleted / 25) * 25;
-    const nextMilestone = currentMilestone + 25;
-    const progressInCurrentRange = battlesCompleted - currentMilestone;
-    return (progressInCurrentRange / 25) * 100;
-  };
-
-  const nextMilestone = calculateNextMilestone();
-  const progressPercentage = calculateMilestoneProgress();
+  const nextMilestone = getNextMilestone(battlesCompleted);
+  const { progress: progressPercentage } = getMilestoneProgress(battlesCompleted);
   const battlesUntilMilestone = nextMilestone - battlesCompleted;
   
   return (
@@ -46,7 +31,6 @@ const BattleProgress: React.FC<BattleProgressProps> = ({
         </span>
       </div>
       
-      {/* Progress bar visualization - more compact */}
       <div className="space-y-1">
         <Progress 
           value={progressPercentage} 

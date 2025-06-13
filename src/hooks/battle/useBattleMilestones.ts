@@ -1,28 +1,44 @@
 
 import { useCallback, useMemo } from "react";
-import { getDefaultBattleMilestones } from "@/utils/battleMilestones";
+import { isMilestone, getNextMilestone, getMilestoneProgress } from "@/utils/battleMilestones";
 
 export const useBattleMilestones = () => {
-  const milestones = useMemo(() => getDefaultBattleMilestones(), []);
+  // Generate milestones dynamically up to a reasonable limit
+  const milestones = useMemo(() => {
+    const maxMilestones = 1000; // Generate up to 1000 battles worth of milestones
+    const result: number[] = [];
+    for (let i = 25; i <= maxMilestones; i += 25) {
+      result.push(i);
+    }
+    return result;
+  }, []);
 
   const checkForMilestone = useCallback((newBattlesCompleted: number) => {
     console.log(`🏆🏆🏆 [MILESTONE_DETECTION] ===== Checking Milestone =====`);
     console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Battle number: ${newBattlesCompleted}`);
-    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Available milestones: ${milestones.join(', ')}`);
     
-    const isMilestone = milestones.includes(newBattlesCompleted);
-    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Is milestone? ${isMilestone}`);
+    const isMilestoneReached = isMilestone(newBattlesCompleted);
+    console.log(`🏆🏆🏆 [MILESTONE_DETECTION] Is milestone? ${isMilestoneReached}`);
     
-    if (isMilestone) {
+    if (isMilestoneReached) {
       console.log(`🏆🏆🏆 [MILESTONE_HIT] ===== MILESTONE ${newBattlesCompleted} REACHED! =====`);
       return true;
     }
     
     return false;
-  }, [milestones]);
+  }, []);
+
+  const getNextMilestoneInfo = useCallback((battleCount: number) => {
+    return {
+      next: getNextMilestone(battleCount),
+      progress: getMilestoneProgress(battleCount)
+    };
+  }, []);
 
   return {
     milestones,
-    checkForMilestone
+    checkForMilestone,
+    getNextMilestoneInfo,
+    isMilestone
   };
 };
