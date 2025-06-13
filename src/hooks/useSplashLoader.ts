@@ -26,21 +26,25 @@ export const useSplashLoader = () => {
     const runSplashSequence = async () => {
       console.log('🔄 [SPLASH_LOADER] Starting splash sequence with Pokemon loading');
       
-      // Phase 1: Initial setup
+      // Phase 1: Initial setup with immediate progress update
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Loading authentication...', 
         progress: 10 
       }));
+      console.log('🔄 [SPLASH_LOADER] Progress: 10% - Auth loading');
       
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 400));
       
-      // Phase 2: Start Pokemon loading
+      // Phase 2: Start Pokemon loading with progress update
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Loading Pokemon dataset...', 
         progress: 30 
       }));
+      console.log('🔄 [SPLASH_LOADER] Progress: 30% - Pokemon loading start');
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Start Pokemon loading if not already started
       if (!pokemonLoadStarted.current && allPokemon.length === 0) {
@@ -53,12 +57,15 @@ export const useSplashLoader = () => {
         }
       }
       
-      // Phase 3: Monitor Pokemon loading progress
+      // Phase 3: Monitor Pokemon loading progress with visual update
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Preparing complete Pokemon dataset...', 
         progress: 60 
       }));
+      console.log('🔄 [SPLASH_LOADER] Progress: 60% - Dataset preparation');
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // IMPROVED WAITING: Wait for either Pokemon to load OR loading to stop
       let attempts = 0;
@@ -67,25 +74,37 @@ export const useSplashLoader = () => {
       while (attempts < maxAttempts && allPokemon.length === 0 && pokemonLoading) {
         await new Promise(resolve => setTimeout(resolve, 200));
         attempts++;
+        
+        // Update progress gradually during waiting
+        if (attempts % 5 === 0) {
+          const waitProgress = Math.min(90, 60 + (attempts / maxAttempts) * 25);
+          setState(prev => ({ 
+            ...prev, 
+            progress: waitProgress 
+          }));
+          console.log(`🔄 [SPLASH_LOADER] Progress: ${waitProgress}% - Waiting for data`);
+        }
       }
       
       console.log(`🔄 [SPLASH_LOADER] Wait complete - Pokemon: ${allPokemon.length}, loading: ${pokemonLoading}, attempts: ${attempts}`);
       
-      // Phase 4: Final setup
+      // Phase 4: Final setup with progress update
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Finalizing setup...', 
         progress: 90 
       }));
+      console.log('🔄 [SPLASH_LOADER] Progress: 90% - Finalizing');
       
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Phase 5: Complete
+      // Phase 5: Complete with full progress
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Welcome to PokeRank Mania!', 
         progress: 100 
       }));
+      console.log('🔄 [SPLASH_LOADER] Progress: 100% - Complete');
       
       // Wait for minimum display time
       await waitForMinimumTime();
