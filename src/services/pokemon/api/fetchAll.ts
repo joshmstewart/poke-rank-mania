@@ -1,4 +1,3 @@
-
 import { Pokemon, PokemonAPIResponse } from "../types";
 import { trackFetchCall, logFetchParameters } from "./fetchCallTracker";
 import { processPokemonData } from "./pokemonProcessor";
@@ -9,24 +8,18 @@ export const fetchAllPokemon = async (
   generationId = 0,
   fullRankingMode = true,
   initialBatchOnly = false,
-  batchSize = 150
+  batchSize = 1500
 ): Promise<Pokemon[]> => {
   const currentCallId = trackFetchCall();
   logFetchParameters(currentCallId, generationId, fullRankingMode, initialBatchOnly, batchSize);
 
   try {
-    // PROGRESSIVE LOADING: Start with smaller, more reliable batch sizes
-    let limit = 150; // Default to 150 for better reliability
+    // FULL LOADING RESTORED: Load complete Pokemon dataset for accurate rankings
+    const limit = 1500; // Restore full dataset loading instead of progressive batches
     
-    if (initialBatchOnly) {
-      limit = Math.min(batchSize, 200); // Cap at 200 even for initial batch
-    } else if (fullRankingMode) {
-      limit = 300; // Moderate increase for full ranking
-    }
-
-    console.log(`🌐 [FETCH_ALL] Call #${currentCallId}: Fetching ${limit} Pokemon from API`);
+    console.log(`🌐 [FETCH_ALL] Call #${currentCallId}: Fetching ALL ${limit} Pokemon from API for complete rankings`);
     
-    // RETRY LOGIC: Add simple retry for network failures
+    // RETRY LOGIC: Keep the reliable retry mechanism
     let response;
     let retryCount = 0;
     const maxRetries = 2;
@@ -54,24 +47,28 @@ export const fetchAllPokemon = async (
     }
 
     const data: PokemonAPIResponse = await response.json();
-    console.log(`📥 [FETCH_ALL] Call #${currentCallId}: API returned ${data.results.length} Pokemon`);
+    console.log(`📥 [FETCH_ALL] Call #${currentCallId}: API returned ${data.results.length} Pokemon for complete dataset`);
     
-    // MINIMUM VALIDATION: Ensure we got some data
+    // VALIDATION: Ensure we got the full dataset
     if (!data.results || data.results.length === 0) {
       throw new Error('No Pokemon data received from API');
     }
     
-    if (data.results.length < 50) {
-      console.warn(`⚠️ [FETCH_ALL] Call #${currentCallId}: Only ${data.results.length} Pokemon received - may indicate API issues`);
+    // DEBUG INFO: Log dataset completeness
+    console.log(`📊 [DATASET_DEBUG] Total Pokemon fetched: ${data.results.length} of expected ~1500`);
+    if (data.results.length < 1000) {
+      console.warn(`⚠️ [FETCH_ALL] Call #${currentCallId}: Only ${data.results.length} Pokemon received - incomplete dataset may affect rankings`);
     }
     
     const filteredList = await processPokemonData(data.results, currentCallId);
 
-    console.log(`✅ [FETCH_ALL] Call #${currentCallId}: Successfully processed ${filteredList.length} Pokemon`);
+    console.log(`✅ [FETCH_ALL] Call #${currentCallId}: Successfully processed ${filteredList.length} Pokemon from complete dataset`);
+    console.log(`📊 [DATASET_COMPLETE] Full Pokemon dataset loaded for accurate rankings`);
+    
     return filteredList;
     
   } catch (error) {
     console.error(`❌ [FETCH_ALL] Call #${currentCallId}: fetchAllPokemon failed:`, error);
-    throw new Error(`Failed to load Pokemon data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Failed to load complete Pokemon dataset: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

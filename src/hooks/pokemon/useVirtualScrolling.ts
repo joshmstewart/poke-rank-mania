@@ -40,6 +40,13 @@ export const useVirtualScrolling = ({
     setScrollTop(e.currentTarget.scrollTop);
   };
 
+  // DEBUG INFO: Log virtual scrolling stats for performance monitoring
+  useEffect(() => {
+    if (items.length > 100) {
+      console.log(`🎯 [VIRTUAL_SCROLL_DEBUG] Optimizing ${items.length} items, showing ${visibleItems.length} (${visibleRange.startIndex}-${visibleRange.endIndex})`);
+    }
+  }, [items.length, visibleItems.length, visibleRange.startIndex, visibleRange.endIndex]);
+
   return {
     scrollElementRef,
     visibleItems,

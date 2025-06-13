@@ -15,6 +15,7 @@ const BattleModeCore: React.FC = () => {
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<string>("");
   
   const initialBattleType: BattleType = "pairs";
   
@@ -26,36 +27,57 @@ const BattleModeCore: React.FC = () => {
   stableSetBattlesCompleted.current = setBattlesCompleted;
   stableSetBattleResults.current = setBattleResults;
 
-  // BACKGROUND LOADING: Try to load Pokemon data when component mounts
+  // COMPLETE DATASET LOADING: Try to load full Pokemon dataset when component mounts
   useEffect(() => {
-    const attemptLoad = async () => {
+    const attemptCompleteLoad = async () => {
       if (allPokemon.length === 0 && !isLoading) {
-        console.log(`🔥 [BATTLE_MODE_CORE] Attempting background Pokemon load`);
+        console.log(`🔥 [BATTLE_MODE_CORE] Attempting complete Pokemon dataset load`);
+        setLoadingProgress("Initializing complete Pokemon dataset...");
         try {
           await loadPokemon(0, true);
           setLoadError(null);
+          setLoadingProgress("");
         } catch (error) {
-          console.error(`🔥 [BATTLE_MODE_CORE] Background load failed:`, error);
-          setLoadError('Failed to load Pokemon data. Please try again.');
+          console.error(`🔥 [BATTLE_MODE_CORE] Complete dataset load failed:`, error);
+          setLoadError('Failed to load complete Pokemon dataset. Rankings may be incomplete.');
+          setLoadingProgress("");
         }
       }
     };
 
-    attemptLoad();
+    attemptCompleteLoad();
   }, [allPokemon.length, isLoading, loadPokemon]);
+
+  // DEBUG INFO: Log dataset completeness
+  useEffect(() => {
+    if (allPokemon.length > 0) {
+      console.log(`📊 [DATASET_DEBUG] Pokemon available for battles: ${allPokemon.length}`);
+      console.log(`📊 [RANKING_DEBUG] Complete dataset loaded - rankings will include all ${allPokemon.length} Pokemon`);
+      
+      // Show dataset completeness in console
+      if (allPokemon.length < 1000) {
+        console.warn(`⚠️ [DATASET_WARNING] Only ${allPokemon.length} Pokemon loaded - rankings may be incomplete`);
+      } else {
+        console.log(`✅ [DATASET_SUCCESS] Complete dataset: ${allPokemon.length} Pokemon ready for accurate rankings`);
+      }
+    }
+  }, [allPokemon.length]);
 
   // MANUAL RETRY: Allow user to retry loading if it fails
   const handleRetry = async () => {
     setIsRetrying(true);
     setLoadError(null);
+    setLoadingProgress("Retrying complete dataset load...");
     
     try {
-      console.log(`🔥 [BATTLE_MODE_CORE] Manual retry initiated`);
+      console.log(`🔥 [BATTLE_MODE_CORE] Manual retry for complete dataset initiated`);
       await loadPokemon(0, true);
-      console.log(`🔥 [BATTLE_MODE_CORE] Manual retry successful`);
+      console.log(`🔥 [BATTLE_MODE_CORE] Manual retry for complete dataset successful`);
+      setLoadingProgress("");
     } catch (error) {
-      console.error(`🔥 [BATTLE_MODE_CORE] Manual retry failed:`, error);
-      setLoadError('Retry failed. Please check your connection and try again.');
+      console.error(`🔥 [BATTLE_MODE_CORE] Manual retry for complete dataset failed:`, error);
+      setLoadError('Retry failed. Rankings may be incomplete without full dataset.');
+      setLoadingProgress("");
     } finally {
       setIsRetrying(false);
     }
@@ -63,16 +85,23 @@ const BattleModeCore: React.FC = () => {
 
   // SUCCESS: Show app if we have Pokemon data
   if (allPokemon.length > 0) {
-    console.log(`✅ [BATTLE_MODE_CORE] Pokemon loaded: ${allPokemon.length}, showing app`);
+    console.log(`✅ [BATTLE_MODE_CORE] Complete dataset loaded: ${allPokemon.length} Pokemon, showing app`);
     
     return (
       <BattleModeProvider allPokemon={allPokemon}>
-        <BattleModeContainer
-          allPokemon={allPokemon}
-          initialBattleType={initialBattleType}
-          setBattlesCompleted={stableSetBattlesCompleted.current}
-          setBattleResults={stableSetBattleResults.current}
-        />
+        <div className="w-full">
+          {/* DEBUG INFO: Show dataset completeness indicator */}
+          <div className="text-center py-2 bg-muted/30 text-xs text-muted-foreground">
+            Dataset: {allPokemon.length} Pokemon loaded 
+            {allPokemon.length >= 1000 ? " ✅ Complete" : " ⚠️ May be incomplete"}
+          </div>
+          <BattleModeContainer
+            allPokemon={allPokemon}
+            initialBattleType={initialBattleType}
+            setBattlesCompleted={stableSetBattlesCompleted.current}
+            setBattleResults={stableSetBattleResults.current}
+          />
+        </div>
       </BattleModeProvider>
     );
   }
@@ -89,27 +118,29 @@ const BattleModeCore: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Failed</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Dataset Loading Failed</h3>
           <p className="text-gray-600 mb-4">{loadError}</p>
           <Button onClick={handleRetry} className="bg-blue-500 hover:bg-blue-600">
-            Try Again
+            Load Complete Dataset
           </Button>
         </div>
       </div>
     );
   }
 
-  // LOADING STATE: Show loading while data is being fetched
+  // LOADING STATE: Show loading while complete dataset is being fetched
   if (isLoading || isRetrying) {
-    const loadingText = isRetrying ? 'Retrying...' : 'Loading Pokémon data...';
-    console.log(`⏳ [BATTLE_MODE_CORE] Showing loading state: ${loadingText}`);
+    const loadingText = isRetrying ? 'Retrying complete dataset...' : 'Loading complete Pokémon dataset...';
+    const progressText = loadingProgress || 'Preparing complete rankings with ~1500 Pokémon...';
+    console.log(`⏳ [BATTLE_MODE_CORE] Showing complete dataset loading state: ${loadingText}`);
     
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4 mx-auto"></div>
           <p className="text-lg font-medium text-gray-700">{loadingText}</p>
-          <p className="text-sm text-gray-500 mt-2">Preparing your Pokémon battles...</p>
+          <p className="text-sm text-gray-500 mt-2">{progressText}</p>
+          <p className="text-xs text-muted-foreground mt-1">Loading complete dataset for accurate rankings...</p>
         </div>
       </div>
     );
@@ -119,8 +150,8 @@ const BattleModeCore: React.FC = () => {
   return (
     <div className="flex justify-center items-center h-64 w-full">
       <div className="text-center">
-        <p className="text-lg font-medium text-gray-700">Initializing Battle Mode</p>
-        <p className="text-sm text-gray-500 mt-2">Please wait while we set up your battles...</p>
+        <p className="text-lg font-medium text-gray-700">Initializing Complete Dataset</p>
+        <p className="text-sm text-gray-500 mt-2">Preparing to load all ~1500 Pokémon for complete rankings...</p>
       </div>
     </div>
   );
