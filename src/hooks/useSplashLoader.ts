@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
+import { usePokemonLoader } from '@/hooks/battle/usePokemonLoader';
 
 interface SplashLoaderState {
   isLoading: boolean;
@@ -16,8 +17,10 @@ export const useSplashLoader = () => {
   });
   
   const { loading } = useAuth();
+  const { loadPokemon } = usePokemonLoader();
   const startTime = useRef(Date.now());
   const minDisplayTime = 2500; // Minimum 2.5 seconds for visual impact
+  const hasLoadedPokemon = useRef(false);
 
   useEffect(() => {
     const updateProgress = async () => {
@@ -39,19 +42,27 @@ export const useSplashLoader = () => {
       
       await new Promise(resolve => setTimeout(resolve, 400));
       
-      // Phase 3: Data loading
-      setState(prev => ({ 
-        ...prev, 
-        loadingStatus: 'Setting up battle system...', 
-        progress: 60 
-      }));
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Phase 3: Load Pokemon data during splash
+      if (!hasLoadedPokemon.current) {
+        setState(prev => ({ 
+          ...prev, 
+          loadingStatus: 'Loading Pokemon database...', 
+          progress: 60 
+        }));
+        
+        try {
+          hasLoadedPokemon.current = true;
+          await loadPokemon(0, true);
+          console.log('✅ [SPLASH_LOADER] Pokemon data loaded during splash');
+        } catch (error) {
+          console.error('❌ [SPLASH_LOADER] Failed to load Pokemon during splash:', error);
+        }
+      }
       
       // Phase 4: Finalizing
       setState(prev => ({ 
         ...prev, 
-        loadingStatus: 'Almost ready...', 
+        loadingStatus: 'Setting up battle system...', 
         progress: 80 
       }));
       
@@ -80,7 +91,7 @@ export const useSplashLoader = () => {
     if (!loading) {
       updateProgress();
     }
-  }, [loading]);
+  }, [loading, loadPokemon]);
 
   return state;
 };

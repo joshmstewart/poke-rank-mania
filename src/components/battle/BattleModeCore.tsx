@@ -4,12 +4,12 @@ import BattleModeContainer from "./BattleModeContainer";
 import BattleModeLoader from "./BattleModeLoader";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
+import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 
 const BattleModeCore: React.FC = () => {
   console.log('🔥 BattleModeCore: Component rendering');
   
-  const [stablePokemon, setStablePokemon] = useState<Pokemon[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { allPokemon, isLoading } = usePokemonLoader();
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
   
@@ -23,51 +23,44 @@ const BattleModeCore: React.FC = () => {
   stableSetBattlesCompleted.current = setBattlesCompleted;
   stableSetBattleResults.current = setBattleResults;
 
-  const handlePokemonLoaded = useCallback((pokemon: Pokemon[]) => {
-    console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeCore received ${pokemon.length} Pokemon from loader`);
-    setStablePokemon(pokemon);
-  }, []);
-
-  const handleLoadingChange = useCallback((loading: boolean) => {
-    console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeCore loading state changed to: ${loading}`);
-    setIsLoading(loading);
-  }, []);
-
-  // Loading state
-  if (isLoading || !stablePokemon.length) {
-    console.log(`🔒 [POKEMON_LOADING_FIX] BattleModeCore showing loading state - isLoading: ${isLoading}, Pokemon count: ${stablePokemon.length}`);
+  // If Pokemon are already loaded (from splash), show the app immediately
+  if (allPokemon.length > 0) {
+    console.log(`✅ [BATTLE_MODE_CORE] Pokemon already loaded: ${allPokemon.length}, showing app immediately`);
     
     return (
-      <>
-        <BattleModeLoader
-          onPokemonLoaded={handlePokemonLoaded}
-          onLoadingChange={handleLoadingChange}
-        />
-        <div className="flex justify-center items-center h-64 w-full">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
-            <p>Loading complete Pokémon dataset for battles...</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <BattleModeLoader
-        onPokemonLoaded={handlePokemonLoaded}
-        onLoadingChange={handleLoadingChange}
-      />
-      <BattleModeProvider allPokemon={stablePokemon}>
+      <BattleModeProvider allPokemon={allPokemon}>
         <BattleModeContainer
-          allPokemon={stablePokemon}
+          allPokemon={allPokemon}
           initialBattleType={initialBattleType}
           setBattlesCompleted={stableSetBattlesCompleted.current}
           setBattleResults={stableSetBattleResults.current}
         />
       </BattleModeProvider>
-    </>
+    );
+  }
+
+  // Only show loading if we're actually loading and don't have Pokemon yet
+  if (isLoading) {
+    console.log(`🔒 [BATTLE_MODE_CORE] Still loading Pokemon, showing loading state`);
+    
+    return (
+      <div className="flex justify-center items-center h-64 w-full">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+          <p>Loading complete Pokémon dataset for battles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback loading state
+  return (
+    <div className="flex justify-center items-center h-64 w-full">
+      <div className="flex flex-col items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+        <p>Preparing battle mode...</p>
+      </div>
+    </div>
   );
 };
 
