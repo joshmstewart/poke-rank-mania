@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
-import { EnhancedAvailablePokemonSection } from "./EnhancedAvailablePokemonSection";
+import EnhancedAvailablePokemonSection from "./EnhancedAvailablePokemonSection";
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { Card } from "@/components/ui/card";
@@ -98,15 +98,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
             {/* Enhanced Available Pokemon Card */}
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <EnhancedAvailablePokemonSection
-                enhancedAvailablePokemon={enhancedAvailablePokemon}
-                isLoading={isLoading}
-                selectedGeneration={selectedGeneration}
-                loadingType={loadingType}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                loadingRef={loadingRef}
-                handlePageChange={handlePageChange}
-                getPageRange={getPageRange}
+                availablePokemon={enhancedAvailablePokemon}
+                rankedPokemon={displayRankings}
               />
             </Card>
 
