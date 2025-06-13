@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pokemon } from "@/services/pokemon";
@@ -181,7 +180,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
             e.preventDefault();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-300 ${
             isPendingRefinement 
               ? 'opacity-100' 
               : isHovered && !isProcessing 
@@ -192,27 +191,12 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
           type="button"
         >
           <Star
-            className={`w-16 h-16 transition-all duration-300 ${
+            className={`w-16 h-16 transition-colors duration-300 ${
               isPendingRefinement 
-                ? 'text-yellow-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)] filter brightness-125' 
+                ? 'text-yellow-500 fill-yellow-500' 
                 : 'text-gray-500 hover:text-yellow-500'
             }`}
-            fill={isPendingRefinement ? "url(#starGradient)" : "none"}
           />
-          {/* SVG gradient definition for shiny star effect */}
-          {isPendingRefinement && (
-            <svg width="0" height="0" className="absolute">
-              <defs>
-                <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="25%" stopColor="#f59e0b" />
-                  <stop offset="50%" stopColor="#fbbf24" />
-                  <stop offset="75%" stopColor="#eab308" />
-                  <stop offset="100%" stopColor="#ca8a04" />
-                </linearGradient>
-              </defs>
-            </svg>
-          )}
         </button>
 
         {/* Info Button - only visible on card hover */}

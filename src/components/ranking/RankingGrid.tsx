@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
@@ -81,7 +80,7 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
           e.stopPropagation();
         }}
         onClick={handlePrioritizeClick}
-        className={`absolute top-2 right-2 z-10 p-1 rounded-full transition-all duration-300 ${
+        className={`absolute top-2 right-2 z-10 p-1 rounded-full transition-opacity duration-300 ${
           isPendingRefinement
             ? 'opacity-100'
             : isHovered
@@ -92,27 +91,12 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
         type="button"
       >
         <Star
-          className={`w-5 h-5 transition-all duration-300 ${
+          className={`w-5 h-5 transition-colors duration-300 ${
             isPendingRefinement 
-              ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] filter brightness-125' 
+              ? 'text-yellow-500 fill-yellow-500' 
               : 'text-gray-500 hover:text-yellow-500'
           }`}
-          fill={isPendingRefinement ? "url(#rankingGridStarGradient)" : "none"}
         />
-        {/* SVG gradient definition for shiny star effect */}
-        {isPendingRefinement && (
-          <svg width="0" height="0" className="absolute">
-            <defs>
-              <linearGradient id="rankingGridStarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fbbf24" />
-                <stop offset="25%" stopColor="#f59e0b" />
-                <stop offset="50%" stopColor="#fbbf24" />
-                <stop offset="75%" stopColor="#eab308" />
-                <stop offset="100%" stopColor="#ca8a04" />
-              </linearGradient>
-            </defs>
-          </svg>
-        )}
       </button>
 
       {/* Pokemon content */}

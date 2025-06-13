@@ -186,7 +186,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             e.stopPropagation();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-all duration-300 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-300 ${
             isPendingRefinement
               ? 'opacity-100'
               : isHovered
@@ -198,8 +198,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           disabled={!isHydrated}
         >
           <Star
-            className={`w-16 h-16 transition-all duration-300 ${
-              isPendingRefinement ? 'text-yellow-400 fill-yellow-400' : 'text-gray-500 hover:text-yellow-500'
+            className={`w-16 h-16 transition-colors duration-300 ${
+              isPendingRefinement ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500 hover:text-yellow-500'
             }`}
           />
         </button>

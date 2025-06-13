@@ -1,4 +1,3 @@
-
 import React from "react";
 import { RankedPokemon } from "@/services/pokemon";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -84,7 +83,7 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
             e.stopPropagation();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-1 -translate-y-1/2 z-30 p-1 rounded-full transition-all duration-300 ${
+          className={`absolute top-1/2 right-1 -translate-y-1/2 z-30 p-1 rounded-full transition-opacity duration-300 ${
             isPendingRefinement
               ? 'opacity-100'
               : isHovered
@@ -95,27 +94,12 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
           type="button"
         >
           <Star
-            className={`w-6 h-6 transition-all duration-300 ${
+            className={`w-6 h-6 transition-colors duration-300 ${
               isPendingRefinement 
-                ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] filter brightness-125' 
+                ? 'text-yellow-500 fill-yellow-500' 
                 : 'text-gray-500 hover:text-yellow-500'
             }`}
-            fill={isPendingRefinement ? "url(#manualStarGradient)" : "none"}
           />
-          {/* SVG gradient definition for shiny star effect */}
-          {isPendingRefinement && (
-            <svg width="0" height="0" className="absolute">
-              <defs>
-                <linearGradient id="manualStarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="25%" stopColor="#f59e0b" />
-                  <stop offset="50%" stopColor="#fbbf24" />
-                  <stop offset="75%" stopColor="#eab308" />
-                  <stop offset="100%" stopColor="#ca8a04" />
-                </linearGradient>
-              </defs>
-            </svg>
-          )}
         </button>
       </div>
     );
@@ -144,7 +128,7 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
               e.stopPropagation();
             }}
             onClick={handlePrioritizeClick}
-            className={`absolute top-1/2 right-1 -translate-y-1/2 z-30 p-1 rounded-full transition-all duration-300 ${
+            className={`absolute top-1/2 right-1 -translate-y-1/2 z-30 p-1 rounded-full transition-opacity duration-300 ${
               isPendingRefinement
                 ? 'opacity-100'
                 : isHovered
@@ -155,27 +139,12 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
             type="button"
           >
             <Star
-              className={`w-6 h-6 transition-all duration-300 ${
+              className={`w-6 h-6 transition-colors duration-300 ${
                 isPendingRefinement 
-                  ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] filter brightness-125' 
+                  ? 'text-yellow-500 fill-yellow-500' 
                   : 'text-gray-500 hover:text-yellow-500'
               }`}
-              fill={isPendingRefinement ? "url(#manualStarGradient)" : "none"}
             />
-            {/* SVG gradient definition for shiny star effect */}
-            {isPendingRefinement && (
-              <svg width="0" height="0" className="absolute">
-                <defs>
-                  <linearGradient id="manualStarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#fbbf24" />
-                    <stop offset="25%" stopColor="#f59e0b" />
-                    <stop offset="50%" stopColor="#fbbf24" />
-                    <stop offset="75%" stopColor="#eab308" />
-                    <stop offset="100%" stopColor="#ca8a04" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            )}
           </button>
         </div>
       </HoverCardTrigger>
