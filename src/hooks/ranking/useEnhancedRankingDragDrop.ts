@@ -180,12 +180,16 @@ export const useEnhancedRankingDragDrop = (
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        console.log(`%cDragEnd: moving from index ${oldIndex} to ${newIndex}`, 'color: green');
+        
         // OPTIMISTIC UI UPDATE: Reorder visually immediately using arrayMove
         const newOrder = arrayMove(localRankings, oldIndex, newIndex);
+        console.log('%cOptimistic newOrder:', 'color: green', newOrder);
         updateLocalRankings(newOrder);
         
         // ASYNCHRONOUS CALCULATION: Update TrueSkill scores in background
         setTimeout(() => {
+          console.log(`%cExecuting TrueSkill calculation for Pokemon ${activePokemonId}`, 'color: purple');
           handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
         }, 0);
       }

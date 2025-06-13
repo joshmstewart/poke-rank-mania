@@ -1,8 +1,9 @@
-
 import { useState, useEffect } from "react";
-import { RankedPokemon, TopNOption } from "@/services/pokemon";
+import { RankedPokemon } from "@/services/pokemon";
 
 export const useRankingState = () => {
+  console.log('%cuseRankingState rendering', 'color: orange');
+  
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<Record<number, number>>({});
   const [activeTier, setActiveTier] = useState<TopNOption>(() => {

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -65,6 +64,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
+  console.log('%cEnhancedRankingLayout rendering', 'color: blue', { displayRankings });
+
   const handleManualModeReset = () => {
     handleComprehensiveReset();
   };
