@@ -19,7 +19,7 @@ interface EnhancedAvailablePokemonSectionProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
-  allRankedPokemon?: any[]; // Add this prop
+  allRankedPokemon?: any[];
 }
 
 export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionProps> = ({
@@ -32,7 +32,7 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
   loadingRef,
   handlePageChange,
   getPageRange,
-  allRankedPokemon = [] // Default to empty array
+  allRankedPokemon = []
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
@@ -66,7 +66,7 @@ export const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonS
     return isGenerationExpanded(genId);
   };
 
-  // Use memoized Pokemon grouping
+  // FIXED: Call the hook at the top level of the component, not inside useMemo
   const { items, showGenerationHeaders } = usePokemonGroupingMemo({
     pokemon: enhancedAvailablePokemon,
     searchTerm,
