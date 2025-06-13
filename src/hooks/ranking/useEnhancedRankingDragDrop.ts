@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
@@ -17,7 +16,7 @@ export const useEnhancedRankingDragDrop = (
   const [activeDraggedPokemon, setActiveDraggedPokemon] = useState<any>(null);
   const [dragSourceInfo, setDragSourceInfo] = useState<{fromAvailable: boolean, isRanked: boolean} | null>(null);
   const [sourceCardProps, setSourceCardProps] = useState<any>(null);
-  const { updateRating, getAllRatings } = useTrueSkillStore();
+  const { updateRating, getAllRatings, forceScoreBetweenNeighbors } = useTrueSkillStore();
 
   // Optimized sensors for enhanced ranking drag drop
   const sensors = useSensors(
@@ -159,6 +158,18 @@ export const useEnhancedRankingDragDrop = (
             console.log(`🐛 [DRAG_DEBUG] REORDER: Moving from position ${currentIndex} to ${insertionPosition}`);
             console.log(`🐛 [DRAG_DEBUG] Current score before reorder: ${pokemon.score}`);
             
+            // Create a temporary reordered list to find neighbors
+            const reorderedRankings = [...localRankings];
+            const [draggedItem] = reorderedRankings.splice(currentIndex, 1);
+            reorderedRankings.splice(insertionPosition, 0, draggedItem);
+
+            const higherNeighborId = reorderedRankings[insertionPosition - 1]?.id.toString();
+            const lowerNeighborId = reorderedRankings[insertionPosition + 1]?.id.toString();
+
+            console.log(`🐛 [DRAG_DEBUG] CRITICAL FIX: Forcing score BEFORE reorder for ${pokemonId} between ${higherNeighborId || 'null'} and ${lowerNeighborId || 'null'}`);
+            forceScoreBetweenNeighbors(pokemonId.toString(), higherNeighborId, lowerNeighborId);
+            
+            // Now call the reorder AFTER the score has been updated
             handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
             
             // Log score after a delay to see if it changed
@@ -232,6 +243,18 @@ export const useEnhancedRankingDragDrop = (
         const draggedPokemon = localRankings[oldIndex];
         console.log(`🐛 [DRAG_DEBUG] Score before ranking reorder: ${draggedPokemon.score}`);
         
+        // Create a temporary reordered list to find neighbors
+        const reorderedRankings = [...localRankings];
+        const [draggedItem] = reorderedRankings.splice(oldIndex, 1);
+        reorderedRankings.splice(newIndex, 0, draggedItem);
+        
+        const higherNeighborId = reorderedRankings[newIndex - 1]?.id.toString();
+        const lowerNeighborId = reorderedRankings[newIndex + 1]?.id.toString();
+
+        console.log(`🐛 [DRAG_DEBUG] CRITICAL FIX: Forcing score BEFORE reorder for ${activePokemonId} between ${higherNeighborId || 'null'} and ${lowerNeighborId || 'null'}`);
+        forceScoreBetweenNeighbors(activePokemonId.toString(), higherNeighborId, lowerNeighborId);
+        
+        // Now call the reorder AFTER the score has been updated
         handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
         
         // Log result after delay
@@ -242,7 +265,7 @@ export const useEnhancedRankingDragDrop = (
         }, 100);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon, getAllRatings]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon, getAllRatings, forceScoreBetweenNeighbors]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
