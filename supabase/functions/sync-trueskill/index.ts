@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { sessionId, ratings, totalBattles, pendingBattles, lastUpdated } = await req.json();
+    const { sessionId, ratings, totalBattles, totalBattlesLastUpdated, pendingBattles, lastUpdated } = await req.json();
 
     if (!sessionId) {
       return new Response(
@@ -42,13 +42,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Upsert the session data
+    // Upsert the session data with new timestamp fields
     const { data, error } = await supabase
       .from('trueskill_sessions')
       .upsert({
         session_id: sessionId,
         ratings_data: ratings || {},
         total_battles: totalBattles || 0,
+        total_battles_last_updated: totalBattlesLastUpdated || new Date().getTime(),
         pending_battles: pendingBattles || [],
         last_updated: lastUpdated || new Date().toISOString()
       }, {

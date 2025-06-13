@@ -7,6 +7,7 @@ interface TrueSkillRating {
   mu: number;
   sigma: number;
   battleCount: number;
+  lastUpdated: number; // Timestamp in milliseconds
 }
 
 interface RefinementBattle {
@@ -24,6 +25,7 @@ interface TrueSkillStore {
   lastSyncTime: number;
   syncInProgress: boolean;
   totalBattles: number;
+  totalBattlesLastUpdated: number; // New timestamp field
   initiatePendingBattle: boolean;
   
   // Actions
@@ -55,10 +57,11 @@ interface TrueSkillStore {
   // Mode switch coordination
   setInitiatePendingBattle: (value: boolean) => void;
   
-  // Cloud sync actions
+  // Enhanced cloud sync actions with timestamp-based merging
   syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
   smartSync: () => Promise<void>;
+  mergeCloudData: (cloudData: any) => void;
   waitForHydration: () => Promise<void>;
   restoreSessionFromCloud: (userId: string) => Promise<void>;
 }
@@ -80,34 +83,38 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       lastSyncTime: 0,
       syncInProgress: false,
       totalBattles: 0,
+      totalBattlesLastUpdated: Date.now(),
       initiatePendingBattle: false,
 
       updateRating: (pokemonId: string, rating: Rating) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] UpdateRating called for Pokemon ${pokemonId}`);
+        const now = Date.now();
         set((state) => ({
           ratings: {
             ...state.ratings,
             [pokemonId]: {
               mu: rating.mu,
               sigma: rating.sigma,
-              battleCount: (state.ratings[pokemonId]?.battleCount || 0)
+              battleCount: (state.ratings[pokemonId]?.battleCount || 0),
+              lastUpdated: now
             }
           }
         }));
         
-        // Queue a sync after updates
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from updateRating`);
         get().syncToCloud();
       },
 
       incrementBattleCount: (pokemonId: string) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] IncrementBattleCount called for Pokemon ${pokemonId}`);
+        const now = Date.now();
         set((state) => ({
           ratings: {
             ...state.ratings,
             [pokemonId]: {
               ...state.ratings[pokemonId],
-              battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1
+              battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1,
+              lastUpdated: now
             }
           }
         }));
@@ -115,18 +122,23 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       incrementTotalBattles: () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] IncrementTotalBattles called`);
+        const now = Date.now();
         set((state) => ({
-          totalBattles: state.totalBattles + 1
+          totalBattles: state.totalBattles + 1,
+          totalBattlesLastUpdated: now
         }));
         
-        // Queue a sync after battle count increment
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from incrementTotalBattles`);
         get().syncToCloud();
       },
 
       setTotalBattles: (count: number) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] SetTotalBattles called with count: ${count}`);
-        set({ totalBattles: count });
+        const now = Date.now();
+        set({ 
+          totalBattles: count,
+          totalBattlesLastUpdated: now
+        });
       },
 
       getAllRatings: () => get().ratings,
@@ -145,9 +157,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       clearAllRatings: () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ClearAllRatings called`);
+        const now = Date.now();
         set({ 
           ratings: {},
-          totalBattles: 0
+          totalBattles: 0,
+          totalBattlesLastUpdated: now
         });
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from clearAllRatings`);
         get().syncToCloud();
@@ -186,7 +200,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           return state;
         });
         
-        // Sync to cloud immediately
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from addPendingBattle`);
         get().syncToCloud();
       },
@@ -234,7 +247,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         const finalLength = get().refinementQueue.length;
         
-        // Sync to cloud
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from queueBattlesForReorder`);
         get().syncToCloud();
         
@@ -253,7 +265,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           return { refinementQueue: newQueue };
         });
         
-        // Sync to cloud
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from popRefinementBattle`);
         get().syncToCloud();
       },
@@ -276,6 +287,61 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       setInitiatePendingBattle: (value: boolean) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] SetInitiatePendingBattle called with value: ${value}`);
         set({ initiatePendingBattle: value });
+      },
+
+      mergeCloudData: (cloudData: any) => {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== TIMESTAMP-BASED MERGE =====`);
+        const currentState = get();
+        
+        // Merge ratings with timestamp priority
+        const mergedRatings: Record<string, TrueSkillRating> = { ...currentState.ratings };
+        
+        if (cloudData.ratings) {
+          Object.entries(cloudData.ratings).forEach(([pokemonId, cloudRating]: [string, any]) => {
+            const localRating = currentState.ratings[pokemonId];
+            
+            // Add default timestamp if missing
+            const cloudTimestamp = cloudRating.lastUpdated || 0;
+            const localTimestamp = localRating?.lastUpdated || 0;
+            
+            if (!localRating || cloudTimestamp > localTimestamp) {
+              console.log(`🚨🚨🚨 [SYNC_AUDIT] Using cloud data for Pokemon ${pokemonId} (cloud: ${cloudTimestamp} > local: ${localTimestamp})`);
+              mergedRatings[pokemonId] = {
+                ...cloudRating,
+                lastUpdated: cloudTimestamp || Date.now()
+              };
+            } else {
+              console.log(`🚨🚨🚨 [SYNC_AUDIT] Keeping local data for Pokemon ${pokemonId} (local: ${localTimestamp} > cloud: ${cloudTimestamp})`);
+            }
+          });
+        }
+        
+        // Merge total battles with timestamp priority
+        let mergedTotalBattles = currentState.totalBattles;
+        let mergedTotalBattlesTimestamp = currentState.totalBattlesLastUpdated;
+        
+        if (cloudData.totalBattlesLastUpdated && cloudData.totalBattlesLastUpdated > currentState.totalBattlesLastUpdated) {
+          mergedTotalBattles = cloudData.totalBattles || 0;
+          mergedTotalBattlesTimestamp = cloudData.totalBattlesLastUpdated;
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Using cloud total battles: ${mergedTotalBattles}`);
+        } else {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Keeping local total battles: ${mergedTotalBattles}`);
+        }
+        
+        // Merge pending battles and refinement queue (combine and dedupe)
+        const mergedPending = [...new Set([...currentState.pendingBattles, ...(cloudData.pendingBattles || [])])];
+        const mergedRefinements = [...currentState.refinementQueue, ...(cloudData.refinementQueue || [])];
+        
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Merge complete - ${Object.keys(mergedRatings).length} ratings, ${mergedTotalBattles} battles`);
+        
+        set({
+          ratings: mergedRatings,
+          totalBattles: mergedTotalBattles,
+          totalBattlesLastUpdated: mergedTotalBattlesTimestamp,
+          pendingBattles: mergedPending,
+          refinementQueue: mergedRefinements,
+          isHydrated: true
+        });
       },
 
       syncToCloud: async () => {
@@ -308,8 +374,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               },
               body: JSON.stringify({
                 sessionId: state.sessionId,
-                ratings: state.ratings as any,
+                ratings: state.ratings,
                 totalBattles: state.totalBattles,
+                totalBattlesLastUpdated: state.totalBattlesLastUpdated,
                 pendingBattles: state.pendingBattles,
                 refinementQueue: state.refinementQueue,
                 lastUpdated: new Date().toISOString()
@@ -377,18 +444,15 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             const cloudRatingsCount = Object.keys(result.ratings).length;
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Loaded ${cloudRatingsCount} ratings from cloud`);
             
-            set({
-              ratings: result.ratings,
-              totalBattles: result.totalBattles || 0,
-              pendingBattles: result.pendingBattles || [],
-              refinementQueue: result.refinementQueue || [],
-              isHydrated: true
-            });
+            // Use the new merge function instead of direct replacement
+            get().mergeCloudData(result);
             
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Load complete - hydration flag set`);
           }
         } catch (error) {
           console.error(`🚨🚨🚨 [SYNC_AUDIT] Load from cloud failed:`, error);
+          // Ensure hydration even if cloud load fails
+          set({ isHydrated: true });
         }
       },
 
@@ -409,15 +473,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync starting - current ratings: ${ratingsBeforeSmartSync}`);
 
         try {
-          const localState = {
-            ratings: state.ratings,
-            totalBattles: state.totalBattles,
-            pendingBattles: state.pendingBattles,
-            refinementQueue: state.refinementQueue,
-          };
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Local state - ${Object.keys(localState.ratings).length} ratings`);
-
           const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
             method: 'POST',
             headers: { 
@@ -427,74 +482,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             body: JSON.stringify({ sessionId: state.sessionId }),
           });
 
-          let cloudState = {
-            ratings: {},
-            totalBattles: 0,
-            pendingBattles: [],
-            refinementQueue: [],
-          };
-
           if (response.ok) {
             const result = await response.json();
             if (result.success) {
-              cloudState = {
-                ratings: result.ratings || {},
-                totalBattles: result.totalBattles || 0,
-                pendingBattles: result.pendingBattles || [],
-                refinementQueue: result.refinementQueue || [],
-              };
+              const cloudRatingCount = Object.keys(result.ratings || {}).length;
+              console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud state - ${cloudRatingCount} ratings`);
+              
+              // Use the new merge function
+              get().mergeCloudData(result);
+              
+              // Sync the merged data back to cloud
+              await get().syncToCloud();
             }
           } else {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state. Using local state only.`);
+            set({ isHydrated: true });
           }
-          
-          const cloudRatingCount = Object.keys(cloudState.ratings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud state - ${cloudRatingCount} ratings`);
-
-          // Merge logic
-          const mergedRatings: Record<string, TrueSkillRating> = {};
-          
-          const allPokemonIds = new Set([
-            ...Object.keys(localState.ratings),
-            ...Object.keys(cloudState.ratings)
-          ]);
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Merging ${allPokemonIds.size} unique Pokemon`);
-          
-          allPokemonIds.forEach(pokemonId => {
-            const localRating = localState.ratings[pokemonId];
-            const cloudRating = cloudState.ratings[pokemonId];
-            
-            if (localRating && cloudRating) {
-              const useLocal = localRating.battleCount >= cloudRating.battleCount;
-              mergedRatings[pokemonId] = useLocal ? localRating : cloudRating;
-            } else if (localRating) {
-              mergedRatings[pokemonId] = localRating;
-            } else if (cloudRating) {
-              mergedRatings[pokemonId] = cloudRating;
-            }
-          });
-
-          const mergedPending = [...new Set([...localState.pendingBattles, ...cloudState.pendingBattles])];
-          const mergedRefinements = [...localState.refinementQueue, ...cloudState.refinementQueue];
-          const mergedTotalBattles = Math.max(localState.totalBattles, cloudState.totalBattles);
-          
-          const finalRatingCount = Object.keys(mergedRatings).length;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Merge complete - final count: ${finalRatingCount}`);
-          
-          set({
-            ratings: mergedRatings,
-            totalBattles: mergedTotalBattles,
-            pendingBattles: mergedPending,
-            refinementQueue: mergedRefinements,
-            isHydrated: true
-          });
           
           console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync complete - hydration flag set`);
           
-          // Sync the final merged state back to the cloud
-          await get().syncToCloud();
-
         } catch (error) {
           console.error(`🚨🚨🚨 [SYNC_AUDIT] Smart sync failed:`, error);
           set({ isHydrated: true }); // Ensure app doesn't hang
@@ -544,8 +550,20 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       name: 'trueskill-storage',
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Migrate old data without timestamps
+          const now = Date.now();
+          Object.keys(state.ratings).forEach(pokemonId => {
+            if (!state.ratings[pokemonId].lastUpdated) {
+              state.ratings[pokemonId].lastUpdated = now;
+            }
+          });
+          
+          if (!state.totalBattlesLastUpdated) {
+            state.totalBattlesLastUpdated = now;
+          }
+          
           state.isHydrated = true;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete`);
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete with timestamp migration`);
         }
       }
     }

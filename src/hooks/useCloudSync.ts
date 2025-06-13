@@ -17,43 +17,54 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
 
-  // CRITICAL DEBUG: Always log hook execution
   console.log(`🚨🚨🚨 [SYNC_AUDIT] useCloudSync hook is running at: ${new Date().toISOString()}`);
   console.log(`🚨🚨🚨 [SYNC_AUDIT] user?.id: ${user?.id || 'UNDEFINED'}`);
   console.log(`🚨🚨🚨 [SYNC_AUDIT] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
   console.log(`🚨🚨🚨 [SYNC_AUDIT] isHydrated: ${isHydrated}`);
 
-  // FIXED: Force effect to run by using more specific dependencies and adding a condition check
+  // PREDICTABLE FLOW: Load local first, then sync with cloud in background
   useEffect(() => {
-    const syncCheckId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC EFFECT TRIGGER CHECK =====`);
-    console.log(`🚨🚨🚨 [SYNC_AUDIT] user?.id: ${user?.id || 'UNDEFINED'}`);
-    console.log(`🚨🚨🚨 [SYNC_AUDIT] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
+    const effectiveUserId = user?.id || session?.user?.id;
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== PREDICTABLE SYNC FLOW =====`);
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] effectiveUserId: ${effectiveUserId || 'UNDEFINED'}`);
     console.log(`🚨🚨🚨 [SYNC_AUDIT] isHydrated: ${isHydrated}`);
     
-    const effectiveUserId = user?.id || session?.user?.id;
-    console.log(`🚨🚨🚨 [SYNC_AUDIT] effectiveUserId: ${effectiveUserId || 'UNDEFINED'}`);
-    console.log(`🚨🚨🚨 [SYNC_AUDIT] Both conditions met: ${!!(effectiveUserId && isHydrated)}`);
-    
     if (effectiveUserId && isHydrated) {
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ CONDITIONS MET - TRIGGERING RESTORE SESSION`);
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] User authenticated and hydrated, restoring session with smart sync`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ STARTING PREDICTABLE SYNC FLOW`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 1: Local data already loaded (hydrated)`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 2: Starting background cloud sync`);
       
       const ratingsBeforeSync = getAllRatings();
       const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings before sync: ${rankedCountBefore}`);
       
-      restoreSessionFromCloud(effectiveUserId);
+      // Show subtle sync indicator
+      toast({
+        title: "Syncing...",
+        description: "Checking for updates from your other devices",
+        duration: 2000
+      });
       
-      // Check after sync with a delay
-      setTimeout(() => {
+      // Perform background sync with timestamp-based merging
+      smartSync().then(() => {
         const ratingsAfterSync = getAllRatings();
         const rankedCountAfter = Object.keys(ratingsAfterSync).length;
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings after sync: ${rankedCountAfter}`);
+        
         if (rankedCountAfter !== rankedCountBefore) {
           console.log(`🚨🚨🚨 [SYNC_AUDIT] RANKING COUNT CHANGED! Before: ${rankedCountBefore}, After: ${rankedCountAfter}`);
+          toast({
+            title: "Sync Complete",
+            description: `Updated with ${rankedCountAfter - rankedCountBefore} changes from your other devices`,
+            duration: 3000
+          });
+        } else {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] No changes from cloud`);
         }
-      }, 2000);
+      }).catch(error => {
+        console.error(`🚨🚨🚨 [SYNC_AUDIT] Background sync failed:`, error);
+        // Don't show error toast for background sync failures
+      });
     } else {
       console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ CONDITIONS NOT MET - SYNC WILL NOT RUN`);
       if (!effectiveUserId) {
@@ -63,8 +74,8 @@ export const useCloudSync = () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Store not hydrated yet`);
       }
     }
-    console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC EFFECT CHECK COMPLETE =====`);
-  }, [user?.id, session?.user?.id, isHydrated, restoreSessionFromCloud, getAllRatings]);
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC FLOW COMPLETE =====`);
+  }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
 
   // Manual sync function for testing
   const triggerManualSync = useCallback(async () => {
@@ -123,7 +134,6 @@ export const useCloudSync = () => {
   }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
-    // Sync is now handled automatically by the store when data changes
     console.log('🚨🚨🚨 [SYNC_AUDIT] Battle data saved - auto-sync will handle cloud updates');
   }, []);
 
@@ -153,7 +163,6 @@ export const useCloudSync = () => {
       return;
     }
     
-    // Sync is now handled automatically by the store
     console.log('🚨🚨🚨 [SYNC_AUDIT] Rankings saved - auto-sync will handle cloud updates');
 
     toast({
@@ -163,7 +172,6 @@ export const useCloudSync = () => {
   }, [isHydrated]);
 
   const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
-    // Sync is now handled automatically by the store
     return isHydrated;
   }, [isHydrated]);
 
@@ -182,7 +190,7 @@ export const useCloudSync = () => {
     saveRankingsToCloud,
     saveSessionToCloud,
     loadSessionFromCloud,
-    triggerManualSync, // New manual sync function
+    triggerManualSync,
     isAuthenticated: !!(user || session?.user)
   };
 };
