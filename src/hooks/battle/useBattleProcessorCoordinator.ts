@@ -14,7 +14,6 @@ export const useBattleProcessorCoordinator = (
   allPokemon: Pokemon[],
   setCurrentBattle: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   setShowingMilestone: React.Dispatch<React.SetStateAction<boolean>>,
-  milestones: number[],
   generateRankings: (results: SingleBattle[]) => void,
   setSelectedPokemon: React.Dispatch<React.SetStateAction<number[]>>,
   activeTier?: TopNOption,
@@ -28,7 +27,6 @@ export const useBattleProcessorCoordinator = (
     battlesCompleted,
     setBattlesCompleted,
     setShowingMilestone,
-    milestones,
     generateRankings
   );
 
