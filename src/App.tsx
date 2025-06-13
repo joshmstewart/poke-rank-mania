@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
 import AppHeader from "@/components/layout/AppHeader";
@@ -11,6 +11,7 @@ import PokemonRankerProvider from "@/components/pokemon/PokemonRankerProvider";
 import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProvider";
 import { SplashPage } from "@/components/splash/SplashPage";
 import { useSplashLoader } from "@/hooks/useSplashLoader";
+import { useAuth } from "@/contexts/auth/useAuth";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -98,6 +99,25 @@ function AppContent() {
   );
 }
 
+function AppWithSplash() {
+  // Now we can safely use the splash loader since we're inside the AuthProvider
+  const { isLoading, loadingStatus, progress } = useSplashLoader();
+  
+  // Show splash page during loading
+  if (isLoading) {
+    return <SplashPage loadingStatus={loadingStatus} progress={progress} />;
+  }
+  
+  // Once splash is done, show the main app content
+  return (
+    <PokemonRankerProvider>
+      <RefinementQueueProvider>
+        <AppContent />
+      </RefinementQueueProvider>
+    </PokemonRankerProvider>
+  );
+}
+
 function App() {
   const renderCount = useRef(0);
   const mountTime = useRef(new Date().toISOString());
@@ -105,9 +125,6 @@ function App() {
   const unmountDetectedRef = useRef(false);
   const intervalRefs = useRef<NodeJS.Timeout[]>([]);
   const lastLogTime = useRef(0);
-  
-  // Splash loader state
-  const { isLoading, loadingStatus, progress } = useSplashLoader();
   
   renderCount.current += 1;
   
@@ -136,19 +153,10 @@ function App() {
     };
   }, []);
   
-  // Show splash page during loading
-  if (isLoading) {
-    return <SplashPage loadingStatus={loadingStatus} progress={progress} />;
-  }
-  
-  // CRITICAL FIX: Establish proper provider hierarchy at the top level
+  // CRITICAL FIX: Establish proper provider hierarchy with AuthProvider at the top level
   return (
     <AuthWrapper>
-      <PokemonRankerProvider>
-        <RefinementQueueProvider>
-          <AppContent />
-        </RefinementQueueProvider>
-      </PokemonRankerProvider>
+      <AppWithSplash />
     </AuthWrapper>
   );
 }
