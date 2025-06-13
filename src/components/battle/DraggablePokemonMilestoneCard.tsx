@@ -313,4 +313,5 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   );
 };
 
-export default DraggablePokemonMilestoneCard;
+// Wrap the export in React.memo to prevent unnecessary re-renders
+export default React.memo(DraggablePokemonMilestoneCard);

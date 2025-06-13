@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { RankedPokemon } from "@/services/pokemon";
+import { RankedPokemon, TopNOption } from "@/services/pokemon";
 
 export const useRankingState = () => {
   console.log('%cuseRankingState rendering', 'color: orange');
