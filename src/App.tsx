@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
 import AppHeader from "@/components/layout/AppHeader";
-import { HeaderSyncStatus } from "@/components/layout/HeaderSyncStatus";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Toaster } from "@/components/ui/toaster"
 import PokemonRankerWithProvider from "@/components/pokemon/PokemonRankerWithProvider";
@@ -198,17 +198,7 @@ function App() {
     <AuthWrapper>
       <PokemonRankerProvider>
         <RefinementQueueProvider>
-          <div className="flex flex-col h-screen">
-            <AppHeader mode={mode} onModeChange={handleModeChange} />
-            <HeaderSyncStatus />
-            
-            <main className="flex-grow bg-gray-100 py-6 px-4">
-              <div className="container max-w-7xl mx-auto">
-                {renderContent()}
-              </div>
-            </main>
-            <Toaster />
-          </div>
+          <AppContent />
         </RefinementQueueProvider>
       </PokemonRankerProvider>
     </AuthWrapper>

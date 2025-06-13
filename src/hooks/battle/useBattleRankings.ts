@@ -10,27 +10,18 @@ export const useBattleRankings = () => {
   const { pokemonLookupMap } = usePokemonContext();
 
   const generateRankingsFromBattleHistory = useCallback((battleHistory: any[]) => {
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] ===== GENERATING MILESTONE RANKINGS =====`);
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Battle history length: ${battleHistory?.length || 0}`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== GENERATING MILESTONE RANKINGS =====`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Battle history length: ${battleHistory?.length || 0}`);
     
-    // CRITICAL FIX: Always use TrueSkill store data instead of battle history
-    // This ensures milestone rankings match Manual mode exactly
+    // Get all TrueSkill ratings from the centralized store
     const allRatings = getAllRatings();
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] TrueSkill store raw ratings:`, Object.keys(allRatings).slice(0, 5));
+    const ratedPokemonIds = Object.keys(allRatings).map(Number);
     
-    // CRITICAL FIX: Convert string keys to numbers for Pokemon ID lookup
-    const ratedPokemonIds = Object.keys(allRatings).map(key => {
-      const numericId = Number(key);
-      console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Converting key "${key}" to number ${numericId}`);
-      return numericId;
-    }).filter(id => !isNaN(id));
-    
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] TrueSkill store contains ${ratedPokemonIds.length} rated Pokemon`);
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Pokemon lookup map size: ${pokemonLookupMap.size}`);
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] First 5 rated Pokemon IDs:`, ratedPokemonIds.slice(0, 5));
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] TrueSkill store contains ${ratedPokemonIds.length} rated Pokemon`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Pokemon lookup map size: ${pokemonLookupMap.size}`);
     
     if (ratedPokemonIds.length === 0) {
-      console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] No TrueSkill ratings found, returning empty rankings`);
+      console.log(`📊 [BATTLE_RANKINGS_FIXED] No TrueSkill ratings found, returning empty rankings`);
       return [];
     }
 
@@ -38,17 +29,12 @@ export const useBattleRankings = () => {
     const rankings: RankedPokemon[] = [];
     
     ratedPokemonIds.forEach(pokemonId => {
-      console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Processing Pokemon ID: ${pokemonId}`);
-      
       const basePokemon = pokemonLookupMap.get(pokemonId);
-      // CRITICAL FIX: Use string key for ratings lookup
-      const ratingData = allRatings[pokemonId.toString()];
-      
-      console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Pokemon ${pokemonId} - basePokemon found: ${!!basePokemon}, ratingData found: ${!!ratingData}`);
+      const ratingData = allRatings[pokemonId];
       
       if (basePokemon && ratingData) {
         const rating = new Rating(ratingData.mu, ratingData.sigma);
-        const conservativeEstimate = rating.mu - rating.sigma;
+        const conservativeEstimate = rating.mu - rating.sigma; // Changed from 3 * sigma to 1 * sigma
         const confidence = Math.max(0, Math.min(100, 100 * (1 - (rating.sigma / 8.33))));
         
         const rankedPokemon: RankedPokemon = {
@@ -63,35 +49,22 @@ export const useBattleRankings = () => {
         };
         
         rankings.push(rankedPokemon);
-        console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] ✅ Added ${basePokemon.name} to rankings`);
       } else {
-        console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] ⚠️ Missing data for Pokemon ${pokemonId}: basePokemon=${!!basePokemon}, ratingData=${!!ratingData}`);
-        
-        // CRITICAL DEBUG: Check if it's a key mismatch issue
-        if (!basePokemon) {
-          console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Pokemon ${pokemonId} not found in lookup map`);
-        }
-        if (!ratingData) {
-          console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Rating data for ${pokemonId} not found. Available keys:`, Object.keys(allRatings).slice(0, 10));
-        }
+        console.log(`📊 [BATTLE_RANKINGS_FIXED] ⚠️ Missing data for Pokemon ${pokemonId}: basePokemon=${!!basePokemon}, ratingData=${!!ratingData}`);
       }
     });
     
     // Sort by score (conservative estimate) - same as Manual mode
     rankings.sort((a, b) => b.score - a.score);
     
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Generated ${rankings.length} rankings from TrueSkill store`);
-    if (rankings.length > 0) {
-      console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] Top 5 rankings:`, rankings.slice(0, 5).map(p => ({
-        name: p.name,
-        id: p.id,
-        score: p.score.toFixed(3),
-        confidence: p.confidence.toFixed(1)
-      })));
-    } else {
-      console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] ❌ NO RANKINGS GENERATED - CRITICAL ISSUE!`);
-    }
-    console.log(`📊🔧🔧🔧 [BATTLE_RANKINGS_MEGA_FIX] ===== MILESTONE RANKINGS COMPLETE =====`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Generated ${rankings.length} rankings from TrueSkill store`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Top 5 rankings:`, rankings.slice(0, 5).map(p => ({
+      name: p.name,
+      id: p.id,
+      score: p.score.toFixed(3),
+      confidence: p.confidence.toFixed(1)
+    })));
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== MILESTONE RANKINGS COMPLETE =====`);
     
     return rankings;
   }, [getAllRatings, pokemonLookupMap]);

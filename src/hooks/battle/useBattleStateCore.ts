@@ -51,8 +51,11 @@ export const useBattleStateCore = (
   // CRITICAL FIX: Get shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
 
-  // CRITICAL: Add battle result processor with pending removal
-  const { processResult } = useBattleResultProcessor();
+  // CRITICAL: Add battle result processor
+  const { processResult: processBattleResult } = useBattleResultProcessor(
+    battleResults,
+    setBattleResults
+  );
 
   // ENHANCED: Save battle count whenever it changes
   useEffect(() => {
@@ -221,18 +224,16 @@ export const useBattleStateCore = (
       // Add current battle Pokemon to recently used IMMEDIATELY
       addToRecentlyUsed(currentBattle);
       
-      // CRITICAL: Process battle result using the safe processor that handles pending removal
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ===== CALLING SAFE BATTLE PROCESSOR =====`);
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] This will update TrueSkill AND remove pending Pokemon`);
+      // CRITICAL: Process battle result using the proper processor
+      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ===== CALLING BATTLE PROCESSOR =====`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Selections: ${newSelection}`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Battle type: ${battleType}`);
       console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Current battle Pokemon: ${currentBattle.map(p => `${p.name}(${p.id})`).join(', ')}`);
       
-      const battleResult = processResult(newSelection, battleType, currentBattle);
+      const battleResult = processBattleResult(newSelection, battleType, currentBattle);
       
       if (battleResult) {
         console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ✅ Battle result processed successfully`);
-        console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] TrueSkill updated AND pending Pokemon removed`);
         
         // Update state
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
@@ -272,7 +273,7 @@ export const useBattleStateCore = (
         console.error(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ❌ Battle result processing failed`);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processResult]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processBattleResult]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
@@ -283,8 +284,8 @@ export const useBattleStateCore = (
       
       addToRecentlyUsed(currentBattle);
       
-      // Process triplet battle result with safe pending removal
-      const battleResult = processResult(selectedPokemon, battleType, currentBattle);
+      // Process triplet battle result
+      const battleResult = processBattleResult(selectedPokemon, battleType, currentBattle);
       
       if (battleResult) {
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
@@ -306,7 +307,7 @@ export const useBattleStateCore = (
         }
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processResult]);
+  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processBattleResult]);
 
   // CRITICAL FIX: Listen for refinement queue updates and force new battles
   useEffect(() => {

@@ -9,11 +9,10 @@ export const useCloudPendingBattles = () => {
     clearAllPendingBattles,
     isPokemonPending,
     getAllPendingBattles,
-    isHydrated,
-    syncToCloud
+    isHydrated
   } = useTrueSkillStore();
 
-  console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Hook initialized - hydrated: ${isHydrated}`);
+  console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hook initialized - hydrated: ${isHydrated}`);
 
   const addPendingPokemon = useCallback((pokemonId: number) => {
     const addId = `ADD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -27,10 +26,6 @@ export const useCloudPendingBattles = () => {
     const afterAdd = getAllPendingBattles();
     console.log(`🔥🔥🔥 [${addId}] Current pending after add:`, afterAdd);
     console.log(`🔥🔥🔥 [${addId}] Successfully added: ${afterAdd.includes(pokemonId)}`);
-    
-    // PHASE 4: Ensure immediate sync for critical pending operations
-    console.log(`🔥🔥🔥 [${addId}] Forcing immediate sync after adding pending Pokemon`);
-    syncToCloud();
     
     // Dispatch immediate event to notify system
     const eventDetail = { 
@@ -46,51 +41,39 @@ export const useCloudPendingBattles = () => {
     });
     document.dispatchEvent(event);
     console.log(`🔥🔥🔥 [${addId}] ✅ Event dispatched successfully`);
-  }, [addPendingBattle, getAllPendingBattles, syncToCloud]);
+  }, [addPendingBattle, getAllPendingBattles]);
 
   const removePendingPokemon = useCallback((pokemonId: number) => {
-    const removeId = `REMOVE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    console.log(`🔥🔥🔥 [${removeId}] ===== REMOVING POKEMON ${pokemonId} =====`);
-    console.log(`🔥🔥🔥 [${removeId}] Current pending before remove:`, getAllPendingBattles());
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== REMOVING POKEMON ${pokemonId} =====`);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending before remove:`, getAllPendingBattles());
     removePendingBattle(pokemonId);
-    
-    const afterRemove = getAllPendingBattles();
-    console.log(`🔥🔥🔥 [${removeId}] Current pending after remove:`, afterRemove);
-    
-    // PHASE 4: Ensure immediate sync for critical pending operations
-    console.log(`🔥🔥🔥 [${removeId}] Forcing immediate sync after removing pending Pokemon`);
-    syncToCloud();
-  }, [removePendingBattle, getAllPendingBattles, syncToCloud]);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after remove:`, getAllPendingBattles());
+  }, [removePendingBattle, getAllPendingBattles]);
 
   const clearAllPending = useCallback(() => {
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] ===== CLEARING ALL PENDING =====`);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Current pending before clear:`, getAllPendingBattles());
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== CLEARING ALL PENDING =====`);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending before clear:`, getAllPendingBattles());
     clearAllPendingBattles();
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Current pending after clear:`, getAllPendingBattles());
-    
-    // PHASE 4: Ensure immediate sync
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Forcing immediate sync after clearing all pending`);
-    syncToCloud();
-  }, [clearAllPendingBattles, getAllPendingBattles, syncToCloud]);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Current pending after clear:`, getAllPendingBattles());
+  }, [clearAllPendingBattles, getAllPendingBattles]);
 
   const getAllPendingIds = useCallback((): number[] => {
     const ids = getAllPendingBattles();
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] ===== GET ALL PENDING IDS =====`);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Raw result:`, ids);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Type:`, typeof ids);
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Is Array:`, Array.isArray(ids));
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Length:`, ids?.length || 'undefined');
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] ===== GET ALL PENDING IDS =====`);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Raw result:`, ids);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Type:`, typeof ids);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Is Array:`, Array.isArray(ids));
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Length:`, ids?.length || 'undefined');
     if (Array.isArray(ids)) {
-      console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Individual items:`, ids.map(id => `${id}(${typeof id})`));
+      console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Individual items:`, ids.map(id => `${id}(${typeof id})`));
       
       // DEBUG: Check if the first few IDs match what the cards are checking
       const firstFew = ids.slice(0, 5);
-      console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] 🔍 CHECKING FIRST FEW IDS:`, firstFew);
+      console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] 🔍 CHECKING FIRST FEW IDS:`, firstFew);
       firstFew.forEach(id => {
         const pendingCheck = isPokemonPending(id);
-        console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] 🔍 isPokemonPending(${id}): ${pendingCheck}`);
-        console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] 🔍 ID type: ${typeof id}, value: ${id}`);
+        console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] 🔍 isPokemonPending(${id}): ${pendingCheck}`);
+        console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] 🔍 ID type: ${typeof id}, value: ${id}`);
       });
     }
     return ids || [];
@@ -98,18 +81,18 @@ export const useCloudPendingBattles = () => {
 
   const hasPendingPokemon = getAllPendingBattles().length > 0;
 
-  // PHASE 2: Enhanced hydration monitoring
+  // If we somehow loaded pending battles but hydration flag is false, fix it
   useEffect(() => {
     if (getAllPendingBattles().length > 0 && !isHydrated) {
       console.warn(
-        '[CLOUD_PENDING_PHASE2] Pending battles present but isHydrated is false. Forcing hydration.'
+        '[CLOUD_PENDING_HOOK] Pending battles present but isHydrated is false. Forcing hydration.'
       );
       useTrueSkillStore.setState({ isHydrated: true });
     }
   }, [isHydrated, getAllPendingBattles]);
 
-  // Debug render with enhanced logging
-  console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Hook render:`, {
+  // Debug render
+  console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hook render:`, {
     hasPendingPokemon,
     pendingCount: getAllPendingBattles().length,
     pendingIds: getAllPendingBattles(),
@@ -118,7 +101,7 @@ export const useCloudPendingBattles = () => {
   });
 
   useEffect(() => {
-    console.log(`🔥🔥🔥 [CLOUD_PENDING_PHASE2] Hydration status changed: ${isHydrated}`);
+    console.log(`🔥🔥🔥 [CLOUD_PENDING_HOOK] Hydration status changed: ${isHydrated}`);
   }, [isHydrated]);
 
   return {
