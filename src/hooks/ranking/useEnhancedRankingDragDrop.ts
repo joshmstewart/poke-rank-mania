@@ -112,6 +112,56 @@ export const useEnhancedRankingDragDrop = (
     
     console.log(`🐛 [DRAG_DEBUG] Active ID: ${activeId}, Over ID: ${overId}`);
 
+    const handleReorder = (pokemonId: number, oldIndex: number, newIndex: number) => {
+        console.log(`🐛 [DRAG_DEBUG] REORDER: Pokemon ${pokemonId} from ${oldIndex} to ${newIndex}`);
+
+        // 1. Create the new array with the pokemon moved.
+        const newLocalRankings = [...localRankings];
+        const [draggedItem] = newLocalRankings.splice(oldIndex, 1);
+        newLocalRankings.splice(newIndex, 0, draggedItem);
+
+        // 2. Determine neighbors from the new array.
+        const higherNeighborId = newLocalRankings[newIndex - 1]?.id.toString();
+        const lowerNeighborId = newLocalRankings[newIndex + 1]?.id.toString();
+
+        // 3. Persist the score change to the global store in the background
+        forceScoreBetweenNeighbors(pokemonId.toString(), higherNeighborId, lowerNeighborId);
+
+        // 4. Calculate the new score locally to prevent async issues
+        const allRatings = getAllRatings();
+        const higherNeighborScore = higherNeighborId ? allRatings[higherNeighborId]?.mu : undefined;
+        const lowerNeighborScore = lowerNeighborId ? allRatings[lowerNeighborId]?.mu : undefined;
+        
+        let targetScore: number;
+        if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
+          targetScore = (higherNeighborScore + lowerNeighborScore) / 2;
+        } else if (higherNeighborScore !== undefined) {
+          // Using the same logic as the store for consistency
+          targetScore = higherNeighborScore + 1.0;
+        } else if (lowerNeighborScore !== undefined) {
+          targetScore = lowerNeighborScore - 1.0;
+        } else {
+          targetScore = 25.0; // Default TrueSkill rating
+        }
+
+        console.log(`🐛 [DRAG_DEBUG] Locally calculated new score for ${pokemonId}: ${targetScore}`);
+
+        // 5. Update the score on the item that was moved in our new local array.
+        newLocalRankings[newIndex] = {
+            ...newLocalRankings[newIndex],
+            score: targetScore,
+        };
+        
+        // 6. Update the component's state with this new, correct array.
+        updateLocalRankings(newLocalRankings);
+        
+        toast({
+          title: "Pokemon Reordered",
+          description: `${newLocalRankings[newIndex].name} moved to position ${newIndex + 1}!`,
+          duration: 3000
+        });
+    };
+
     // Handle drag from available to rankings
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
@@ -156,38 +206,7 @@ export const useEnhancedRankingDragDrop = (
             // CASE A: Pokemon is already in rankings - this is a REORDER
             const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
             console.log(`🐛 [DRAG_DEBUG] REORDER: Moving from position ${currentIndex} to ${insertionPosition}`);
-            console.log(`🐛 [DRAG_DEBUG] Current score before reorder: ${pokemon.score}`);
-            
-            // Create a temporary reordered list to find neighbors
-            const reorderedRankings = [...localRankings];
-            const [draggedItem] = reorderedRankings.splice(currentIndex, 1);
-            reorderedRankings.splice(insertionPosition, 0, draggedItem);
-
-            const higherNeighborId = reorderedRankings[insertionPosition - 1]?.id.toString();
-            const lowerNeighborId = reorderedRankings[insertionPosition + 1]?.id.toString();
-
-            console.log(`🐛 [DRAG_DEBUG] CRITICAL FIX: Forcing score BEFORE reorder for ${pokemonId} between ${higherNeighborId || 'null'} and ${lowerNeighborId || 'null'}`);
-            forceScoreBetweenNeighbors(pokemonId.toString(), higherNeighborId, lowerNeighborId);
-            
-            // Now call the reorder AFTER the score has been updated
-            handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
-            
-            // Log score after a delay to see if it changed
-            setTimeout(() => {
-              const allRatings = getAllRatings();
-              const updatedRating = allRatings[pokemonId.toString()];
-              console.log(`🐛 [DRAG_DEBUG] Score after reorder (delay): ${updatedRating?.mu || 'Not found'}`);
-              
-              const updatedPokemonInRankings = localRankings.find(p => p.id === pokemonId);
-              console.log(`🐛 [DRAG_DEBUG] Pokemon in local rankings after reorder: score=${updatedPokemonInRankings?.score || 'Not found'}`);
-            }, 100);
-            
-            toast({
-              title: "Pokemon Reordered",
-              description: `${pokemon.name} moved to position ${insertionPosition + 1}!`,
-              duration: 3000
-            });
-            
+            handleReorder(pokemonId, currentIndex, insertionPosition);
           } else {
             // CASE B: Pokemon is not in rankings - add as new
             console.log(`🐛 [DRAG_DEBUG] ADD NEW: Adding Pokemon ${pokemonId} at position ${insertionPosition}`);
@@ -240,32 +259,10 @@ export const useEnhancedRankingDragDrop = (
       console.log(`🐛 [DRAG_DEBUG] Old index: ${oldIndex}, New index: ${newIndex}`);
       
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const draggedPokemon = localRankings[oldIndex];
-        console.log(`🐛 [DRAG_DEBUG] Score before ranking reorder: ${draggedPokemon.score}`);
-        
-        // Create a temporary reordered list to find neighbors
-        const reorderedRankings = [...localRankings];
-        const [draggedItem] = reorderedRankings.splice(oldIndex, 1);
-        reorderedRankings.splice(newIndex, 0, draggedItem);
-        
-        const higherNeighborId = reorderedRankings[newIndex - 1]?.id.toString();
-        const lowerNeighborId = reorderedRankings[newIndex + 1]?.id.toString();
-
-        console.log(`🐛 [DRAG_DEBUG] CRITICAL FIX: Forcing score BEFORE reorder for ${activePokemonId} between ${higherNeighborId || 'null'} and ${lowerNeighborId || 'null'}`);
-        forceScoreBetweenNeighbors(activePokemonId.toString(), higherNeighborId, lowerNeighborId);
-        
-        // Now call the reorder AFTER the score has been updated
-        handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
-        
-        // Log result after delay
-        setTimeout(() => {
-          const allRatings = getAllRatings();
-          const updatedRating = allRatings[activePokemonId.toString()];
-          console.log(`🐛 [DRAG_DEBUG] Score after ranking reorder (delay): ${updatedRating?.mu || 'Not found'}`);
-        }, 100);
+        handleReorder(activePokemonId, oldIndex, newIndex);
       }
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon, getAllRatings, forceScoreBetweenNeighbors]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, updateRating, setAvailablePokemon, getAllRatings, forceScoreBetweenNeighbors, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
