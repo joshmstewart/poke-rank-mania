@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
-import { usePokemonLoader } from '@/hooks/battle/usePokemonLoader';
+import { useProgressivePokemonLoader } from '@/hooks/battle/useProgressivePokemonLoader';
 
 interface SplashLoaderState {
   isLoading: boolean;
@@ -17,62 +17,68 @@ export const useSplashLoader = () => {
   });
   
   const { loading } = useAuth();
-  const { loadPokemon, allPokemon, isLoading: pokemonLoading } = usePokemonLoader();
+  const { 
+    essentialPokemon, 
+    isLoadingEssential, 
+    loadEssentialPokemon, 
+    startBackgroundLoading 
+  } = useProgressivePokemonLoader();
+  
   const startTime = useRef(Date.now());
-  const minDisplayTime = 2500; // Minimum 2.5 seconds for visual impact
-  const maxWaitTime = 15000; // Maximum 15 seconds timeout
-  const hasLoadedPokemon = useRef(false);
+  const minDisplayTime = 1500; // Reduced from 2.5s to 1.5s for faster experience
+  const maxWaitTime = 8000; // Reduced from 15s to 8s
+  const hasLoadedEssential = useRef(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     const updateProgress = async () => {
-      console.log('🔄 [SPLASH_LOADER] Starting splash sequence');
+      console.log('🚀 [SPLASH_LOADER] Starting optimized splash sequence');
       
-      // Phase 1: Initial setup
+      // Phase 1: Initial setup (faster)
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Loading authentication...', 
-        progress: 20 
+        progress: 15 
       }));
       
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay
       
       // Phase 2: Auth check
       setState(prev => ({ 
         ...prev, 
-        loadingStatus: 'Preparing Pokemon data...', 
-        progress: 40 
+        loadingStatus: 'Preparing essential Pokemon...', 
+        progress: 35 
       }));
       
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Phase 3: Load Pokemon data during splash
-      if (!hasLoadedPokemon.current) {
+      // Phase 3: Load essential Pokemon only (much faster)
+      if (!hasLoadedEssential.current) {
         setState(prev => ({ 
           ...prev, 
-          loadingStatus: 'Loading Pokemon database...', 
+          loadingStatus: 'Loading starter Pokemon...', 
           progress: 60 
         }));
         
         try {
-          hasLoadedPokemon.current = true;
-          console.log('🔄 [SPLASH_LOADER] Calling loadPokemon...');
-          await loadPokemon(0, true);
-          console.log('✅ [SPLASH_LOADER] Pokemon data loaded during splash');
+          hasLoadedEssential.current = true;
+          console.log('🚀 [SPLASH_LOADER] Loading essential Pokemon only...');
+          await loadEssentialPokemon();
+          console.log('✅ [SPLASH_LOADER] Essential Pokemon loaded during splash');
           
         } catch (error) {
-          console.error('❌ [SPLASH_LOADER] Failed to load Pokemon during splash:', error);
+          console.error('❌ [SPLASH_LOADER] Failed to load essential Pokemon during splash:', error);
         }
       }
       
-      // Phase 4: Finalizing
+      // Phase 4: Finalizing (faster)
       setState(prev => ({ 
         ...prev, 
         loadingStatus: 'Setting up battle system...', 
-        progress: 80 
+        progress: 85 
       }));
       
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Phase 5: Complete
       setState(prev => ({ 
@@ -81,7 +87,7 @@ export const useSplashLoader = () => {
         progress: 100 
       }));
       
-      // Wait for completion with timeout protection
+      // Wait for completion with optimized timeout
       await waitForCompletion();
       
       console.log('✅ [SPLASH_LOADER] Splash sequence complete, transitioning to app');
@@ -89,6 +95,12 @@ export const useSplashLoader = () => {
         ...prev, 
         isLoading: false 
       }));
+      
+      // Start background loading AFTER splash is hidden
+      setTimeout(() => {
+        console.log('🌱 [SPLASH_LOADER] Starting background loading of remaining Pokemon');
+        startBackgroundLoading();
+      }, 1000);
     };
 
     const waitForCompletion = () => {
@@ -100,27 +112,27 @@ export const useSplashLoader = () => {
           const waitElapsed = Date.now() - startWaitTime;
           
           const hasMinTime = elapsed >= minDisplayTime;
-          const hasData = allPokemon.length > 0;
-          const notLoading = !pokemonLoading;
+          const hasData = essentialPokemon.length > 30; // Much lower threshold for essential Pokemon
+          const notLoading = !isLoadingEssential;
           const withinTimeout = waitElapsed < maxWaitTime;
           
           console.log(`🔍 [SPLASH_LOADER] Completion check:`, {
             hasMinTime,
-            hasData: `${allPokemon.length} Pokemon`,
+            hasData: `${essentialPokemon.length} essential Pokemon`,
             notLoading,
             elapsed: `${elapsed}ms`,
             waitElapsed: `${waitElapsed}ms`
           });
           
-          // Complete if we have data and minimum time has passed
+          // Complete if we have essential data and minimum time has passed
           if (hasMinTime && hasData && notLoading) {
-            console.log('✅ [SPLASH_LOADER] All conditions met, completing');
+            console.log('✅ [SPLASH_LOADER] All conditions met, completing with essential Pokemon');
             clearTimeout(loadingTimeoutRef.current);
             resolve();
             return;
           }
           
-          // Timeout fallback - force completion after max wait time
+          // Timeout fallback - force completion with whatever we have
           if (!withinTimeout) {
             console.warn('⚠️ [SPLASH_LOADER] Timeout reached, forcing completion');
             clearTimeout(loadingTimeoutRef.current);
@@ -128,8 +140,8 @@ export const useSplashLoader = () => {
             return;
           }
           
-          // Continue checking
-          loadingTimeoutRef.current = setTimeout(checkCompletion, 200);
+          // Continue checking more frequently for faster response
+          loadingTimeoutRef.current = setTimeout(checkCompletion, 100); // Reduced from 200ms
         };
         
         // Start checking immediately
@@ -148,7 +160,7 @@ export const useSplashLoader = () => {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [loading, loadPokemon, allPokemon.length, pokemonLoading]);
+  }, [loading, loadEssentialPokemon, essentialPokemon.length, isLoadingEssential, startBackgroundLoading]);
 
   return state;
 };
