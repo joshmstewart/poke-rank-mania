@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -38,7 +37,8 @@ export const useBattleStateSimplified = (
   const { 
     totalBattles: battlesCompleted,
     getAllRatings,
-    updateRating
+    updateRating,
+    incrementTotalBattles
   } = useTrueSkillStore();
   
   const { addBattlePair } = useBattleStarterMemory();
@@ -86,6 +86,10 @@ export const useBattleStateSimplified = (
       
       setBattleHistory(prev => [...prev, battleData]);
       
+      // Increment total battles in the store
+      incrementTotalBattles();
+      console.log(`📈 [SIMPLIFIED_STATE] Total battles incremented.`);
+      
       // Generate next battle with Top N parameters
       const N = 25; // Default Top N value
       const ratings = getAllRatings();
@@ -100,7 +104,7 @@ export const useBattleStateSimplified = (
         return newSelected;
       });
     }
-  }, [battleType, currentBattle, generateNewBattle, getAllRatings, addBattlePair]);
+  }, [battleType, currentBattle, generateNewBattle, getAllRatings, addBattlePair, incrementTotalBattles]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length === 0) return;
@@ -122,12 +126,16 @@ export const useBattleStateSimplified = (
     setBattleHistory(prev => [...prev, battleData]);
     setSelectedPokemon([]);
     
+    // Increment total battles in the store
+    incrementTotalBattles();
+    console.log(`📈 [SIMPLIFIED_STATE] Total battles incremented.`);
+    
     // Generate next battle with Top N parameters
     const N = 25; // Default Top N value
     const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
     
-  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, addBattlePair]);
+  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, addBattlePair, incrementTotalBattles]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
