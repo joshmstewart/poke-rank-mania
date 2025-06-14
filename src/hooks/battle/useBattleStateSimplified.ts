@@ -23,7 +23,7 @@ export const useBattleStateSimplified = (
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
-  const [activeTier, setActiveTier] = useState<string>("all");
+  const [activeTier, setActiveTier] = useState<string>("All");
   const [milestones] = useState([25, 50, 100, 200, 300, 500, 750, 1000]);
   const [rankingGenerated, setRankingGenerated] = useState(false);
   const [isAnyProcessing, setIsAnyProcessing] = useState(false);
@@ -46,7 +46,7 @@ export const useBattleStateSimplified = (
     setFinalRankings, 
     showingMilestone, 
     setShowingMilestone 
-  } = useMilestoneManager(battlesCompleted);
+  } = useMilestoneManager(battlesCompleted, allPokemon);
   
   const { addBattlePair } = useBattleStarterMemory();
   const refinementQueue = useSharedRefinementQueue();

@@ -1,19 +1,19 @@
 
 import { useState, useEffect, useRef } from "react";
-import { RankedPokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { useBattleRankings } from "./useBattleRankings";
 
 const BATTLE_MILESTONE_INTERVAL = 25;
 
-export const useMilestoneManager = (battlesCompleted: number) => {
+export const useMilestoneManager = (battlesCompleted: number, allPokemon: Pokemon[]) => {
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
   const lastMilestoneRef = useRef(0);
   const { generateRankingsFromBattleHistory } = useBattleRankings();
 
   useEffect(() => {
-    // Prevent running on initial render if battlesCompleted is already a milestone number from a previous session
-    if (battlesCompleted === 0) return;
+    // Prevent running on initial render or if Pokemon data isn't ready
+    if (battlesCompleted === 0 || allPokemon.length === 0) return;
 
     const isMilestone = battlesCompleted > 0 && battlesCompleted % BATTLE_MILESTONE_INTERVAL === 0;
     const isNewMilestone = battlesCompleted !== lastMilestoneRef.current;
@@ -27,7 +27,7 @@ export const useMilestoneManager = (battlesCompleted: number) => {
       setFinalRankings(newRankings);
       setShowingMilestone(true);
     }
-  }, [battlesCompleted, generateRankingsFromBattleHistory]);
+  }, [battlesCompleted, allPokemon, generateRankingsFromBattleHistory]);
 
   return {
     finalRankings,
