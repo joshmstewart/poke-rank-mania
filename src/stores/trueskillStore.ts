@@ -67,6 +67,7 @@ interface TrueSkillStore {
   mergeCloudData: (cloudData: any) => void;
   waitForHydration: () => Promise<void>;
   restoreSessionFromCloud: (userId: string) => Promise<void>;
+  dangerouslyWipeLocalState: () => void; // New action for debugging
 }
 
 const generateSessionId = () => crypto.randomUUID();
@@ -409,8 +410,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
 
             if (result.success) {
-              set({ lastSyncTime: Date.now() });
-              console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync successful!`);
+              const now = Date.now();
+              set({ lastSyncTime: now });
+              console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync successful! lastSyncTime updated to: ${now} (${new Date(now).toISOString()})`);
             } else {
               throw new Error(result.error || 'Unknown sync error');
             }
@@ -578,6 +580,28 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         } catch (error) {
           console.error(`🚨🚨🚨 [SYNC_AUDIT] Session restoration failed:`, error);
         }
+      },
+
+      dangerouslyWipeLocalState: () => {
+        console.warn(`🚨🚨🚨 [DANGER] Wiping all local state and reloading!`);
+
+        localStorage.removeItem('trueskill-storage');
+        // Clear potential legacy keys that might cause conflicts
+        localStorage.removeItem('battleState');
+        localStorage.removeItem('battleCount');
+        localStorage.removeItem('battleState-gen-all');
+        localStorage.removeItem('battleCount-gen-all');
+        localStorage.removeItem('pokemon-rankings-gen-all');
+        localStorage.removeItem('generation-settings');
+        
+        toast({
+          title: "Local State Wiped",
+          description: "App will reload to fetch fresh data from the cloud.",
+          variant: "destructive",
+          duration: 3000,
+        });
+
+        setTimeout(() => window.location.reload(), 1500);
       }
     }),
     {

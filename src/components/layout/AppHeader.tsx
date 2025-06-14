@@ -5,6 +5,10 @@ import ModeStyleControls from "./ModeStyleControls";
 import { SaveProgressSection } from "./SaveProgressSection";
 import { LastSyncDisplay } from "./LastSyncDisplay";
 import { AuthStatusIndicator } from "./AuthStatusIndicator";
+import { useCloudSync } from "@/hooks/useCloudSync";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { Button } from "@/components/ui/button";
+import { ServerCrash, Trash2 } from "lucide-react";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -15,6 +19,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
   console.log('🔥🔥🔥 AppHeader: HEADER IS RENDERING - this should ALWAYS appear');
   console.log('🔥🔥🔥 AppHeader: Current mode:', mode);
   console.log('🔥🔥🔥 AppHeader: Timestamp:', new Date().toISOString());
+
+  const { triggerManualSync } = useCloudSync();
+  const dangerouslyWipeLocalState = useTrueSkillStore(
+    (state) => state.dangerouslyWipeLocalState
+  );
+
+  const handleWipe = () => {
+    if (window.confirm("DANGER: This will wipe all your local rankings and force a reload from the cloud. This is for debugging and cannot be undone. Are you sure?")) {
+      dangerouslyWipeLocalState();
+    }
+  }
 
   return (
     <>
@@ -29,6 +44,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
             
             {/* Right side - Clean Save Progress Section */}
             <div className="flex items-center">
+              {/* --- DEBUG CONTROLS --- */}
+              <div className="flex items-center gap-2 border-r pr-2 mr-2 border-gray-200">
+                <Button onClick={triggerManualSync} variant="outline" size="sm" className="flex items-center gap-1.5">
+                  <ServerCrash className="h-3.5 w-3.5" />
+                  Manual Sync
+                </Button>
+                <Button onClick={handleWipe} variant="destructive" size="sm" className="flex items-center gap-1.5">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Wipe State
+                </Button>
+              </div>
+              {/* --- END DEBUG CONTROLS --- */}
               <AuthStatusIndicator />
               <SaveProgressSection />
             </div>
