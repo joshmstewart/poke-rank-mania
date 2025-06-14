@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentRenderer from "./BattleContentRenderer";
+import { BattleLogDisplay } from "./BattleLogDisplay";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateSimplified } from "@/hooks/battle/useBattleStateSimplified";
@@ -24,6 +25,7 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   console.log(`🚀 [CONTAINER_SIMPLIFIED] Rendering with ${allPokemon.length} Pokemon`);
   
   const [selectedGeneration, setSelectedGeneration] = useState(0);
+  const [battleLog, setBattleLog] = useState<string[]>([]);
   const { totalBattles } = useTrueSkillStore();
 
   const handleGenerationChange = useCallback((gen: number) => {
@@ -35,6 +37,11 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
     console.log(`🚀 [CONTAINER_SIMPLIFIED] Battle type changed to: ${type}`);
   }, []);
 
+  // Function to add to battle log
+  const addBattleLogEntry = useCallback((strategy: string) => {
+    setBattleLog(prevLog => [strategy, ...prevLog.slice(0, 9)]);
+  }, []);
+
   // CRITICAL DEBUG: Monitor TrueSkill store changes
   useEffect(() => {
     console.log(`📊 [TRUESKILL_MONITOR] Total battles updated: ${totalBattles}`);
@@ -42,15 +49,21 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
 
   return (
     <RefinementQueueProvider>
-      <BattleModeContainerContent
-        allPokemon={allPokemon}
-        initialBattleType={initialBattleType}
-        selectedGeneration={selectedGeneration}
-        setBattlesCompleted={setBattlesCompleted}
-        setBattleResults={setBattleResults}
-        handleGenerationChange={handleGenerationChange}
-        handleBattleTypeChange={handleBattleTypeChange}
-      />
+      <div className="relative">
+        <BattleModeContainerContent
+          allPokemon={allPokemon}
+          initialBattleType={initialBattleType}
+          selectedGeneration={selectedGeneration}
+          setBattlesCompleted={setBattlesCompleted}
+          setBattleResults={setBattleResults}
+          handleGenerationChange={handleGenerationChange}
+          handleBattleTypeChange={handleBattleTypeChange}
+          addBattleLogEntry={addBattleLogEntry}
+        />
+        
+        {/* Add the Battle Log Gadget */}
+        <BattleLogDisplay log={battleLog} />
+      </div>
     </RefinementQueueProvider>
   );
 };
@@ -63,6 +76,7 @@ const BattleModeContainerContent: React.FC<{
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
   handleGenerationChange: (gen: number) => void;
   handleBattleTypeChange: (type: BattleType) => void;
+  addBattleLogEntry: (strategy: string) => void;
 }> = ({
   allPokemon,
   initialBattleType,
@@ -70,7 +84,8 @@ const BattleModeContainerContent: React.FC<{
   setBattlesCompleted,
   setBattleResults,
   handleGenerationChange,
-  handleBattleTypeChange
+  handleBattleTypeChange,
+  addBattleLogEntry
 }) => {
   const { totalBattles } = useTrueSkillStore();
 

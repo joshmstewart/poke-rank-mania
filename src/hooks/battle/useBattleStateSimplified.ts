@@ -36,11 +36,10 @@ export const useBattleStateSimplified = (
   // Store integration
   const { 
     totalBattles: battlesCompleted,
-    addBattle,
-    getRankings,
+    battles,
     ratings,
-    addRating,
-    updateRating
+    updateRating,
+    getAllRankings
   } = useTrueSkillStore();
   
   // Fixed milestone calculations call - only one argument
@@ -86,7 +85,8 @@ export const useBattleStateSimplified = (
         battleType
       };
       
-      addBattle(battleData);
+      // Use store methods correctly
+      battles.push(battleData);
       
       // Update battle history
       setBattleHistory(prev => [...prev, battleData]);
@@ -104,7 +104,7 @@ export const useBattleStateSimplified = (
         return newSelected;
       });
     }
-  }, [battleType, currentBattle, addBattle, generateNewBattle, ratings]);
+  }, [battleType, currentBattle, battles, generateNewBattle, ratings]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length === 0) return;
@@ -119,7 +119,8 @@ export const useBattleStateSimplified = (
       battleType
     };
     
-    addBattle(battleData);
+    // Use store methods correctly
+    battles.push(battleData);
     setBattleHistory(prev => [...prev, battleData]);
     setSelectedPokemon([]);
     
@@ -127,7 +128,7 @@ export const useBattleStateSimplified = (
     const N = 25; // Default Top N value
     generateNewBattle(battleType, timestamp, N, ratings);
     
-  }, [selectedPokemon, currentBattle, battleType, addBattle, generateNewBattle, ratings]);
+  }, [selectedPokemon, currentBattle, battleType, battles, generateNewBattle, ratings]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
@@ -162,10 +163,10 @@ export const useBattleStateSimplified = (
 
   const handleSaveRankings = useCallback(() => {
     console.log(`💾 [SIMPLIFIED_STATE] Saving rankings`);
-    const rankings = getRankings();
+    const rankings = getAllRankings();
     setFinalRankings(rankings);
     setRankingGenerated(true);
-  }, [getRankings]);
+  }, [getAllRankings]);
 
   const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => {
     console.log(`📝 [SIMPLIFIED_STATE] Ranking suggestion: ${pokemon.name} ${direction} ${strength}`);
@@ -201,10 +202,10 @@ export const useBattleStateSimplified = (
     if (battlesCompleted > 0 && battlesCompleted % BATTLE_MILESTONE_INTERVAL === 0) {
       console.log(`🎉 [SIMPLIFIED_STATE] Milestone reached: ${battlesCompleted} battles`);
       setShowingMilestone(true);
-      const rankings = getRankings();
+      const rankings = getAllRankings();
       setFinalRankings(rankings);
     }
-  }, [battlesCompleted, getRankings]);
+  }, [battlesCompleted, getAllRankings]);
 
   return {
     // State
