@@ -1,8 +1,10 @@
+
 import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
 import { useCloudPendingBattles } from "./useCloudPendingBattles";
+import { useBattleStarterMemory } from "./useBattleStarterMemory";
 
 interface Ratings {
   [pokemonId: number]: {
@@ -19,6 +21,7 @@ export interface BattleGenerationResult {
 }
 
 export const useBattleGeneration = (allPokemon: Pokemon[]) => {
+  const { isPairRecent } = useBattleStarterMemory();
   const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
   const { pendingPokemon, removePendingPokemon } = useCloudPendingBattles();
 
@@ -347,173 +350,194 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     ratings: Ratings = {}
   ): BattleGenerationResult => {
     const battleSize = battleType === "pairs" ? 2 : 3;
-    const battleNumber = battlesCompleted + 1;
-    
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Battle #${battleNumber} Generation =====`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Battle size: ${battleSize}`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Total Pokemon received: ${allPokemon.length}`);
-    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Pending Pokemon count: ${Array.from(pendingPokemon).length}`);
-    
-    // PRIORITY 1: Handle User-Specified Pending Battles
-    if (Array.from(pendingPokemon).length > 0) {
-      console.log(`⭐ [PENDING_PRIORITY] ===== PENDING BATTLE DETECTED =====`);
-      const pendingIds = Array.from(pendingPokemon);
-      // Filter out recently used pending pokemon if possible
-      let p_id_pool = pendingIds.filter(id => !recentlyUsedPokemon.has(id));
-      if (p_id_pool.length === 0) {
-        console.warn(`⭐ [PENDING_PRIORITY] All pending pokemon were recently used. Using oldest pending pokemon.`);
-        p_id_pool = pendingIds;
-      }
-      const primaryPokemonId = p_id_pool[0];
+    const MAX_RETRIES = 10;
+    let lastGeneratedBattle: BattleGenerationResult = { battle: [], strategy: "Failed" };
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const battleNumber = battlesCompleted + 1;
       
-      console.log(`⭐ [PENDING_PRIORITY] Processing pending Pokemon: ${primaryPokemonId}`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Battle #${battleNumber} Generation (Attempt ${attempt + 1}) =====`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Battle size: ${battleSize}`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Total Pokemon received: ${allPokemon.length}`);
+      console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Pending Pokemon count: ${Array.from(pendingPokemon).length}`);
       
-      const pendingResult = generatePendingBattle(primaryPokemonId, ratings);
-      if (pendingResult.battle.length > 0) {
-        const validated = validateBattlePokemon(pendingResult.battle);
-        console.log(`⭐ [PENDING_PRIORITY] ✅ RETURNING PENDING BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
-        return { battle: validated, strategy: pendingResult.strategy };
-      } else {
-        console.error(`⭐ [PENDING_PRIORITY] Failed to generate pending battle, removing from queue`);
-        removePendingPokemon(primaryPokemonId);
-        // Try again recursively
-        return generateNewBattle(battleType, battlesCompleted, refinementQueue, N, ratings);
-      }
-    }
-    
-    // CRITICAL FIX: Check for refinement battles FIRST and consume them properly
-    if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
-      console.log(`🎯 [REFINEMENT_PRIORITY] ===== REFINEMENT BATTLE DETECTED =====`);
-      console.log(`🎯 [REFINEMENT_PRIORITY] Refinement queue has ${refinementQueue.refinementBattleCount} battles`);
-      
-      const nextRefinement = refinementQueue.getNextRefinementBattle();
-      console.log(`🎯 [REFINEMENT_PRIORITY] Next refinement:`, nextRefinement);
-      
-      if (nextRefinement) {
-        const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
-        const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+      // PRIORITY 1: Handle User-Specified Pending Battles
+      if (Array.from(pendingPokemon).length > 0) {
+        console.log(`⭐ [PENDING_PRIORITY] ===== PENDING BATTLE DETECTED =====`);
+        const pendingIds = Array.from(pendingPokemon);
+        // Filter out recently used pending pokemon if possible
+        let p_id_pool = pendingIds.filter(id => !recentlyUsedPokemon.has(id));
+        if (p_id_pool.length === 0) {
+          console.warn(`⭐ [PENDING_PRIORITY] All pending pokemon were recently used. Using oldest pending pokemon.`);
+          p_id_pool = pendingIds;
+        }
+        const primaryPokemonId = p_id_pool[0];
         
-        console.log(`🎯 [REFINEMENT_PRIORITY] Primary Pokemon: ${primary?.name} (${primary?.id})`);
-        console.log(`🎯 [REFINEMENT_PRIORITY] Opponent Pokemon: ${opponent?.name} (${opponent?.id})`);
+        console.log(`⭐ [PENDING_PRIORITY] Processing pending Pokemon: ${primaryPokemonId}`);
         
-        if (primary && opponent) {
-          const refinementBattle = [primary, opponent];
-          const validated = validateBattlePokemon(refinementBattle);
-          
-          console.log(`🎯 [REFINEMENT_PRIORITY] ✅ RETURNING REFINEMENT BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
-          console.log(`🎯 [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
-          
-          setTimeout(() => {
-            console.log(`🎯 [REFINEMENT_CONSUMPTION] Consuming refinement battle from queue`);
-            refinementQueue.popRefinementBattle();
-            console.log(`🎯 [REFINEMENT_CONSUMPTION] Refinement consumed, remaining: ${refinementQueue.refinementBattleCount}`);
-          }, 100);
-          
-          return { battle: validated, strategy: "Refinement Queue" };
+        const pendingResult = generatePendingBattle(primaryPokemonId, ratings);
+        if (pendingResult.battle.length > 0) {
+          const validated = validateBattlePokemon(pendingResult.battle);
+          console.log(`⭐ [PENDING_PRIORITY] ✅ RETURNING PENDING BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
+          return { battle: validated, strategy: pendingResult.strategy };
         } else {
-          console.error(`🎯 [REFINEMENT_PRIORITY] ❌ Could not find Pokemon for refinement - removing from queue`);
-          refinementQueue.popRefinementBattle();
-          return generateNewBattle(battleType, battlesCompleted, refinementQueue);
+          console.error(`⭐ [PENDING_PRIORITY] Failed to generate pending battle, removing from queue`);
+          removePendingPokemon(primaryPokemonId);
+          // Try again recursively
+          return generateNewBattle(battleType, battlesCompleted, refinementQueue, N, ratings);
         }
       }
-    } else {
-      console.log(`🎯 [REFINEMENT_PRIORITY] No refinement battles available - proceeding with regular generation`);
-    }
-    
-    if (!allPokemon || allPokemon.length < battleSize) {
-      console.error(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
-      return { battle: [], strategy: "Failed - Not Enough Pokemon" };
-    }
-    
-    // TOP N LOGIC STARTS HERE
-    console.log(`🎯 [TOP_N_SCHEDULER] ===== Generating Battle #${battleNumber} with Top N Logic =====`);
-    console.log(`🎯 [TOP_N_SCHEDULER] Target Top N: ${N}`);
-    console.log(`🎯 [TOP_N_SCHEDULER] Total Pokemon: ${allPokemon.length}`);
-    console.log(`🎯 [TOP_N_SCHEDULER] Rated Pokemon: ${Object.keys(ratings).length}`);
-
-    const unrankedPool = getUnrankedPokemon(ratings);
-    const battleStrategyRoll = Math.random();
-    
-    console.log(`🎯 [TOP_N_SCHEDULER] Strategy roll: ${battleStrategyRoll.toFixed(3)}`);
-    console.log(`🎯 [TOP_N_SCHEDULER] Unranked pool size: ${unrankedPool.length}`);
-
-    let battleResult: BattleGenerationResult;
-
-    // FIXED STRATEGY DISTRIBUTION: Use proper if...else if...else chain
-    if (unrankedPool.length > 0 && battleStrategyRoll < 0.15) {
-      // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
-      console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE (15%)`);
-      battleResult = generateUnrankedBattle(unrankedPool, ratings);
-    } else if (battleStrategyRoll < 0.65) {
-      // Strategy 2: Refine Top N (50% chance) - 0.15 to 0.65
-      console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: TOP N REFINEMENT (50%)`);
-      battleResult = generateTopNRefinementBattle(ratings, N);
-    } else if (battleStrategyRoll < 0.85) {
-      // Strategy 3: Bubble challenge (20% chance) - 0.65 to 0.85
-      console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BUBBLE CHALLENGE (20%)`);
-      battleResult = generateBubbleChallengeBattle(ratings, N);
-    } else {
-      // Strategy 4: Bottom confirmation (15% chance) - 0.85 to 1.0
-      console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BOTTOM CONFIRMATION (15%)`);
-      battleResult = generateBottomConfirmationBattle(ratings, N);
-    }
-
-    // Fallback to simple random selection if no battle was generated
-    if (battleResult.battle.length === 0) {
-      console.log(`🎯 [TOP_N_SCHEDULER] No battle generated, falling back to random selection`);
       
-      // Step 1: Filter out recently used Pokemon
-      let availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
-      console.log(`🎲🎲🎲 [FILTERING_TRACE] Available after filtering recent: ${availablePokemon.length}`);
+      // CRITICAL FIX: Check for refinement battles FIRST and consume them properly
+      if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
+        console.log(`🎯 [REFINEMENT_PRIORITY] ===== REFINEMENT BATTLE DETECTED =====`);
+        console.log(`🎯 [REFINEMENT_PRIORITY] Refinement queue has ${refinementQueue.refinementBattleCount} battles`);
+        
+        const nextRefinement = refinementQueue.getNextRefinementBattle();
+        console.log(`🎯 [REFINEMENT_PRIORITY] Next refinement:`, nextRefinement);
+        
+        if (nextRefinement) {
+          const primary = allPokemon.find(p => p.id === nextRefinement.primaryPokemonId);
+          const opponent = allPokemon.find(p => p.id === nextRefinement.opponentPokemonId);
+          
+          console.log(`🎯 [REFINEMENT_PRIORITY] Primary Pokemon: ${primary?.name} (${primary?.id})`);
+          console.log(`🎯 [REFINEMENT_PRIORITY] Opponent Pokemon: ${opponent?.name} (${opponent?.id})`);
+          
+          if (primary && opponent) {
+            const refinementBattle = [primary, opponent];
+            const validated = validateBattlePokemon(refinementBattle);
+            
+            console.log(`🎯 [REFINEMENT_PRIORITY] ✅ RETURNING REFINEMENT BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
+            console.log(`🎯 [REFINEMENT_PRIORITY] Reason: ${nextRefinement.reason}`);
+            
+            setTimeout(() => {
+              console.log(`🎯 [REFINEMENT_CONSUMPTION] Consuming refinement battle from queue`);
+              refinementQueue.popRefinementBattle();
+              console.log(`🎯 [REFINEMENT_CONSUMPTION] Refinement consumed, remaining: ${refinementQueue.refinementBattleCount}`);
+            }, 100);
+            
+            return { battle: validated, strategy: "Refinement Queue" };
+          } else {
+            console.error(`🎯 [REFINEMENT_PRIORITY] ❌ Could not find Pokemon for refinement - removing from queue`);
+            refinementQueue.popRefinementBattle();
+            return generateNewBattle(battleType, battlesCompleted, refinementQueue);
+          }
+        }
+      } else {
+        console.log(`🎯 [REFINEMENT_PRIORITY] No refinement battles available - proceeding with regular generation`);
+      }
       
-      // Step 2: Handle insufficient available Pokemon
-      if (availablePokemon.length < battleSize) {
-        console.log(`🎲🎲🎲 [FILTERING_TRACE] Not enough non-recent Pokemon, reducing recent list`);
+      if (!allPokemon || allPokemon.length < battleSize) {
+        console.error(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Not enough Pokemon: need ${battleSize}, have ${allPokemon.length}`);
+        return { battle: [], strategy: "Failed - Not Enough Pokemon" };
+      }
+      
+      // TOP N LOGIC STARTS HERE
+      console.log(`🎯 [TOP_N_SCHEDULER] ===== Generating Battle #${battleNumber} with Top N Logic =====`);
+      console.log(`🎯 [TOP_N_SCHEDULER] Target Top N: ${N}`);
+      console.log(`🎯 [TOP_N_SCHEDULER] Total Pokemon: ${allPokemon.length}`);
+      console.log(`🎯 [TOP_N_SCHEDULER] Rated Pokemon: ${Object.keys(ratings).length}`);
+
+      const unrankedPool = getUnrankedPokemon(ratings);
+      const battleStrategyRoll = Math.random();
+      
+      console.log(`🎯 [TOP_N_SCHEDULER] Strategy roll: ${battleStrategyRoll.toFixed(3)}`);
+      console.log(`🎯 [TOP_N_SCHEDULER] Unranked pool size: ${unrankedPool.length}`);
+
+      let battleResult: BattleGenerationResult;
+
+      // FIXED STRATEGY DISTRIBUTION: Use proper if...else if...else chain
+      if (unrankedPool.length > 0 && battleStrategyRoll < 0.15) {
+        // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE (15%)`);
+        battleResult = generateUnrankedBattle(unrankedPool, ratings);
+      } else if (battleStrategyRoll < 0.65) {
+        // Strategy 2: Refine Top N (50% chance) - 0.15 to 0.65
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: TOP N REFINEMENT (50%)`);
+        battleResult = generateTopNRefinementBattle(ratings, N);
+      } else if (battleStrategyRoll < 0.85) {
+        // Strategy 3: Bubble challenge (20% chance) - 0.65 to 0.85
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BUBBLE CHALLENGE (20%)`);
+        battleResult = generateBubbleChallengeBattle(ratings, N);
+      } else {
+        // Strategy 4: Bottom confirmation (15% chance) - 0.85 to 1.0
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BOTTOM CONFIRMATION (15%)`);
+        battleResult = generateBottomConfirmationBattle(ratings, N);
+      }
+
+      // Fallback to simple random selection if no battle was generated
+      if (battleResult.battle.length === 0) {
+        console.log(`🎯 [TOP_N_SCHEDULER] No battle generated, falling back to random selection`);
         
-        const recentArray = Array.from(recentlyUsedPokemon);
-        const reducedRecent = new Set(recentArray.slice(-10));
-        setRecentlyUsedPokemon(reducedRecent);
+        // Step 1: Filter out recently used Pokemon
+        let availablePokemon = allPokemon.filter(pokemon => !recentlyUsedPokemon.has(pokemon.id));
+        console.log(`🎲🎲🎲 [FILTERING_TRACE] Available after filtering recent: ${availablePokemon.length}`);
         
-        availablePokemon = allPokemon.filter(pokemon => !reducedRecent.has(pokemon.id));
-        console.log(`🎲🎲🎲 [FILTERING_TRACE] Available after reducing recent list: ${availablePokemon.length}`);
-        
+        // Step 2: Handle insufficient available Pokemon
         if (availablePokemon.length < battleSize) {
-          console.log(`🎲🎲🎲 [FILTERING_TRACE] Still not enough, clearing recent list completely`);
-          setRecentlyUsedPokemon(new Set());
-          availablePokemon = [...allPokemon];
+          console.log(`🎲🎲🎲 [FILTERING_TRACE] Not enough non-recent Pokemon, reducing recent list`);
+          
+          const recentArray = Array.from(recentlyUsedPokemon);
+          const reducedRecent = new Set(recentArray.slice(-10));
+          setRecentlyUsedPokemon(reducedRecent);
+          
+          availablePokemon = allPokemon.filter(pokemon => !reducedRecent.has(pokemon.id));
+          console.log(`🎲🎲🎲 [FILTERING_TRACE] Available after reducing recent list: ${availablePokemon.length}`);
+          
+          if (availablePokemon.length < battleSize) {
+            console.log(`🎲🎲🎲 [FILTERING_TRACE] Still not enough, clearing recent list completely`);
+            setRecentlyUsedPokemon(new Set());
+            availablePokemon = [...allPokemon];
+          }
+        }
+        
+        // Enhanced randomization
+        console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Starting randomization with ${availablePokemon.length} Pokemon`);
+        
+        const cryptoSelected: Pokemon[] = [];
+        const availableCopy = [...availablePokemon];
+        
+        for (let i = 0; i < battleSize && availableCopy.length > 0; i++) {
+          const randomArray = new Uint32Array(1);
+          crypto.getRandomValues(randomArray);
+          const randomIndex = Math.floor((randomArray[0] / (0xFFFFFFFF + 1)) * availableCopy.length);
+          
+          console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Selection ${i + 1}: randomIndex=${randomIndex}, poolSize=${availableCopy.length}`);
+          
+          const selected = availableCopy.splice(randomIndex, 1)[0];
+          cryptoSelected.push(selected);
+          
+          console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Selected: ${selected.name} (ID: ${selected.id})`);
+        }
+        
+        battleResult = { battle: cryptoSelected, strategy: "Random Fallback" };
+      }
+
+      // NEW: Check if the generated battle pair is recent
+      if (battleSize === 2 && battleResult.battle.length === 2) {
+        const pokemonIds = battleResult.battle.map(p => p.id);
+        if (isPairRecent(pokemonIds)) {
+          console.log(`🔁 [BATTLE_REPEAT_CHECK] Battle pair [${pokemonIds.join(', ')}] is recent. Retrying...`);
+          lastGeneratedBattle = battleResult; // Save in case we fail all retries
+          continue; // Try to generate a new battle
         }
       }
+
+      const validated = validateBattlePokemon(battleResult.battle);
       
-      // Enhanced randomization
-      console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Starting randomization with ${availablePokemon.length} Pokemon`);
+      console.log(`🎯 [TOP_N_SCHEDULER] Final battle: ${validated.map(p => p.name).join(' vs ')}`);
+      console.log(`🎯 [TOP_N_SCHEDULER] Strategy used: ${battleResult.strategy}`);
+      console.log(`🎯 [TOP_N_SCHEDULER] ===== Generation Complete =====`);
       
-      const cryptoSelected: Pokemon[] = [];
-      const availableCopy = [...availablePokemon];
-      
-      for (let i = 0; i < battleSize && availableCopy.length > 0; i++) {
-        const randomArray = new Uint32Array(1);
-        crypto.getRandomValues(randomArray);
-        const randomIndex = Math.floor((randomArray[0] / (0xFFFFFFFF + 1)) * availableCopy.length);
-        
-        console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Selection ${i + 1}: randomIndex=${randomIndex}, poolSize=${availableCopy.length}`);
-        
-        const selected = availableCopy.splice(randomIndex, 1)[0];
-        cryptoSelected.push(selected);
-        
-        console.log(`🎲🎲🎲 [RANDOMIZATION_TRACE] Selected: ${selected.name} (ID: ${selected.id})`);
-      }
-      
-      battleResult = { battle: cryptoSelected, strategy: "Random Fallback" };
+      return { battle: validated, strategy: battleResult.strategy };
     }
 
-    const validated = validateBattlePokemon(battleResult.battle);
-    
-    console.log(`🎯 [TOP_N_SCHEDULER] Final battle: ${validated.map(p => p.name).join(' vs ')}`);
-    console.log(`🎯 [TOP_N_SCHEDULER] Strategy used: ${battleResult.strategy}`);
-    console.log(`🎯 [TOP_N_SCHEDULER] ===== Generation Complete =====`);
-    
-    return { battle: validated, strategy: battleResult.strategy };
-  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon]);
+    // If we've exhausted all retries
+    console.warn(`🔁 [BATTLE_REPEAT_CHECK] Failed to generate a non-recent battle after ${MAX_RETRIES} attempts. Returning the last generated repeated battle.`);
+    const validated = validateBattlePokemon(lastGeneratedBattle.battle);
+    return { battle: validated, strategy: `${lastGeneratedBattle.strategy} (Repeated)` };
+
+  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon, isPairRecent]);
 
   const addToRecentlyUsed = useCallback((pokemon: Pokemon[]) => {
     setRecentlyUsedPokemon(prev => {

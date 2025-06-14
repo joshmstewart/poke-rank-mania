@@ -5,6 +5,7 @@ import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
+import { useBattleStarterMemory } from "./useBattleStarterMemory";
 
 const BATTLE_MILESTONE_INTERVAL = 25;
 
@@ -69,6 +70,9 @@ export const useBattleStateSimplified = (
       const nonSelectedIds = currentBattle.filter(p => p.id !== id).map(p => p.id);
       
       console.log(`⚡ [PAIR_BATTLE] Processing pair battle: winner=${id}, loser=${nonSelectedIds[0]}`);
+
+      // NEW: Add battle to recent pair memory
+      addBattlePair(currentBattle.map(p => p.id));
       
       // Add to battle history
       const battleData = {
@@ -94,7 +98,7 @@ export const useBattleStateSimplified = (
         return newSelected;
       });
     }
-  }, [battleType, currentBattle, generateNewBattle, getAllRatings]);
+  }, [battleType, currentBattle, generateNewBattle, getAllRatings, addBattlePair]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length === 0) return;
@@ -102,6 +106,10 @@ export const useBattleStateSimplified = (
     console.log(`⚡ [TRIPLET_BATTLE] Processing triplet battle with ${selectedPokemon.length} selections`);
     
     const timestamp = new Date().toISOString();
+
+    // NEW: Add battle to recent pair memory
+    addBattlePair(currentBattle.map(p => p.id));
+
     const battleData = {
       battle: currentBattle,
       selected: selectedPokemon,
@@ -117,7 +125,7 @@ export const useBattleStateSimplified = (
     const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
     
-  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings]);
+  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, addBattlePair]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
