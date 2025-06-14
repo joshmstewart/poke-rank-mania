@@ -18,12 +18,14 @@ interface DraggableMilestoneGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
   localPendingRefinements: Set<number>;
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
 }
 
 const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   displayRankings,
   localPendingRefinements,
-  onManualReorder
+  onManualReorder,
+  onLocalReorder
 }) => {
   const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
 
@@ -36,7 +38,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
     onManualReorder: onManualReorder || (() => {
       console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] No manual reorder handler - drag disabled`);
     }),
-    onLocalReorder: () => {} // Not needed for milestone grid
+    onLocalReorder: onLocalReorder || (() => {})
   });
 
   const handleDragStart = (event: any) => {

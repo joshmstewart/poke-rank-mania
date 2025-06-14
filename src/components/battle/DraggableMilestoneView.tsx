@@ -89,6 +89,15 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
     true // preventAutoResorting = true to maintain manual order
   );
 
+  const handleLocalReorder = (reorderedSlice: (Pokemon | RankedPokemon)[]) => {
+    const currentDisplayCount = displayRankings.length;
+    const newFullRankings = [
+      ...reorderedSlice,
+      ...localRankings.slice(currentDisplayCount),
+    ];
+    setLocalRankings(newFullRankings);
+  };
+
   return (
     <div className="bg-white p-6 w-full max-w-7xl mx-auto">
       {/* Header - exactly matching the image */}
@@ -117,6 +126,7 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
         displayRankings={displayRankings}
         localPendingRefinements={localPendingRefinements}
         onManualReorder={handleEnhancedManualReorder}
+        onLocalReorder={handleLocalReorder}
       />
 
       <InfiniteScrollHandler 
