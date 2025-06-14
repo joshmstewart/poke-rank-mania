@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
+import { useCloudPendingBattles } from "./useCloudPendingBattles";
 
 interface Ratings {
   [pokemonId: number]: {
@@ -13,6 +14,7 @@ interface Ratings {
 
 export const useBattleGeneration = (allPokemon: Pokemon[]) => {
   const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
+  const { pendingPokemon, removePendingPokemon } = useCloudPendingBattles();
 
   // Helper function to get unranked Pokemon
   const getUnrankedPokemon = useCallback((ratings: Ratings): Pokemon[] => {
@@ -44,6 +46,69 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     // Bottom Tier (> N+50): back-burnered if sigma < 3.5
     return rating.sigma < 3.5;
   }, []);
+
+  // NEW: Generate pending battle (Priority 1)
+  const generatePendingBattle = useCallback((primaryPokemonId: number, ratings: Ratings): Pokemon[] => {
+    console.log(`⭐ [PENDING_BATTLE] Generating battle for starred Pokemon ID: ${primaryPokemonId}`);
+    
+    const primary = allPokemon.find(p => p.id === primaryPokemonId);
+    if (!primary) {
+      console.error(`⭐ [PENDING_BATTLE] Primary Pokemon not found: ${primaryPokemonId}`);
+      return [];
+    }
+
+    // Find opponent with similar mu value for informative battle
+    const primaryRating = ratings[primaryPokemonId];
+    let opponent: Pokemon;
+
+    if (primaryRating && primaryRating.battleCount > 0) {
+      // For ranked Pokemon, find similar skill opponent
+      const rankedPokemon = getRankedPokemon(ratings);
+      const otherRanked = rankedPokemon.filter(p => p.id !== primaryPokemonId);
+      
+      if (otherRanked.length > 0) {
+        opponent = otherRanked.reduce((closest, current) => {
+          const currentDiff = Math.abs(ratings[current.id].mu - primaryRating.mu);
+          const closestDiff = Math.abs(ratings[closest.id].mu - primaryRating.mu);
+          return currentDiff < closestDiff ? current : closest;
+        });
+      } else {
+        // Fallback to random if no other ranked Pokemon
+        const others = allPokemon.filter(p => p.id !== primaryPokemonId);
+        opponent = others[Math.floor(Math.random() * others.length)];
+      }
+    } else {
+      // For unranked Pokemon, prefer another unranked or high-sigma opponent
+      const unranked = getUnrankedPokemon(ratings).filter(p => p.id !== primaryPokemonId);
+      
+      if (unranked.length > 0) {
+        opponent = unranked[Math.floor(Math.random() * unranked.length)];
+      } else {
+        // Fallback to high-sigma Pokemon from bottom tier
+        const rankedPokemon = getRankedPokemon(ratings);
+        const bottomTier = rankedPokemon.slice(Math.max(0, rankedPokemon.length - 20));
+        const highSigmaBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5);
+        
+        if (highSigmaBottom.length > 0) {
+          opponent = highSigmaBottom[Math.floor(Math.random() * highSigmaBottom.length)];
+        } else {
+          // Final fallback
+          const others = allPokemon.filter(p => p.id !== primaryPokemonId);
+          opponent = others[Math.floor(Math.random() * others.length)];
+        }
+      }
+    }
+
+    console.log(`⭐ [PENDING_BATTLE] Generated: ${primary.name} vs ${opponent.name}`);
+    
+    // Remove from pending list after generating battle
+    setTimeout(() => {
+      removePendingPokemon(primaryPokemonId);
+      console.log(`⭐ [PENDING_BATTLE] Removed ${primary.name} from pending list`);
+    }, 100);
+
+    return [primary, opponent];
+  }, [allPokemon, getRankedPokemon, getUnrankedPokemon, removePendingPokemon]);
 
   // Strategy 1: Generate unranked battle
   const generateUnrankedBattle = useCallback((unrankedPool: Pokemon[], ratings: Ratings): Pokemon[] => {
@@ -188,7 +253,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     return generateBubbleChallengeBattle(ratings, N);
   }, [getRankedPokemon, generateBubbleChallengeBattle]);
 
-  // Main battle generation function with Top N logic
+  // Main battle generation function with Top N logic and pending battles priority
   const generateNewBattle = useCallback((
     battleType: BattleType, 
     battlesCompleted: number, 
@@ -202,6 +267,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] ===== Battle #${battleNumber} Generation =====`);
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Battle size: ${battleSize}`);
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Total Pokemon received: ${allPokemon.length}`);
+    console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Pending Pokemon count: ${pendingPokemon.size}`);
     
     // COMPREHENSIVE DEBUGGING: Analyze the input Pokemon dataset
     if (allPokemon.length > 0) {
@@ -235,6 +301,27 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used Pokemon count: ${recentlyUsedPokemon.size}`);
     console.log(`🎲🎲🎲 [BATTLE_GENERATION_DEBUG] Recently used IDs: [${Array.from(recentlyUsedPokemon).slice(0, 10).join(', ')}${recentlyUsedPokemon.size > 10 ? '...' : ''}]`);
+    
+    // PRIORITY 1: Handle User-Specified Pending Battles
+    if (pendingPokemon.size > 0) {
+      console.log(`⭐ [PENDING_PRIORITY] ===== PENDING BATTLE DETECTED =====`);
+      const pendingIds = Array.from(pendingPokemon);
+      const primaryPokemonId = pendingIds[0];
+      
+      console.log(`⭐ [PENDING_PRIORITY] Processing pending Pokemon: ${primaryPokemonId}`);
+      
+      const pendingBattle = generatePendingBattle(primaryPokemonId, ratings);
+      if (pendingBattle.length > 0) {
+        const validated = validateBattlePokemon(pendingBattle);
+        console.log(`⭐ [PENDING_PRIORITY] ✅ RETURNING PENDING BATTLE: ${validated.map(p => p.name).join(' vs ')}`);
+        return validated;
+      } else {
+        console.error(`⭐ [PENDING_PRIORITY] Failed to generate pending battle, removing from queue`);
+        removePendingPokemon(primaryPokemonId);
+        // Try again recursively
+        return generateNewBattle(battleType, battlesCompleted, refinementQueue, N, ratings);
+      }
+    }
     
     // CRITICAL FIX: Check for refinement battles FIRST and consume them properly
     if (refinementQueue && refinementQueue.hasRefinementBattles && refinementQueue.refinementBattleCount > 0) {
@@ -390,7 +477,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     console.log(`🎯 [TOP_N_SCHEDULER] ===== Generation Complete =====`);
     
     return validated;
-  }, [allPokemon, recentlyUsedPokemon, getUnrankedPokemon, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle]);
+  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon]);
 
   const addToRecentlyUsed = useCallback((pokemon: Pokemon[]) => {
     setRecentlyUsedPokemon(prev => {
