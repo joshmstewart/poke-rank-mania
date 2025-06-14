@@ -153,31 +153,66 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
 
   // Strategy 2: Generate Top N refinement battle
   const generateTopNRefinementBattle = useCallback((ratings: Ratings, N: number): BattleGenerationResult => {
-    console.log(`🎯 [TOP_N_REFINEMENT] Generating Top ${N} refinement battle`);
+    console.log(`🎯 [TOP_N_REFINEMENT] Generating Top ${N} refinement battle. Recent list size: ${recentlyUsedPokemon.size}`);
     
     const rankedPokemon = getRankedPokemon(ratings);
     const topN = rankedPokemon.slice(0, N);
     
-    if (topN.length < 2) return { battle: [], strategy: "Top N Refinement (Failed)" };
+    if (topN.length < 2) return { battle: [], strategy: "Top N Refinement (Failed - Not enough in Top N)" };
 
-    // Find Pokemon with highest sigma in Top N
-    const primaryCandidate = topN.reduce((highest, current) => 
-      ratings[current.id].sigma > ratings[highest.id].sigma ? current : highest
-    );
+    // Start with the full Top N pool
+    let selectionPool = topN;
 
-    // Find opponent with most similar mu value
+    // Try to use a pool without recently used Pokemon
+    const nonRecentPool = topN.filter(p => !recentlyUsedPokemon.has(p.id));
+    if (nonRecentPool.length >= 2) {
+      console.log(`[TOP_N_DEBUG] Using non-recent pool of size ${nonRecentPool.length}`);
+      selectionPool = nonRecentPool;
+    } else {
+      console.warn(`[TOP_N_DEBUG] Not enough non-recent Pokemon (${nonRecentPool.length}). Using full Top N pool.`);
+    }
+
+    // Find candidates for primary Pokemon (top 5 highest sigma)
+    const primaryCandidates = [...selectionPool]
+      .sort((a, b) => ratings[b.id].sigma - ratings[a.id].sigma)
+      .slice(0, 5);
+
+    if (primaryCandidates.length === 0) return { battle: [], strategy: "Top N Refinement (Failed - No primary candidates)" };
+
+    // Select a primary pokemon randomly from the candidates
+    const primaryCandidate = primaryCandidates[Math.floor(Math.random() * primaryCandidates.length)];
+    console.log(`[TOP_N_DEBUG] Primary candidates: [${primaryCandidates.map(p => p.name).join(', ')}]. Selected: ${primaryCandidate.name}`);
+
     const primaryMu = ratings[primaryCandidate.id].mu;
-    const opponents = topN.filter(p => p.id !== primaryCandidate.id);
-    
-    const opponent = opponents.reduce((closest, current) => {
-      const currentDiff = Math.abs(ratings[current.id].mu - primaryMu);
-      const closestDiff = Math.abs(ratings[closest.id].mu - primaryMu);
-      return currentDiff < closestDiff ? current : closest;
-    });
 
-    console.log(`🎯 [TOP_N_REFINEMENT] ${primaryCandidate.name} (σ=${ratings[primaryCandidate.id].sigma.toFixed(2)}) vs ${opponent.name}`);
+    // Opponent pool must not include the primary candidate
+    const opponentPool = selectionPool.filter(p => p.id !== primaryCandidate.id);
+    if(opponentPool.length === 0) return { battle: [], strategy: "Top N Refinement (Failed - No opponents left)"};
+    
+    // Find candidates for opponent (top 3 most similar mu)
+    const opponentCandidates = opponentPool
+      .sort((a, b) => {
+        const diffA = Math.abs(ratings[a.id].mu - primaryMu);
+        const diffB = Math.abs(ratings[b.id].mu - primaryMu);
+        return diffA - diffB;
+      })
+      .slice(0, 3);
+
+    if (opponentCandidates.length === 0) {
+      // Fallback: if no candidates, just pick a random opponent from the pool
+      const opponent = opponentPool[Math.floor(Math.random() * opponentPool.length)];
+      console.log(`[TOP_N_DEBUG] No ideal opponent candidates. Selected random opponent: ${opponent.name}`);
+      console.log(`🎯 [TOP_N_REFINEMENT] Randomized battle: ${primaryCandidate.name} (σ=${ratings[primaryCandidate.id].sigma.toFixed(2)}) vs ${opponent.name}`);
+      return { battle: [primaryCandidate, opponent], strategy: "Top N Refinement" };
+    }
+    
+    // Select opponent randomly from candidates
+    const opponent = opponentCandidates[Math.floor(Math.random() * opponentCandidates.length)];
+    console.log(`[TOP_N_DEBUG] Opponent candidates: [${opponentCandidates.map(p => p.name).join(', ')}]. Selected: ${opponent.name}`);
+
+    console.log(`🎯 [TOP_N_REFINEMENT] Randomized battle: ${primaryCandidate.name} (σ=${ratings[primaryCandidate.id].sigma.toFixed(2)}) vs ${opponent.name}`);
     return { battle: [primaryCandidate, opponent], strategy: "Top N Refinement" };
-  }, [getRankedPokemon]);
+  }, [getRankedPokemon, recentlyUsedPokemon]);
 
   // Strategy 3: Generate bubble challenge battle
   const generateBubbleChallengeBattle = useCallback((ratings: Ratings, N: number): BattleGenerationResult => {

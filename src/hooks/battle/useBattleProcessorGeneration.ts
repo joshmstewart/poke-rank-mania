@@ -12,7 +12,10 @@ export const useBattleProcessorGeneration = (
   onBattleGenerated?: (strategy: string) => void
 ) => {
   const refinementQueue = useSharedRefinementQueue();
-  const { generateNewBattle: generateBattleWithStrategy } = useBattleGeneration(allPokemon);
+  const { 
+    generateNewBattle: generateBattleWithStrategy, 
+    addToRecentlyUsed 
+  } = useBattleGeneration(allPokemon);
 
   const generateNewBattle = useCallback((
     battleType: BattleType,
@@ -39,6 +42,7 @@ export const useBattleProcessorGeneration = (
       
       if (setCurrentBattle) {
         setCurrentBattle(result.battle);
+        addToRecentlyUsed(result.battle);
       }
       
       // Call the callback to update battle log with the correct strategy
@@ -56,7 +60,8 @@ export const useBattleProcessorGeneration = (
     battlesCompleted, 
     refinementQueue, 
     setCurrentBattle, 
-    onBattleGenerated
+    onBattleGenerated,
+    addToRecentlyUsed
   ]);
 
   return { generateNewBattle };
