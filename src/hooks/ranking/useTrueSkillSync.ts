@@ -1,11 +1,11 @@
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
 import { RankedPokemon } from "@/services/pokemon";
 
 export const useTrueSkillSync = () => {
-  const { getAllRatings, smartSync, isHydrated } = useTrueSkillStore();
+  const isHydrated = useTrueSkillStore(state => state.isHydrated);
+  const lastSyncTime = useTrueSkillStore(state => state.lastSyncTime);
   const { pokemonLookupMap } = usePokemonContext();
   const [localRankings, setLocalRankings] = useState<RankedPokemon[]>([]);
   const isManualUpdateRef = useRef(false);
@@ -19,15 +19,17 @@ export const useTrueSkillSync = () => {
     console.log('🚨🚨🚨 [SYNC_AUDIT] pokemonLookupMap size:', pokemonLookupMap.size);
     
     if (isHydrated && pokemonLookupMap.size > 0) {
+      const { smartSync } = useTrueSkillStore.getState();
       console.log('🚨🚨🚨 [SYNC_AUDIT] Triggering smart sync for mode switch to ranking');
       smartSync();
     } else {
       console.log('🚨🚨🚨 [SYNC_AUDIT] Skipping sync - not ready (hydrated:', isHydrated, ', pokemon:', pokemonLookupMap.size, ')');
     }
-  }, [isHydrated, pokemonLookupMap.size, smartSync]);
+  }, [isHydrated, pokemonLookupMap.size]);
 
   // Transform TrueSkill ratings to RankedPokemon - ALWAYS SORT BY SCORE
   const rankingsFromTrueSkill = useMemo(() => {
+    const { getAllRatings } = useTrueSkillStore.getState();
     const syncId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     console.log('🚨🚨🚨 [SYNC_AUDIT] ===== GENERATING RANKINGS FROM TRUESKILL =====');
     console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync ID: ${syncId}`);
@@ -114,7 +116,7 @@ export const useTrueSkillSync = () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== END AUDIT =====`);
     
     return sortedRankings;
-  }, [getAllRatings, pokemonLookupMap]);
+  }, [pokemonLookupMap, lastSyncTime]);
 
   // Update local rankings when TrueSkill data changes
   useEffect(() => {

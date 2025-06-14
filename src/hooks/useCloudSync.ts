@@ -15,7 +15,7 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
+  const isHydrated = useTrueSkillStore(state => state.isHydrated);
 
   console.log(`🚨🚨🚨 [SYNC_AUDIT] useCloudSync hook is running at: ${new Date().toISOString()}`);
   console.log(`🚨🚨🚨 [SYNC_AUDIT] user?.id: ${user?.id || 'UNDEFINED'}`);
@@ -30,6 +30,7 @@ export const useCloudSync = () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] isHydrated: ${isHydrated}`);
     
     if (effectiveUserId && isHydrated) {
+      const { smartSync, getAllRatings } = useTrueSkillStore.getState();
       console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ STARTING PREDICTABLE SYNC FLOW`);
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 1: Local data already loaded (hydrated)`);
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 2: Starting background cloud sync`);
@@ -75,10 +76,11 @@ export const useCloudSync = () => {
       }
     }
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC FLOW COMPLETE =====`);
-  }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
+  }, [user?.id, session?.user?.id, isHydrated]);
 
   // Manual sync function for testing
   const triggerManualSync = useCallback(async () => {
+    const { smartSync, getAllRatings } = useTrueSkillStore.getState();
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== MANUAL SYNC TRIGGERED =====`);
     
     const effectiveUserId = user?.id || session?.user?.id;
@@ -131,7 +133,7 @@ export const useCloudSync = () => {
         variant: "destructive"
       });
     }
-  }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
+  }, [user?.id, session?.user?.id, isHydrated]);
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
     console.log('🚨🚨🚨 [SYNC_AUDIT] Battle data saved - auto-sync will handle cloud updates');
@@ -142,6 +144,7 @@ export const useCloudSync = () => {
       return null;
     }
     
+    const { smartSync, getAllRatings } = useTrueSkillStore.getState();
     await smartSync();
     
     const allRatings = getAllRatings();
@@ -156,7 +159,7 @@ export const useCloudSync = () => {
       completionPercentage: 0,
       fullRankingMode: false
     };
-  }, [smartSync, getAllRatings, isHydrated]);
+  }, [isHydrated]);
 
   const saveRankingsToCloud = useCallback(async (rankings: any[], generation: number) => {
     if (!isHydrated) {
@@ -180,9 +183,10 @@ export const useCloudSync = () => {
       return {};
     }
     
+    const { smartSync, getAllRatings } = useTrueSkillStore.getState();
     await smartSync();
     return getAllRatings();
-  }, [smartSync, getAllRatings, isHydrated]);
+  }, [isHydrated]);
 
   return {
     saveBattleToCloud,
