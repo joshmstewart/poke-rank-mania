@@ -3,6 +3,7 @@ import React from "react";
 import LogoSection from "./LogoSection";
 import ModeStyleControls from "./ModeStyleControls";
 import { SaveProgressSection } from "./SaveProgressSection";
+import { LastSyncDisplay } from "./LastSyncDisplay";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -15,22 +16,25 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
   console.log('🔥🔥🔥 AppHeader: Timestamp:', new Date().toISOString());
 
   return (
-    <header className="bg-white border-b-2 border-gray-300 shadow-md sticky top-0 z-50 relative">
-      <div className="container max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-24 bg-white rounded-lg mx-2 my-2 px-4">
-          {/* Left side - Logo */}
-          <LogoSection />
-          
-          {/* Center - Mode and Style Controls Group */}
-          <ModeStyleControls mode={mode} onModeChange={onModeChange} />
-          
-          {/* Right side - Clean Save Progress Section */}
-          <div className="flex items-center">
-            <SaveProgressSection />
+    <>
+      <header className="bg-white border-b-2 border-gray-300 shadow-md sticky top-0 z-50 relative">
+        <div className="container max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between h-24 bg-white rounded-lg mx-2 my-2 px-4">
+            {/* Left side - Logo */}
+            <LogoSection />
+            
+            {/* Center - Mode and Style Controls Group */}
+            <ModeStyleControls mode={mode} onModeChange={onModeChange} />
+            
+            {/* Right side - Clean Save Progress Section */}
+            <div className="flex items-center">
+              <SaveProgressSection />
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <LastSyncDisplay />
+    </>
   );
 };
 
