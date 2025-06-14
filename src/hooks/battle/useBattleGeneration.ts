@@ -67,31 +67,38 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const primaryRating = ratings[primaryPokemonId];
     let opponent: Pokemon;
 
+    // Filter out recently used Pokemon from potential opponents
+    const availableOpponents = allPokemon.filter(p => p.id !== primaryPokemonId && !recentlyUsedPokemon.has(p.id));
+
     if (primaryRating && primaryRating.battleCount > 0) {
       // For ranked Pokemon, find similar skill opponent
-      const rankedPokemon = getRankedPokemon(ratings);
-      const otherRanked = rankedPokemon.filter(p => p.id !== primaryPokemonId);
+      const rankedPokemon = getRankedPokemon(ratings).filter(p => p.id !== primaryPokemonId && !recentlyUsedPokemon.has(p.id));
       
-      if (otherRanked.length > 0) {
-        opponent = otherRanked.reduce((closest, current) => {
-          const currentDiff = Math.abs(ratings[current.id].mu - primaryRating.mu);
-          const closestDiff = Math.abs(ratings[closest.id].mu - primaryRating.mu);
-          return currentDiff < closestDiff ? current : closest;
-        });
+      if (rankedPokemon.length > 0) {
+        // Find top 3 most similar mu opponents and pick one randomly
+        const opponentCandidates = rankedPokemon
+          .sort((a, b) => {
+            const diffA = Math.abs(ratings[a.id].mu - primaryRating.mu);
+            const diffB = Math.abs(ratings[b.id].mu - primaryRating.mu);
+            return diffA - diffB;
+          })
+          .slice(0, 3);
+        
+        opponent = opponentCandidates[Math.floor(Math.random() * opponentCandidates.length)];
+
       } else {
         // Fallback to random if no other ranked Pokemon
-        const others = allPokemon.filter(p => p.id !== primaryPokemonId);
-        opponent = others[Math.floor(Math.random() * others.length)];
+        opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
       }
     } else {
       // For unranked Pokemon, prefer another unranked or high-sigma opponent
-      const unranked = getUnrankedPokemon(ratings).filter(p => p.id !== primaryPokemonId);
+      const unranked = getUnrankedPokemon(ratings).filter(p => p.id !== primaryPokemonId && !recentlyUsedPokemon.has(p.id));
       
       if (unranked.length > 0) {
         opponent = unranked[Math.floor(Math.random() * unranked.length)];
       } else {
-        // Fallback to high-sigma Pokemon from bottom tier
-        const rankedPokemon = getRankedPokemon(ratings);
+        // Fallback to high-sigma Pokemon from bottom tier (also filtered)
+        const rankedPokemon = getRankedPokemon(ratings).filter(p => !recentlyUsedPokemon.has(p.id));
         const bottomTier = rankedPokemon.slice(Math.max(0, rankedPokemon.length - 20));
         const highSigmaBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5);
         
@@ -99,10 +106,15 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
           opponent = highSigmaBottom[Math.floor(Math.random() * highSigmaBottom.length)];
         } else {
           // Final fallback
-          const others = allPokemon.filter(p => p.id !== primaryPokemonId);
-          opponent = others[Math.floor(Math.random() * others.length)];
+          opponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
         }
       }
+    }
+
+    if (!opponent) {
+      console.error(`⭐ [PENDING_BATTLE] Could not find an opponent for ${primary.name}.`);
+      removePendingPokemon(primaryPokemonId);
+      return { battle: [], strategy: "Pending Battle (Failed - No Opponent)" };
     }
 
     console.log(`⭐ [PENDING_BATTLE] Generated: ${primary.name} vs ${opponent.name}`);
@@ -114,27 +126,41 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     }, 100);
 
     return { battle: [primary, opponent], strategy: "Pending Battle" };
-  }, [allPokemon, getRankedPokemon, getUnrankedPokemon, removePendingPokemon]);
+  }, [allPokemon, getRankedPokemon, getUnrankedPokemon, removePendingPokemon, recentlyUsedPokemon]);
 
   // Strategy 1: Generate unranked battle
   const generateUnrankedBattle = useCallback((unrankedPool: Pokemon[], ratings: Ratings): BattleGenerationResult => {
     console.log(`🎯 [UNRANKED_BATTLE] Generating unranked battle from pool of ${unrankedPool.length}`);
     
-    if (unrankedPool.length === 0) return { battle: [], strategy: "Unranked Battle (Failed)" };
+    // Filter out recently used Pokemon
+    const availableUnranked = unrankedPool.filter(p => !recentlyUsedPokemon.has(p.id));
+    
+    if (availableUnranked.length < 2) {
+        console.log(`🎯 [UNRANKED_BATTLE] Not enough non-recent unranked Pokemon, trying with full pool.`);
+        const nonRecentFromFull = unrankedPool.filter(p => !recentlyUsedPokemon.has(p.id));
+        if (nonRecentFromFull.length >=2) {
+             const primary = nonRecentFromFull[Math.floor(Math.random() * nonRecentFromFull.length)];
+             const otherUnranked = nonRecentFromFull.filter(p => p.id !== primary.id);
+             const opponent = otherUnranked[Math.floor(Math.random() * otherUnranked.length)];
+             return { battle: [primary, opponent], strategy: "Unranked Battle" };
+        }
+        console.log(`🎯 [UNRANKED_BATTLE] Still not enough, returning failure.`);
+        return { battle: [], strategy: "Unranked Battle (Failed)" };
+    }
 
     // Select primary unranked Pokemon
-    const primary = unrankedPool[Math.floor(Math.random() * unrankedPool.length)];
+    const primary = availableUnranked[Math.floor(Math.random() * availableUnranked.length)];
     
     // Try to find another unranked opponent
-    const otherUnranked = unrankedPool.filter(p => p.id !== primary.id);
+    const otherUnranked = availableUnranked.filter(p => p.id !== primary.id);
     
     let opponent: Pokemon;
     if (otherUnranked.length > 0) {
       opponent = otherUnranked[Math.floor(Math.random() * otherUnranked.length)];
       console.log(`🎯 [UNRANKED_BATTLE] Both Pokemon unranked: ${primary.name} vs ${opponent.name}`);
     } else {
-      // Fall back to high-sigma Pokemon from bottom tier
-      const rankedPokemon = getRankedPokemon(ratings);
+      // Fall back to high-sigma Pokemon from bottom tier (also filtered)
+      const rankedPokemon = getRankedPokemon(ratings).filter(p => !recentlyUsedPokemon.has(p.id));
       const bottomTier = rankedPokemon.slice(Math.max(0, rankedPokemon.length - 20));
       const highSigmaBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5);
       
@@ -142,14 +168,18 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
         opponent = highSigmaBottom[Math.floor(Math.random() * highSigmaBottom.length)];
         console.log(`🎯 [UNRANKED_BATTLE] Unranked vs bottom tier: ${primary.name} vs ${opponent.name}`);
       } else {
-        // Final fallback to any ranked Pokemon
-        opponent = rankedPokemon[Math.floor(Math.random() * rankedPokemon.length)];
-        console.log(`🎯 [UNRANKED_BATTLE] Unranked vs random ranked: ${primary.name} vs ${opponent.name}`);
+        // Final fallback to any ranked Pokemon (filtered)
+        if (rankedPokemon.length > 0) {
+            opponent = rankedPokemon[Math.floor(Math.random() * rankedPokemon.length)];
+            console.log(`🎯 [UNRANKED_BATTLE] Unranked vs random ranked: ${primary.name} vs ${opponent.name}`);
+        } else {
+            return { battle: [], strategy: "Unranked Battle (Failed - No opponents)" };
+        }
       }
     }
 
     return { battle: [primary, opponent], strategy: "Unranked Battle" };
-  }, [getRankedPokemon]);
+  }, [getRankedPokemon, recentlyUsedPokemon]);
 
   // Strategy 2: Generate Top N refinement battle
   const generateTopNRefinementBattle = useCallback((ratings: Ratings, N: number): BattleGenerationResult => {
@@ -224,24 +254,33 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const innerBubble = rankedPokemon.slice(N, N + 20);
     const outerBubble = rankedPokemon.slice(N + 20, N + 50).filter(p => ratings[p.id].sigma > 2.5);
     
-    const challengerPool = [...innerBubble, ...outerBubble];
+    // Filter out recently used Pokemon
+    let challengerPool = [...innerBubble, ...outerBubble].filter(p => !recentlyUsedPokemon.has(p.id));
     
     if (challengerPool.length === 0) {
-      console.log(`🎯 [BUBBLE_CHALLENGE] No challengers available, falling back to Top N battle`);
+      console.log(`🎯 [BUBBLE_CHALLENGE] No non-recent challengers available, falling back to Top N battle`);
       return generateTopNRefinementBattle(ratings, N);
     }
 
-    // Select challenger with highest sigma
-    const challenger = challengerPool.reduce((highest, current) => 
-      ratings[current.id].sigma > ratings[highest.id].sigma ? current : highest
-    );
+    // Select challenger from top 5 highest sigma, randomly
+    const challengerCandidates = challengerPool
+      .sort((a, b) => ratings[b.id].sigma - ratings[a.id].sigma)
+      .slice(0, 5);
 
-    // Select gatekeeper from bottom of Top N (ranks N-5 to N)
-    const gatekeeperPool = rankedPokemon.slice(Math.max(0, N - 5), N);
+    const challenger = challengerCandidates[Math.floor(Math.random() * challengerCandidates.length)];
+    console.log(`🎯 [BUBBLE_CHALLENGE] Challenger candidates: [${challengerCandidates.map(p => p.name).join(', ')}]. Selected: ${challenger.name}`);
+
+    // Select gatekeeper from bottom of Top N (ranks N-5 to N), filtering for recent
+    const gatekeeperPoolSource = rankedPokemon.slice(Math.max(0, N - 5), N);
+    let gatekeeperPool = gatekeeperPoolSource.filter(p => !recentlyUsedPokemon.has(p.id) && p.id !== challenger.id);
     
     if (gatekeeperPool.length === 0) {
-      console.log(`🎯 [BUBBLE_CHALLENGE] No gatekeepers available, using random Top N`);
-      const topN = rankedPokemon.slice(0, N);
+      console.log(`🎯 [BUBBLE_CHALLENGE] No non-recent gatekeepers, using random Top N (filtered)`);
+      const topN = rankedPokemon.slice(0, N).filter(p => !recentlyUsedPokemon.has(p.id) && p.id !== challenger.id);
+      if (topN.length === 0) {
+          console.log(`🎯 [BUBBLE_CHALLENGE] No available opponents in Top N, falling back to main Top N battle`);
+          return generateTopNRefinementBattle(ratings, N);
+      }
       const gatekeeper = topN[Math.floor(Math.random() * topN.length)];
       return { battle: [challenger, gatekeeper], strategy: "Bubble Challenge" };
     }
@@ -250,7 +289,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     
     console.log(`🎯 [BUBBLE_CHALLENGE] Challenger ${challenger.name} vs Gatekeeper ${gatekeeper.name}`);
     return { battle: [challenger, gatekeeper], strategy: "Bubble Challenge" };
-  }, [getRankedPokemon, generateTopNRefinementBattle]);
+  }, [getRankedPokemon, generateTopNRefinementBattle, recentlyUsedPokemon]);
 
   // Strategy 4: Generate bottom confirmation battle
   const generateBottomConfirmationBattle = useCallback((ratings: Ratings, N: number): BattleGenerationResult => {
@@ -259,12 +298,16 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const rankedPokemon = getRankedPokemon(ratings);
     const bottomTier = rankedPokemon.slice(N + 50);
     
-    // Only include Pokemon with sigma > 3.5 (not back-burnered)
-    const eligibleBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5);
+    // Only include Pokemon with sigma > 3.5 (not back-burnered) and not recently used
+    let eligibleBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5 && !recentlyUsedPokemon.has(p.id));
     
     if (eligibleBottom.length === 0) {
-      console.log(`🎯 [BOTTOM_CONFIRMATION] No eligible bottom tier Pokemon, falling back to bubble challenge`);
-      return generateBubbleChallengeBattle(ratings, N);
+      // Fallback if no non-recent, use the original pool
+      eligibleBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5);
+      if (eligibleBottom.length === 0) {
+        console.log(`🎯 [BOTTOM_CONFIRMATION] No eligible bottom tier Pokemon, falling back to bubble challenge`);
+        return generateBubbleChallengeBattle(ratings, N);
+      }
     }
 
     const primary = eligibleBottom[Math.floor(Math.random() * eligibleBottom.length)];
@@ -273,8 +316,8 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const upsetRoll = Math.random();
     
     if (upsetRoll < 0.2) {
-      // Upset battle against Top N
-      const topN = rankedPokemon.slice(0, N);
+      // Upset battle against Top N (filtered)
+      const topN = rankedPokemon.slice(0, N).filter(p => !recentlyUsedPokemon.has(p.id) && p.id !== primary.id);
       if (topN.length > 0) {
         const opponent = topN[Math.floor(Math.random() * topN.length)];
         console.log(`🎯 [BOTTOM_CONFIRMATION] UPSET! ${primary.name} vs Top N ${opponent.name}`);
@@ -282,7 +325,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
       }
     }
     
-    // Regular bottom vs bottom battle
+    // Regular bottom vs bottom battle (filtered)
     const otherBottom = eligibleBottom.filter(p => p.id !== primary.id);
     if (otherBottom.length > 0) {
       const opponent = otherBottom[Math.floor(Math.random() * otherBottom.length)];
@@ -291,8 +334,9 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     }
 
     // Fallback if only one eligible bottom tier Pokemon
+    console.log(`🎯 [BOTTOM_CONFIRMATION] Not enough opponents in bottom tier, falling back to bubble challenge.`);
     return generateBubbleChallengeBattle(ratings, N);
-  }, [getRankedPokemon, generateBubbleChallengeBattle]);
+  }, [getRankedPokemon, generateBubbleChallengeBattle, recentlyUsedPokemon]);
 
   // Main battle generation function with Top N logic and pending battles priority
   const generateNewBattle = useCallback((
@@ -314,7 +358,13 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     if (Array.from(pendingPokemon).length > 0) {
       console.log(`⭐ [PENDING_PRIORITY] ===== PENDING BATTLE DETECTED =====`);
       const pendingIds = Array.from(pendingPokemon);
-      const primaryPokemonId = pendingIds[0];
+      // Filter out recently used pending pokemon if possible
+      let p_id_pool = pendingIds.filter(id => !recentlyUsedPokemon.has(id));
+      if (p_id_pool.length === 0) {
+        console.warn(`⭐ [PENDING_PRIORITY] All pending pokemon were recently used. Using oldest pending pokemon.`);
+        p_id_pool = pendingIds;
+      }
+      const primaryPokemonId = p_id_pool[0];
       
       console.log(`⭐ [PENDING_PRIORITY] Processing pending Pokemon: ${primaryPokemonId}`);
       
