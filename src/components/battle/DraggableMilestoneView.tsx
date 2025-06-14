@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
@@ -51,26 +50,16 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   const displayRankings = localRankings.slice(0, Math.min(milestoneDisplayCount, maxItems));
   const hasMoreToLoad = milestoneDisplayCount < maxItems;
 
-  // Update local state when props change, but only if we don't have local changes
+  // Update local state ONLY when the formattedRankings prop changes.
+  // This prevents local drag-and-drop state from being overwritten.
   useEffect(() => {
-    console.log(`🏆 [MILESTONE_DRAG_SYNC] Props changed - formattedRankings: ${formattedRankings.length}, localRankings: ${localRankings.length}`);
-    
-    // Only update if the rankings are significantly different (suggesting external update)
-    // This prevents overwriting local drag changes
-    const hasSignificantDifference = Math.abs(formattedRankings.length - localRankings.length) > 0 ||
-      formattedRankings.slice(0, 5).some((p, i) => p.id !== localRankings[i]?.id);
-    
-    if (hasSignificantDifference) {
-      console.log(`🏆 [MILESTONE_DRAG_SYNC] Significant difference detected, updating local rankings`);
-      // Apply name formatting when updating from props
-      const formattedData = formattedRankings.map(pokemon => ({
-        ...pokemon,
-        name: formatPokemonName(pokemon.name)
-      }));
-      setLocalRankings(formattedData);
-    } else {
-      console.log(`🏆 [MILESTONE_DRAG_SYNC] No significant difference, keeping local rankings to preserve drag state`);
-    }
+    console.log(`🏆 [MILESTONE_DRAG_SYNC] Prop 'formattedRankings' changed, updating local rankings.`);
+    // Apply name formatting when updating from props
+    const formattedData = formattedRankings.map(pokemon => ({
+      ...pokemon,
+      name: formatPokemonName(pokemon.name)
+    }));
+    setLocalRankings(formattedData);
   }, [formattedRankings]);
 
   // Enhanced manual reorder with proper callback that doesn't cause resets
