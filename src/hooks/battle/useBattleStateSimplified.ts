@@ -4,7 +4,6 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
-import { useMilestoneCalculations } from "./useMilestoneCalculations";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
@@ -39,11 +38,6 @@ export const useBattleStateSimplified = (
     getAllRatings,
     updateRating
   } = useTrueSkillStore();
-  
-  // Fixed milestone calculations call - only one argument
-  const { getMilestoneProgress, getNextMilestone } = useMilestoneCalculations(
-    battlesCompleted
-  );
   
   const refinementQueue = useSharedRefinementQueue();
   
