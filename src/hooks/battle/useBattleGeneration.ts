@@ -354,23 +354,21 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
 
     let battleResult: BattleGenerationResult;
 
-    // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
+    // FIXED STRATEGY DISTRIBUTION: Use proper if...else if...else chain
     if (unrankedPool.length > 0 && battleStrategyRoll < 0.15) {
+      // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
       console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE (15%)`);
       battleResult = generateUnrankedBattle(unrankedPool, ratings);
-    }
-    // Strategy 2: Refine Top N (50% chance)
-    else if (battleStrategyRoll < 0.65) {
+    } else if (battleStrategyRoll < 0.65) {
+      // Strategy 2: Refine Top N (50% chance) - 0.15 to 0.65
       console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: TOP N REFINEMENT (50%)`);
       battleResult = generateTopNRefinementBattle(ratings, N);
-    }
-    // Strategy 3: Bubble challenge (20% chance)
-    else if (battleStrategyRoll < 0.85) {
+    } else if (battleStrategyRoll < 0.85) {
+      // Strategy 3: Bubble challenge (20% chance) - 0.65 to 0.85
       console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BUBBLE CHALLENGE (20%)`);
       battleResult = generateBubbleChallengeBattle(ratings, N);
-    }
-    // Strategy 4: Bottom confirmation (15% chance)
-    else {
+    } else {
+      // Strategy 4: Bottom confirmation (15% chance) - 0.85 to 1.0
       console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BOTTOM CONFIRMATION (15%)`);
       battleResult = generateBottomConfirmationBattle(ratings, N);
     }

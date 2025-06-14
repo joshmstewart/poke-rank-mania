@@ -2,7 +2,9 @@
 import React from "react";
 import { BattleType } from "@/hooks/battle/types";
 import { SingleBattle } from "@/hooks/battle/types";
+import { TopNOption } from "@/services/pokemon";
 import UnifiedControls from "../shared/UnifiedControls";
+import TierSelector from "./TierSelector";
 
 interface BattleControlsProps {
   selectedGeneration: number;
@@ -13,6 +15,8 @@ interface BattleControlsProps {
   setBattlesCompleted?: React.Dispatch<React.SetStateAction<number>>;
   setBattleResults?: React.Dispatch<React.SetStateAction<SingleBattle[]>>;
   performFullBattleReset?: () => void;
+  activeTier?: TopNOption;
+  setActiveTier?: (tier: TopNOption) => void;
 }
 
 const BattleControls: React.FC<BattleControlsProps> = ({
@@ -23,7 +27,9 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   onRestartBattles,
   setBattlesCompleted,
   setBattleResults,
-  performFullBattleReset
+  performFullBattleReset,
+  activeTier = 25,
+  setActiveTier
 }) => {
   const handleBattleModeReset = () => {
     console.log(`🔄 [BATTLE_MODE_RESET] Performing Battle mode specific reset actions`);
@@ -43,16 +49,26 @@ const BattleControls: React.FC<BattleControlsProps> = ({
   };
 
   return (
-    <UnifiedControls
-      selectedGeneration={selectedGeneration}
-      battleType={battleType}
-      onGenerationChange={onGenerationChange}
-      onBattleTypeChange={onBattleTypeChange}
-      showBattleTypeControls={true}
-      mode="battle"
-      onReset={onRestartBattles}
-      customResetAction={handleBattleModeReset}
-    />
+    <div className="flex items-center justify-between gap-4">
+      <UnifiedControls
+        selectedGeneration={selectedGeneration}
+        battleType={battleType}
+        onGenerationChange={onGenerationChange}
+        onBattleTypeChange={onBattleTypeChange}
+        showBattleTypeControls={true}
+        mode="battle"
+        onReset={onRestartBattles}
+        customResetAction={handleBattleModeReset}
+      />
+      
+      {/* Add the TierSelector here */}
+      {setActiveTier && (
+        <TierSelector 
+          activeTier={activeTier} 
+          onTierChange={setActiveTier} 
+        />
+      )}
+    </div>
   );
 };
 
