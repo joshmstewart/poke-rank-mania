@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -40,6 +41,7 @@ export const useBattleStateSimplified = (
     updateRating
   } = useTrueSkillStore();
   
+  const { addBattlePair } = useBattleStarterMemory();
   const refinementQueue = useSharedRefinementQueue();
   
   // Battle integration
