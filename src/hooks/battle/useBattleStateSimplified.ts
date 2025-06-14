@@ -6,6 +6,7 @@ import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useBattleStarterMemory } from "./useBattleStarterMemory";
+import { useMilestoneManager } from "./useMilestoneManager";
 
 const BATTLE_MILESTONE_INTERVAL = 25;
 
@@ -22,8 +23,6 @@ export const useBattleStateSimplified = (
   const [selectedPokemon, setSelectedPokemon] = useState<number[]>([]);
   const [battleType, setBattleType] = useState<BattleType>(initialBattleType);
   const [battleHistory, setBattleHistory] = useState<{ battle: Pokemon[], selected: number[] }[]>([]);
-  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
-  const [showingMilestone, setShowingMilestone] = useState(false);
   const [activeTier, setActiveTier] = useState<string>("all");
   const [milestones] = useState([25, 50, 100, 200, 300, 500, 750, 1000]);
   const [rankingGenerated, setRankingGenerated] = useState(false);
@@ -40,6 +39,14 @@ export const useBattleStateSimplified = (
     updateRating,
     incrementTotalBattles
   } = useTrueSkillStore();
+
+  // Milestone manager hook
+  const { 
+    finalRankings, 
+    setFinalRankings, 
+    showingMilestone, 
+    setShowingMilestone 
+  } = useMilestoneManager(battlesCompleted);
   
   const { addBattlePair } = useBattleStarterMemory();
   const refinementQueue = useSharedRefinementQueue();
@@ -156,7 +163,7 @@ export const useBattleStateSimplified = (
     const N = 25; // Default Top N value
     const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
-  }, [battleType, generateNewBattle, getAllRatings]);
+  }, [battleType, generateNewBattle, getAllRatings, setShowingMilestone]);
 
   const performFullBattleReset = useCallback(() => {
     console.log(`🔄 [SIMPLIFIED_STATE] Performing full battle reset`);
@@ -167,7 +174,7 @@ export const useBattleStateSimplified = (
     setShowingMilestone(false);
     setRankingGenerated(false);
     initialBattleStartedRef.current = false;
-  }, []);
+  }, [setFinalRankings, setShowingMilestone]);
 
   const handleSaveRankings = useCallback(() => {
     console.log(`💾 [SIMPLIFIED_STATE] Saving rankings`);
@@ -187,12 +194,12 @@ export const useBattleStateSimplified = (
   const resetMilestoneInProgress = useCallback(() => {
     console.log(`🎯 [SIMPLIFIED_STATE] Resetting milestone in progress`);
     setShowingMilestone(false);
-  }, []);
+  }, [setShowingMilestone]);
 
   const handleManualReorder = useCallback((reorderedRankings: RankedPokemon[]) => {
     console.log(`🔄 [SIMPLIFIED_STATE] Manual reorder with ${reorderedRankings.length} rankings`);
     setFinalRankings(reorderedRankings);
-  }, []);
+  }, [setFinalRankings]);
 
   // Initial battle start effect
   useEffect(() => {
