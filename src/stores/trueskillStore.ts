@@ -396,9 +396,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             } catch (jsonError) {
               console.error(`🚨🚨🚨 [SYNC_AUDIT] Failed to parse JSON: ${raw}`);
               toast({
-                title: 'Sync Error',
-                description: 'Unexpected response from the server.',
-                variant: 'destructive'
+                title: 'Cloud Sync Failed',
+                description: 'Could not save progress to the cloud. Your changes are saved locally.',
+                variant: 'destructive',
               });
               return;
             }
@@ -411,6 +411,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           } catch (error) {
             console.error(`🚨🚨🚨 [SYNC_AUDIT] Sync failed:`, error);
+            toast({
+              title: 'Cloud Sync Failed',
+              description: 'Could not save progress to the cloud. Your changes are saved locally.',
+              variant: 'destructive',
+            });
           } finally {
             set({ syncInProgress: false });
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync operation complete`);
@@ -451,6 +456,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
         } catch (error) {
           console.error(`🚨🚨🚨 [SYNC_AUDIT] Load from cloud failed:`, error);
+          toast({
+            title: 'Cloud Load Failed',
+            description: 'Could not load data from the cloud. Using local data for now.',
+            variant: 'destructive',
+          });
           // Ensure hydration even if cloud load fails
           set({ isHydrated: true });
         }
@@ -503,6 +513,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           
         } catch (error) {
           console.error(`🚨🚨🚨 [SYNC_AUDIT] Smart sync failed:`, error);
+          toast({
+            title: 'Smart Sync Failed',
+            description: 'Could not sync with the cloud. Check console for details.',
+            variant: 'destructive',
+          });
           set({ isHydrated: true }); // Ensure app doesn't hang
         } finally {
           set({ syncInProgress: false });

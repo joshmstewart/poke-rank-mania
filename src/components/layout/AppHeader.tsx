@@ -4,6 +4,7 @@ import LogoSection from "./LogoSection";
 import ModeStyleControls from "./ModeStyleControls";
 import { SaveProgressSection } from "./SaveProgressSection";
 import { LastSyncDisplay } from "./LastSyncDisplay";
+import { AuthStatusIndicator } from "./AuthStatusIndicator";
 
 interface AppHeaderProps {
   mode: "rank" | "battle";
@@ -28,6 +29,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ mode, onModeChange }) => {
             
             {/* Right side - Clean Save Progress Section */}
             <div className="flex items-center">
+              <AuthStatusIndicator />
               <SaveProgressSection />
             </div>
           </div>

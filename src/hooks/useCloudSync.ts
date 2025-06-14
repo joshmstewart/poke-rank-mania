@@ -1,7 +1,9 @@
+
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BattleData {
   selectedGeneration: number;
@@ -15,7 +17,45 @@ interface BattleData {
 
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore();
+  // Using a selector to prevent unnecessary re-renders from state changes we don't care about here.
+  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore(
+    (state) => ({
+      smartSync: state.smartSync,
+      getAllRatings: state.getAllRatings,
+      isHydrated: state.isHydrated,
+      restoreSessionFromCloud: state.restoreSessionFromCloud,
+    })
+  );
+
+  useEffect(() => {
+    const checkEdgeFunctionHealth = async () => {
+        console.log('🚨🚨🚨 [HEALTH_CHECK] Checking edge function connectivity...');
+        try {
+            const { data, error } = await supabase.functions.invoke('health-check', {
+                body: { message: 'ping' }
+            });
+
+            if (error) throw error;
+
+            console.log('✅ [HEALTH_CHECK] Edge function is healthy:', data);
+            toast({
+                title: 'System Status',
+                description: 'Cloud connection is healthy.',
+                duration: 3000,
+            });
+
+        } catch (error) {
+            console.error('❌ [HEALTH_CHECK] Edge function health check failed:', error);
+            toast({
+                title: 'System Status',
+                description: 'Could not connect to cloud services. Some features may not work.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    checkEdgeFunctionHealth();
+  }, []); // Run once on mount
 
   console.log(`🚨🚨🚨 [SYNC_AUDIT] useCloudSync hook is running at: ${new Date().toISOString()}`);
   console.log(`🚨🚨🚨 [SYNC_AUDIT] user?.id: ${user?.id || 'UNDEFINED'}`);
