@@ -3,14 +3,16 @@ import { useCallback } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
+import { useBattleGeneration, BattleGenerationResult } from "./useBattleGeneration";
 
 export const useBattleProcessorGeneration = (
-  battleStarter?: any,
-  integratedStartNewBattle?: (battleType: BattleType, N?: number, ratings?: any) => Pokemon[],
+  allPokemon: Pokemon[],
+  battlesCompleted: number,
   setCurrentBattle?: React.Dispatch<React.SetStateAction<Pokemon[]>>,
   onBattleGenerated?: (strategy: string) => void
 ) => {
   const refinementQueue = useSharedRefinementQueue();
+  const { generateNewBattle: generateBattleWithStrategy } = useBattleGeneration(allPokemon);
 
   const generateNewBattle = useCallback((
     battleType: BattleType,
@@ -18,49 +20,44 @@ export const useBattleProcessorGeneration = (
     N: number = 25,
     ratings: any = {}
   ) => {
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] ===== generateNewBattle CALLED =====`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Timestamp: ${timestamp}`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Battle type: ${battleType}`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Top N: ${N}`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Ratings count: ${Object.keys(ratings).length}`);
+    console.log(`[PROCESSOR_GENERATION_REFACTORED] ===== generateNewBattle CALLED =====`);
+    console.log(`[PROCESSOR_GENERATION_REFACTORED] Battle type: ${battleType}`);
+    console.log(`[PROCESSOR_GENERATION_REFACTORED] Top N: ${N}`);
     
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Prerequisites:`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] - battleStarter exists: ${!!battleStarter}`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] - integratedStartNewBattle exists: ${!!integratedStartNewBattle}`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] - setCurrentBattle exists: ${!!setCurrentBattle}`);
-    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] - refinementQueue exists: ${!!refinementQueue}`);
-    
-    // Regular battle generation with Top N logic
-    console.log(`🚀 [REGULAR_BATTLE_GENERATION] Proceeding with Top N generation`);
-    
-    if (battleStarter && integratedStartNewBattle) {
-      console.log(`🚀 [REGULAR_BATTLE_GENERATION] Calling integratedStartNewBattle with N=${N}...`);
-      const newBattle = integratedStartNewBattle(battleType, N, ratings);
-      if (newBattle && newBattle.length > 0) {
-        const strategy = `Top ${N} battle generated (${battleType})`;
-        console.log(`🚀 [REGULAR_BATTLE_GENERATION] New Top N battle generated: ${newBattle.map(p => p.name)}`);
-        console.log(`🚀 [REGULAR_BATTLE_GENERATION] Strategy: ${strategy}`);
-        
-        if (setCurrentBattle) {
-          setCurrentBattle(newBattle);
-        }
-        
-        // Call the callback to update battle log
-        if (onBattleGenerated) {
-          onBattleGenerated(strategy);
-        }
-        
-        return true;
-      } else {
-        console.error(`🚀 [REGULAR_BATTLE_GENERATION] ❌ Failed to generate new battle`);
-        return false;
+    // Call the correct generation function with the full strategy logic
+    const result: BattleGenerationResult = generateBattleWithStrategy(
+      battleType,
+      battlesCompleted,
+      refinementQueue,
+      N,
+      ratings
+    );
+
+    if (result && result.battle.length > 0) {
+      const strategy = result.strategy || "Unknown Strategy";
+      console.log(`[PROCESSOR_GENERATION_REFACTORED] New battle generated with strategy: ${strategy}`);
+      
+      if (setCurrentBattle) {
+        setCurrentBattle(result.battle);
       }
+      
+      // Call the callback to update battle log with the correct strategy
+      if (onBattleGenerated) {
+        onBattleGenerated(strategy);
+      }
+      
+      return true;
     } else {
-      console.error(`🚀 [REGULAR_BATTLE_GENERATION] ❌ Missing battleStarter or integratedStartNewBattle`);
+      console.error(`[PROCESSOR_GENERATION_REFACTORED] ❌ Failed to generate new battle`);
+      return false;
     }
-    
-    return false;
-  }, [battleStarter, integratedStartNewBattle, setCurrentBattle, refinementQueue, onBattleGenerated]);
+  }, [
+    generateBattleWithStrategy, 
+    battlesCompleted, 
+    refinementQueue, 
+    setCurrentBattle, 
+    onBattleGenerated
+  ]);
 
   return { generateNewBattle };
 };

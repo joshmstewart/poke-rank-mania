@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
@@ -74,8 +73,8 @@ export const useBattleProcessor = (
   );
 
   const { generateNewBattle } = useBattleProcessorGeneration(
-    battleStarter,
-    integratedStartNewBattle,
+    allPokemon,
+    battlesCompleted,
     setCurrentBattle
   );
 
