@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -62,7 +61,7 @@ interface TrueSkillStore {
   setInitiatePendingBattle: (value: boolean) => void;
   
   // Enhanced cloud sync actions with timestamp-based merging
-  syncToCloud: () => Promise<void>;
+  syncToCloud: (options?: { immediate?: boolean }) => Promise<void>;
   loadFromCloud: () => Promise<void>;
   smartSync: () => Promise<void>;
   mergeCloudData: (cloudData: any) => void;
@@ -98,9 +97,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
 
       endBatchUpdate: () => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Ending batch update, triggering sync`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Ending batch update, triggering immediate sync`);
         set({ batchMode: false });
-        get().syncToCloud();
+        // Force an immediate sync to ensure data is saved at the end of a batch operation.
+        get().syncToCloud({ immediate: true });
       },
 
       updateRating: (pokemonId: string, rating: Rating) => {
@@ -352,20 +352,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         });
       },
 
-      syncToCloud: async () => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC TO CLOUD CALLED =====`);
-        
-        const stateForCheck = get();
-        if (stateForCheck.batchMode) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Batch mode is active, deferring sync.`);
-          return;
-        }
+      syncToCloud: async ({ immediate = false } = {}) => {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC TO CLOUD CALLED (immediate: ${immediate}) =====`);
 
-        if (syncTimeout) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Clearing existing sync timeout`);
-          clearTimeout(syncTimeout);
-        }
-        syncTimeout = setTimeout(async () => {
+        const performSync = async () => {
           syncTimeout = null;
           const state = get();
           
@@ -435,7 +425,21 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             set({ syncInProgress: false });
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync operation complete`);
           }
-        }, SYNC_DEBOUNCE_DELAY);
+        };
+        
+        if (immediate) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Performing immediate sync.`);
+          if (syncTimeout) {
+            clearTimeout(syncTimeout);
+          }
+          await performSync();
+        } else {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Debouncing sync for ${SYNC_DEBOUNCE_DELAY}ms.`);
+          if (syncTimeout) {
+            clearTimeout(syncTimeout);
+          }
+          syncTimeout = setTimeout(performSync, SYNC_DEBOUNCE_DELAY);
+        }
       },
 
       loadFromCloud: async () => {
@@ -517,7 +521,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               get().mergeCloudData(result);
               
               // Sync the merged data back to cloud
-              await get().syncToCloud();
+              await get().syncToCloud({ immediate: true });
             }
           } else {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state. Using local state only.`);
