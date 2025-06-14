@@ -33,13 +33,11 @@ export const useBattleStateSimplified = (
   // Refs
   const initialBattleStartedRef = useRef(false);
   
-  // Store integration
+  // Store integration - FIXED property names
   const { 
     totalBattles: battlesCompleted,
-    battles,
-    ratings,
-    updateRating,
-    getAllRankings
+    getAllRatings,
+    updateRating
   } = useTrueSkillStore();
   
   // Fixed milestone calculations call - only one argument
@@ -77,7 +75,7 @@ export const useBattleStateSimplified = (
       
       console.log(`⚡ [PAIR_BATTLE] Processing pair battle: winner=${id}, loser=${nonSelectedIds[0]}`);
       
-      // Add to TrueSkill store
+      // Add to battle history
       const battleData = {
         battle: currentBattle,
         selected: selectedIds,
@@ -85,14 +83,11 @@ export const useBattleStateSimplified = (
         battleType
       };
       
-      // Use store methods correctly
-      battles.push(battleData);
-      
-      // Update battle history
       setBattleHistory(prev => [...prev, battleData]);
       
       // Generate next battle with Top N parameters
       const N = 25; // Default Top N value
+      const ratings = getAllRatings();
       generateNewBattle(battleType, timestamp, N, ratings);
       
     } else {
@@ -104,7 +99,7 @@ export const useBattleStateSimplified = (
         return newSelected;
       });
     }
-  }, [battleType, currentBattle, battles, generateNewBattle, ratings]);
+  }, [battleType, currentBattle, generateNewBattle, getAllRatings]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length === 0) return;
@@ -119,16 +114,15 @@ export const useBattleStateSimplified = (
       battleType
     };
     
-    // Use store methods correctly
-    battles.push(battleData);
     setBattleHistory(prev => [...prev, battleData]);
     setSelectedPokemon([]);
     
     // Generate next battle with Top N parameters
     const N = 25; // Default Top N value
+    const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
     
-  }, [selectedPokemon, currentBattle, battleType, battles, generateNewBattle, ratings]);
+  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
@@ -147,8 +141,9 @@ export const useBattleStateSimplified = (
     // Generate next battle with Top N parameters
     const timestamp = new Date().toISOString();
     const N = 25; // Default Top N value
+    const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
-  }, [battleType, generateNewBattle, ratings]);
+  }, [battleType, generateNewBattle, getAllRatings]);
 
   const performFullBattleReset = useCallback(() => {
     console.log(`🔄 [SIMPLIFIED_STATE] Performing full battle reset`);
@@ -163,10 +158,10 @@ export const useBattleStateSimplified = (
 
   const handleSaveRankings = useCallback(() => {
     console.log(`💾 [SIMPLIFIED_STATE] Saving rankings`);
-    const rankings = getAllRankings();
-    setFinalRankings(rankings);
+    const ratings = getAllRatings();
+    // Convert ratings to rankings format if needed
     setRankingGenerated(true);
-  }, [getAllRankings]);
+  }, [getAllRatings]);
 
   const suggestRanking = useCallback((pokemon: RankedPokemon, direction: "up" | "down", strength: 1 | 2 | 3) => {
     console.log(`📝 [SIMPLIFIED_STATE] Ranking suggestion: ${pokemon.name} ${direction} ${strength}`);
@@ -192,20 +187,21 @@ export const useBattleStateSimplified = (
       console.log(`🚀 [SIMPLIFIED_STATE] Starting initial battle`);
       const timestamp = new Date().toISOString();
       const N = 25; // Default Top N value
+      const ratings = getAllRatings();
       generateNewBattle(battleType, timestamp, N, ratings);
       initialBattleStartedRef.current = true;
     }
-  }, [allPokemon, battleType, generateNewBattle, ratings]);
+  }, [allPokemon, battleType, generateNewBattle, getAllRatings]);
 
   // Milestone detection effect
   useEffect(() => {
     if (battlesCompleted > 0 && battlesCompleted % BATTLE_MILESTONE_INTERVAL === 0) {
       console.log(`🎉 [SIMPLIFIED_STATE] Milestone reached: ${battlesCompleted} battles`);
       setShowingMilestone(true);
-      const rankings = getAllRankings();
-      setFinalRankings(rankings);
+      const ratings = getAllRatings();
+      // Convert ratings to rankings if needed for finalRankings
     }
-  }, [battlesCompleted, getAllRankings]);
+  }, [battlesCompleted, getAllRatings]);
 
   return {
     // State

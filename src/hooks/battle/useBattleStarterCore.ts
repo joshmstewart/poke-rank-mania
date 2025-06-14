@@ -2,7 +2,7 @@
 import { useCallback } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
-import { useBattleGeneration } from "./useBattleGeneration";
+import { useBattleGeneration, BattleGenerationResult } from "./useBattleGeneration";
 
 interface BattleStarterConfig {
   allPokemon: Pokemon[];
@@ -34,7 +34,7 @@ export const useBattleStarterCore = (
     console.log(`🎯 [BATTLE_STARTER_CORE] Ratings available: ${Object.keys(ratings).length}`);
 
     // Use the new Top N battle generation logic
-    const battle = generateNewBattle(
+    const result = generateNewBattle(
       battleType,
       0, // battlesCompleted - not used in Top N logic
       undefined, // refinementQueue - handled elsewhere
@@ -42,9 +42,10 @@ export const useBattleStarterCore = (
       ratings
     );
 
-    console.log(`🎯 [BATTLE_STARTER_CORE] Generated battle:`, battle.map(p => `${p.name}(${p.id})`));
+    console.log(`🎯 [BATTLE_STARTER_CORE] Generated battle:`, result.battle.map(p => `${p.name}(${p.id})`));
+    console.log(`🎯 [BATTLE_STARTER_CORE] Strategy used: ${result.strategy}`);
     
-    return battle;
+    return result.battle;
   }, [generateNewBattle]);
 
   return {

@@ -102,11 +102,12 @@ export const useBattleStateCore = (
       console.log(`🚀 [START_NEW_BATTLE] Refinement queue state: hasRefinementBattles=${refinementQueue.hasRefinementBattles}, count=${refinementQueue.refinementBattleCount}`);
     }
     
-    const newBattle = generateNewBattle(battleType, battlesCompleted, refinementQueue);
-    if (newBattle.length > 0) {
-      setCurrentBattle(newBattle);
+    const result = generateNewBattle(battleType, battlesCompleted, refinementQueue);
+    if (result.battle.length > 0) {
+      setCurrentBattle(result.battle);
       setSelectedPokemon([]);
-      console.log(`🚀 [START_NEW_BATTLE] New battle set: ${newBattle.map(p => p.name).join(' vs ')}`);
+      console.log(`🚀 [START_NEW_BATTLE] New battle set: ${result.battle.map(p => p.name).join(' vs ')}`);
+      console.log(`🚀 [START_NEW_BATTLE] Strategy used: ${result.strategy}`);
       
       // CRITICAL: Log store state after generating new battle
       const postNewBattleRatings = getAllRatings();
@@ -120,7 +121,7 @@ export const useBattleStateCore = (
       // ENHANCED: Save battle state including current battle
       const stateToSave = {
         battlesCompleted,
-        currentBattle: newBattle,
+        currentBattle: result.battle,
         selectedPokemon: [],
         battleHistory,
         battleResults,
