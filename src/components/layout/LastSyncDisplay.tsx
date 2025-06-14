@@ -2,10 +2,26 @@
 import React from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { formatDistanceToNow } from 'date-fns';
-import { Cloud, WifiOff } from 'lucide-react';
+import { Cloud, WifiOff, Loader2 } from 'lucide-react';
 
 export const LastSyncDisplay = () => {
   const lastSyncTime = useTrueSkillStore(state => state.lastSyncTime);
+  const syncInProgress = useTrueSkillStore(state => state.syncInProgress);
+
+  if (syncInProgress) {
+    return (
+      <div className="bg-gray-50 border-b border-gray-200 w-full">
+        <div className="container max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-center h-8 text-xs font-medium">
+              <div className="flex items-center gap-2 text-blue-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Syncing...</span>
+              </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getSyncStatus = () => {
     if (!lastSyncTime) {

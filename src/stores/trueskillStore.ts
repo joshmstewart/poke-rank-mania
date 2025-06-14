@@ -24,14 +24,11 @@ interface TrueSkillStore {
   isHydrated: boolean;
   lastSyncTime: number;
   syncInProgress: boolean;
-  batchMode: boolean; // New: To control sync triggers
   totalBattles: number;
-  totalBattlesLastUpdated: number; // New timestamp field
+  totalBattlesLastUpdated: number;
   initiatePendingBattle: boolean;
   
   // Actions
-  startBatchUpdate: () => void; // New
-  endBatchUpdate: () => void; // New
   updateRating: (pokemonId: string, rating: Rating) => void;
   incrementBattleCount: (pokemonId: string) => void;
   incrementTotalBattles: () => void;
@@ -60,8 +57,8 @@ interface TrueSkillStore {
   // Mode switch coordination
   setInitiatePendingBattle: (value: boolean) => void;
   
-  // Enhanced cloud sync actions with timestamp-based merging
-  syncToCloud: (options?: { immediate?: boolean }) => Promise<void>;
+  // Simplified cloud sync action
+  syncToCloud: () => Promise<void>;
   loadFromCloud: () => Promise<void>;
   smartSync: () => Promise<void>;
   mergeCloudData: (cloudData: any) => void;
@@ -70,10 +67,6 @@ interface TrueSkillStore {
 }
 
 const generateSessionId = () => crypto.randomUUID();
-
-// Debounce delay for syncing to the server (in milliseconds)
-const SYNC_DEBOUNCE_DELAY = 1500;
-let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
@@ -85,23 +78,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       isHydrated: false,
       lastSyncTime: 0,
       syncInProgress: false,
-      batchMode: false, // New
       totalBattles: 0,
       totalBattlesLastUpdated: Date.now(),
       initiatePendingBattle: false,
-
-      // New batching actions
-      startBatchUpdate: () => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting batch update`);
-        set({ batchMode: true });
-      },
-
-      endBatchUpdate: () => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Ending batch update, triggering immediate sync`);
-        set({ batchMode: false });
-        // Force an immediate sync to ensure data is saved at the end of a batch operation.
-        get().syncToCloud({ immediate: true });
-      },
 
       updateRating: (pokemonId: string, rating: Rating) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] UpdateRating called for Pokemon ${pokemonId}`);
@@ -117,8 +96,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           }
         }));
-        
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       incrementBattleCount: (pokemonId: string) => {
@@ -134,6 +112,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             }
           }
         }));
+        get().syncToCloud();
       },
 
       incrementTotalBattles: () => {
@@ -143,8 +122,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: state.totalBattles + 1,
           totalBattlesLastUpdated: now
         }));
-        
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       setTotalBattles: (count: number) => {
@@ -154,6 +132,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: count,
           totalBattlesLastUpdated: now
         });
+        get().syncToCloud();
       },
 
       getAllRatings: () => get().ratings,
@@ -178,7 +157,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: 0,
           totalBattlesLastUpdated: now
         });
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
@@ -205,16 +184,19 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       addPendingBattle: (pokemonId: number) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] AddPendingBattle called for Pokemon ${pokemonId}`);
+        let stateChanged = false;
         set((state) => {
           if (!state.pendingBattles.includes(pokemonId)) {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Adding Pokemon ${pokemonId} to pending battles`);
+            stateChanged = true;
             const newPendingBattles = [...state.pendingBattles, pokemonId];
             return { pendingBattles: newPendingBattles };
           }
           return state;
         });
-        
-        // No longer triggers sync directly
+        if (stateChanged) {
+            get().syncToCloud();
+        }
       },
 
       removePendingBattle: (pokemonId: number) => {
@@ -222,14 +204,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         set((state) => ({
           pendingBattles: state.pendingBattles.filter(id => id !== pokemonId)
         }));
-        
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       clearAllPendingBattles: () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ClearAllPendingBattles called`);
         set({ pendingBattles: [] });
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       isPokemonPending: (pokemonId: number) => {
@@ -256,11 +237,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           return { refinementQueue: updatedQueue };
         });
         
-        const finalLength = get().refinementQueue.length;
-        
-        // No longer triggers sync directly
-        
-        return finalLength;
+        get().syncToCloud();
+        return get().refinementQueue.length;
       },
 
       getNextRefinementBattle: () => {
@@ -274,8 +252,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           const newQueue = state.refinementQueue.slice(1);
           return { refinementQueue: newQueue };
         });
-        
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       hasRefinementBattles: () => {
@@ -289,7 +266,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       clearRefinementQueue: () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ClearRefinementQueue called`);
         set({ refinementQueue: [] });
-        // No longer triggers sync directly
+        get().syncToCloud();
       },
 
       setInitiatePendingBattle: (value: boolean) => {
@@ -352,93 +329,75 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         });
       },
 
-      syncToCloud: async ({ immediate = false } = {}) => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC TO CLOUD CALLED (immediate: ${immediate}) =====`);
+      syncToCloud: async () => {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC TO CLOUD CALLED (IMMEDIATE) =====`);
 
-        const performSync = async () => {
-          syncTimeout = null;
-          const state = get();
+        const state = get();
+        
+        if (state.syncInProgress) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync already in progress, aborting`);
+          return;
+        }
+
+        set({ syncInProgress: true });
+        
+        try {
+          const ratingsBeforeSync = Object.keys(state.ratings).length;
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting sync - ${ratingsBeforeSync} ratings, ${state.totalBattles} battles`);
           
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Checking sync in progress: ${state.syncInProgress}`);
-          if (state.syncInProgress) {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync already in progress, aborting`);
-            return;
+          const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/sync-trueskill', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
+            },
+            body: JSON.stringify({
+              sessionId: state.sessionId,
+              ratings: state.ratings,
+              totalBattles: state.totalBattles,
+              totalBattlesLastUpdated: state.totalBattlesLastUpdated,
+              pendingBattles: state.pendingBattles,
+              refinementQueue: state.refinementQueue,
+              lastUpdated: new Date().toISOString()
+            })
+          });
+
+          const raw = await response.text();
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync response status: ${response.status}`);
+
+          if (!response.ok) {
+            throw new Error(`Sync failed: ${response.status} - ${raw}`);
           }
 
-          set({ syncInProgress: true });
-          
+          let result: any;
           try {
-            const ratingsBeforeSync = Object.keys(state.ratings).length;
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting sync - ${ratingsBeforeSync} ratings, ${state.totalBattles} battles`);
-            
-            const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/sync-trueskill', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
-              },
-              body: JSON.stringify({
-                sessionId: state.sessionId,
-                ratings: state.ratings,
-                totalBattles: state.totalBattles,
-                totalBattlesLastUpdated: state.totalBattlesLastUpdated,
-                pendingBattles: state.pendingBattles,
-                refinementQueue: state.refinementQueue,
-                lastUpdated: new Date().toISOString()
-              })
-            });
-
-            const raw = await response.text();
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync response status: ${response.status}`);
-
-            if (!response.ok) {
-              throw new Error(`Sync failed: ${response.status} - ${raw}`);
-            }
-
-            let result: any;
-            try {
-              result = JSON.parse(raw);
-            } catch (jsonError) {
-              console.error(`🚨🚨🚨 [SYNC_AUDIT] Failed to parse JSON: ${raw}`);
-              toast({
-                title: 'Cloud Sync Failed',
-                description: 'Could not save progress to the cloud. Your changes are saved locally.',
-                variant: 'destructive',
-              });
-              return;
-            }
-
-            if (result.success) {
-              set({ lastSyncTime: Date.now() });
-              console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync successful!`);
-            } else {
-              throw new Error(result.error || 'Unknown sync error');
-            }
-          } catch (error) {
-            console.error(`🚨🚨🚨 [SYNC_AUDIT] Sync failed:`, error);
+            result = JSON.parse(raw);
+          } catch (jsonError) {
+            console.error(`🚨🚨🚨 [SYNC_AUDIT] Failed to parse JSON: ${raw}`);
             toast({
               title: 'Cloud Sync Failed',
               description: 'Could not save progress to the cloud. Your changes are saved locally.',
               variant: 'destructive',
             });
-          } finally {
-            set({ syncInProgress: false });
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync operation complete`);
+            return;
           }
-        };
-        
-        if (immediate) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Performing immediate sync.`);
-          if (syncTimeout) {
-            clearTimeout(syncTimeout);
+
+          if (result.success) {
+            set({ lastSyncTime: Date.now() });
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync successful!`);
+          } else {
+            throw new Error(result.error || 'Unknown sync error');
           }
-          await performSync();
-        } else {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Debouncing sync for ${SYNC_DEBOUNCE_DELAY}ms.`);
-          if (syncTimeout) {
-            clearTimeout(syncTimeout);
-          }
-          syncTimeout = setTimeout(performSync, SYNC_DEBOUNCE_DELAY);
+        } catch (error) {
+          console.error(`🚨🚨🚨 [SYNC_AUDIT] Sync failed:`, error);
+          toast({
+            title: 'Cloud Sync Failed',
+            description: 'Could not save progress to the cloud. Your changes are saved locally.',
+            variant: 'destructive',
+          });
+        } finally {
+          set({ syncInProgress: false });
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync operation complete`);
         }
       },
 
@@ -521,7 +480,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               get().mergeCloudData(result);
               
               // Sync the merged data back to cloud
-              await get().syncToCloud({ immediate: true });
+              await get().syncToCloud();
             }
           } else {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state. Using local state only.`);
@@ -584,6 +543,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       name: 'trueskill-storage',
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // REMOVED batchMode property from state if it exists
+          if ('batchMode' in state) {
+            delete (state as any).batchMode;
+          }
           // Migrate old data without timestamps
           const now = Date.now();
           Object.keys(state.ratings).forEach(pokemonId => {

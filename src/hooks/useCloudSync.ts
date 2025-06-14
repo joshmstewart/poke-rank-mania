@@ -202,7 +202,8 @@ export const useCloudSync = () => {
   }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
-    console.log('🚨🚨🚨 [SYNC_AUDIT] Battle data saved - auto-sync will handle cloud updates');
+    console.log('🚨🚨🚨 [SYNC_AUDIT] "saveBattleToCloud" called. Sync is now automatic on data change.');
+    // This is now a no-op as the store handles data changes and syncs automatically.
   }, []);
 
   const loadBattleFromCloud = useCallback(async (generation: number): Promise<BattleData | null> => {
@@ -227,19 +228,21 @@ export const useCloudSync = () => {
   }, [smartSync, getAllRatings, isHydrated]);
 
   const saveRankingsToCloud = useCallback(async (rankings: any[], generation: number) => {
+    console.log('🚨🚨🚨 [SYNC_AUDIT] "saveRankingsToCloud" called. Sync is now automatic on data change.');
     if (!isHydrated) {
       return;
     }
     
-    console.log('🚨🚨🚨 [SYNC_AUDIT] Rankings saved - auto-sync will handle cloud updates');
-
+    // The actual sync is handled by the store when rankings are updated.
+    // We can show a toast here to confirm to the user that progress has been saved.
     toast({
       title: "Progress Saved",
-      description: "Your rankings have been saved to the cloud!",
+      description: "Your changes have been saved to the cloud!",
     });
   }, [isHydrated]);
 
   const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
+    console.log('🚨🚨🚨 [SYNC_AUDIT] "saveSessionToCloud" called. Sync is now automatic on data change.');
     return isHydrated;
   }, [isHydrated]);
 
