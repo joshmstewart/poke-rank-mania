@@ -12,7 +12,8 @@ const BATTLE_MILESTONE_INTERVAL = 25;
 export const useBattleStateSimplified = (
   allPokemon: Pokemon[],
   initialBattleType: BattleType,
-  selectedGeneration: number
+  selectedGeneration: number,
+  onBattleGenerated?: (strategy: string) => void
 ) => {
   console.log(`🚀 [SIMPLIFIED_STATE] Initializing with ${allPokemon.length} Pokemon`);
   
@@ -55,7 +56,8 @@ export const useBattleStateSimplified = (
   const { generateNewBattle } = useBattleProcessorGeneration(
     battleStarterIntegration.battleStarter,
     battleStarterIntegration.startNewBattle,
-    setCurrentBattle
+    setCurrentBattle,
+    onBattleGenerated
   );
 
   // Battle handlers

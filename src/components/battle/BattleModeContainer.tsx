@@ -39,6 +39,7 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
 
   // Function to add to battle log
   const addBattleLogEntry = useCallback((strategy: string) => {
+    console.log(`📊 [BATTLE_LOG] Adding entry: ${strategy}`);
     setBattleLog(prevLog => [strategy, ...prevLog.slice(0, 9)]);
   }, []);
 
@@ -89,11 +90,12 @@ const BattleModeContainerContent: React.FC<{
 }) => {
   const { totalBattles } = useTrueSkillStore();
 
-  // Use the simplified battle state hook
+  // Use the simplified battle state hook with battle log callback
   const battleState = useBattleStateSimplified(
     allPokemon,
     initialBattleType,
-    selectedGeneration
+    selectedGeneration,
+    addBattleLogEntry
   );
 
   // CRITICAL FIX: Sync battle count from TrueSkill store

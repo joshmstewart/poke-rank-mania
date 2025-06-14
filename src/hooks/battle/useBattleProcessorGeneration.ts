@@ -7,7 +7,8 @@ import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 export const useBattleProcessorGeneration = (
   battleStarter?: any,
   integratedStartNewBattle?: (battleType: BattleType, N?: number, ratings?: any) => Pokemon[],
-  setCurrentBattle?: React.Dispatch<React.SetStateAction<Pokemon[]>>
+  setCurrentBattle?: React.Dispatch<React.SetStateAction<Pokemon[]>>,
+  onBattleGenerated?: (strategy: string) => void
 ) => {
   const refinementQueue = useSharedRefinementQueue();
 
@@ -36,10 +37,19 @@ export const useBattleProcessorGeneration = (
       console.log(`🚀 [REGULAR_BATTLE_GENERATION] Calling integratedStartNewBattle with N=${N}...`);
       const newBattle = integratedStartNewBattle(battleType, N, ratings);
       if (newBattle && newBattle.length > 0) {
+        const strategy = `Top ${N} battle generated (${battleType})`;
         console.log(`🚀 [REGULAR_BATTLE_GENERATION] New Top N battle generated: ${newBattle.map(p => p.name)}`);
+        console.log(`🚀 [REGULAR_BATTLE_GENERATION] Strategy: ${strategy}`);
+        
         if (setCurrentBattle) {
           setCurrentBattle(newBattle);
         }
+        
+        // Call the callback to update battle log
+        if (onBattleGenerated) {
+          onBattleGenerated(strategy);
+        }
+        
         return true;
       } else {
         console.error(`🚀 [REGULAR_BATTLE_GENERATION] ❌ Failed to generate new battle`);
@@ -50,7 +60,7 @@ export const useBattleProcessorGeneration = (
     }
     
     return false;
-  }, [battleStarter, integratedStartNewBattle, setCurrentBattle, refinementQueue]);
+  }, [battleStarter, integratedStartNewBattle, setCurrentBattle, refinementQueue, onBattleGenerated]);
 
   return { generateNewBattle };
 };
