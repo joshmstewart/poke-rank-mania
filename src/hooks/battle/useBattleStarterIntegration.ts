@@ -26,9 +26,10 @@ export const useBattleStarterIntegration = (
   const { startNewBattle: startNewBattleCore } = useBattleStarterCore(allPokemon, getCurrentRankings);
   const refinementQueue = useSharedRefinementQueue();
 
-  // FIXED: Create proper battle starter that constructs the correct config object
-  const startNewBattle = useCallback((battleType: BattleType): Pokemon[] => {
-    console.log(`🚀 [INTEGRATION_FIX] startNewBattle called for type: ${battleType}`);
+  // UPDATED: Create proper battle starter that accepts N and ratings parameters
+  const startNewBattle = useCallback((battleType: BattleType, N: number = 25, ratings: any = {}): Pokemon[] => {
+    console.log(`🚀 [INTEGRATION_FIX] startNewBattle called for type: ${battleType}, N: ${N}`);
+    console.log(`🚀 [INTEGRATION_FIX] Ratings provided: ${Object.keys(ratings).length} Pokemon`);
     
     if (!allPokemon || allPokemon.length === 0) {
       console.log(`🚀 [INTEGRATION_FIX] No Pokemon available`);
@@ -40,17 +41,19 @@ export const useBattleStarterIntegration = (
       return [];
     }
     
-    // FIXED: Construct proper BattleStarterConfig object
+    // UPDATED: Construct proper BattleStarterConfig object with new parameters
     const config = {
       allPokemon,
       currentRankings: finalRankings,
       battleType,
       selectedGeneration: 0, // Default to all generations
-      freezeList: [] // Default to no frozen Pokemon
+      freezeList: [], // Default to no frozen Pokemon
+      N, // Add Top N parameter
+      ratings // Add ratings parameter
     };
     
     const result = startNewBattleCore(config);
-    console.log(`🚀 [INTEGRATION_FIX] Generated battle:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
+    console.log(`🚀 [INTEGRATION_FIX] Generated Top N battle:`, result?.map(p => `${p.name}(${p.id})`).join(' vs ') || 'empty');
     
     return result || [];
   }, [allPokemon, finalRankings, startNewBattleCore]);
@@ -60,7 +63,10 @@ export const useBattleStarterIntegration = (
   }, []);
 
   return {
-    battleStarter: { startNewBattle },
+    battleStarter: { 
+      startNewBattle,
+      getAllPokemon: () => allPokemon // Add this method for refinement queue access
+    },
     startNewBattle,
     resetSuggestionPriority,
     refinementQueue

@@ -6,18 +6,22 @@ import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 
 export const useBattleProcessorGeneration = (
   battleStarter?: any,
-  integratedStartNewBattle?: (battleType: BattleType) => Pokemon[],
+  integratedStartNewBattle?: (battleType: BattleType, N?: number, ratings?: any) => Pokemon[],
   setCurrentBattle?: React.Dispatch<React.SetStateAction<Pokemon[]>>
 ) => {
   const refinementQueue = useSharedRefinementQueue();
 
   const generateNewBattle = useCallback((
     battleType: BattleType,
-    timestamp: string
+    timestamp: string,
+    N: number = 25,
+    ratings: any = {}
   ) => {
     console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] ===== generateNewBattle CALLED =====`);
     console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Timestamp: ${timestamp}`);
     console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Battle type: ${battleType}`);
+    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Top N: ${N}`);
+    console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Ratings count: ${Object.keys(ratings).length}`);
     
     console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] Prerequisites:`);
     console.log(`🚨🚨🚨 [PROCESSOR_GENERATION_ULTRA_TRACE] - battleStarter exists: ${!!battleStarter}`);
@@ -57,7 +61,7 @@ export const useBattleProcessorGeneration = (
           console.error(`🎯 [REFINEMENT_QUEUE_PROCESSING] ❌ Could not find Pokemon for refinement`);
           refinementQueue.popRefinementBattle();
           // Try again recursively
-          return generateNewBattle(battleType, timestamp);
+          return generateNewBattle(battleType, timestamp, N, ratings);
         }
       } else {
         console.error(`🎯 [REFINEMENT_QUEUE_PROCESSING] ❌ Missing nextRefinement or battleStarter.getAllPokemon`);
@@ -70,14 +74,14 @@ export const useBattleProcessorGeneration = (
       }
     }
     
-    // Regular battle generation if no refinements
-    console.log(`🚀 [REGULAR_BATTLE_GENERATION] No refinement battles - proceeding with regular generation`);
+    // Regular battle generation if no refinements - now with Top N logic
+    console.log(`🚀 [REGULAR_BATTLE_GENERATION] No refinement battles - proceeding with Top N generation`);
     
     if (battleStarter && integratedStartNewBattle) {
-      console.log(`🚀 [REGULAR_BATTLE_GENERATION] Calling integratedStartNewBattle...`);
-      const newBattle = integratedStartNewBattle(battleType);
+      console.log(`🚀 [REGULAR_BATTLE_GENERATION] Calling integratedStartNewBattle with N=${N}...`);
+      const newBattle = integratedStartNewBattle(battleType, N, ratings);
       if (newBattle && newBattle.length > 0) {
-        console.log(`🚀 [REGULAR_BATTLE_GENERATION] New battle generated: ${newBattle.map(p => p.name)}`);
+        console.log(`🚀 [REGULAR_BATTLE_GENERATION] New Top N battle generated: ${newBattle.map(p => p.name)}`);
         if (setCurrentBattle) {
           setCurrentBattle(newBattle);
         }
