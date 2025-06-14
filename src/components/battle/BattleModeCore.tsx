@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import BattleModeProvider from "./BattleModeProvider";
 import BattleModeContainer from "./BattleModeContainer";
@@ -5,10 +6,14 @@ import { Pokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
 import { Button } from "@/components/ui/button";
+import { useLegacyBattleStateCleanup } from "@/hooks/battle/useLegacyBattleStateCleanup";
 
 const BattleModeCore: React.FC = () => {
   console.log('🔥 [BATTLE_MODE_CORE] Component rendering - trusting splash screen completed loading');
   
+  // Run the one-time cleanup for legacy localStorage keys.
+  useLegacyBattleStateCleanup();
+
   const { allPokemon, isLoading, loadPokemon } = usePokemonLoader();
   const [battlesCompleted, setBattlesCompleted] = useState(0);
   const [battleResults, setBattleResults] = useState<SingleBattle[]>([]);
