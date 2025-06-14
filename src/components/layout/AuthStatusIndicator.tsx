@@ -1,6 +1,24 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
+import type { User, Session } from '@supabase/supabase-js';
+
+const getDisplayIdentifier = (user: User | null, session: Session | null): string => {
+  const currentUser = user || session?.user;
+
+  if (!currentUser) {
+    return 'No Details';
+  }
+
+  const displayName = currentUser.user_metadata?.display_name || currentUser.user_metadata?.full_name;
+  if (displayName) return displayName;
+  
+  if (currentUser.email) return currentUser.email;
+  
+  if (currentUser.phone) return currentUser.phone;
+
+  return 'Authenticated';
+};
 
 export const AuthStatusIndicator: React.FC = () => {
   const { user, session, loading } = useAuth();
@@ -11,7 +29,6 @@ export const AuthStatusIndicator: React.FC = () => {
 
   const hasSession = !!session;
   const hasUser = !!user;
-  const displayEmail = user?.email || session?.user?.email || 'No Email';
 
   let statusText = 'Unauthenticated';
   let bgColor = 'bg-yellow-100 border-yellow-300';
@@ -20,7 +37,7 @@ export const AuthStatusIndicator: React.FC = () => {
   if (hasSession && hasUser) {
     statusText = 'Authenticated';
     bgColor = 'bg-green-100 border-green-300';
-    detailsText = displayEmail;
+    detailsText = getDisplayIdentifier(user, session);
   } else if (hasSession && !hasUser) {
     statusText = 'Incomplete Auth';
     bgColor = 'bg-red-100 border-red-300';
