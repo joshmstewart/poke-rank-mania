@@ -109,13 +109,41 @@ export const useCloudSync = () => {
       console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ CONDITIONS NOT MET - SYNC WILL NOT RUN`);
       if (!effectiveUserId) {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Missing user ID`);
+        // If a session exists but we can't get a user ID, we're in an inconsistent state.
+        // Alert the user and try to recover by refreshing the session.
+        if (session) {
+          toast({
+            title: "Sync Blocked: Incomplete Auth",
+            description: "Cannot sync. Attempting to refresh your session to fix this. If the problem persists, please sign out and back in.",
+            variant: "destructive",
+            duration: 10000
+          });
+          supabase.auth.refreshSession().then(({ error }) => {
+            if (error) {
+              console.error('🚨🚨🚨 [SYNC_AUDIT] Session refresh failed:', error);
+              toast({
+                title: "Session Refresh Failed",
+                description: "Automatic fix failed. Please sign out and sign back in to resolve the sync issue.",
+                variant: "destructive",
+                duration: 10000
+              });
+            } else {
+              console.log('🚨🚨🚨 [SYNC_AUDIT] Session refreshed successfully. Sync will retry.');
+              toast({
+                title: "Session Refreshed",
+                description: "Sync will attempt to run again shortly.",
+                duration: 3000
+              });
+            }
+          });
+        }
       }
       if (!isHydrated) {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Store not hydrated yet`);
       }
     }
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC FLOW COMPLETE =====`);
-  }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
+  }, [user?.id, session, isHydrated, smartSync, getAllRatings]);
 
   // Manual sync function for testing
   const triggerManualSync = useCallback(async () => {
