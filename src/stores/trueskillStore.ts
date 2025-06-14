@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -24,11 +25,14 @@ interface TrueSkillStore {
   isHydrated: boolean;
   lastSyncTime: number;
   syncInProgress: boolean;
+  batchMode: boolean; // New: To control sync triggers
   totalBattles: number;
   totalBattlesLastUpdated: number; // New timestamp field
   initiatePendingBattle: boolean;
   
   // Actions
+  startBatchUpdate: () => void; // New
+  endBatchUpdate: () => void; // New
   updateRating: (pokemonId: string, rating: Rating) => void;
   incrementBattleCount: (pokemonId: string) => void;
   incrementTotalBattles: () => void;
@@ -82,9 +86,22 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       isHydrated: false,
       lastSyncTime: 0,
       syncInProgress: false,
+      batchMode: false, // New
       totalBattles: 0,
       totalBattlesLastUpdated: Date.now(),
       initiatePendingBattle: false,
+
+      // New batching actions
+      startBatchUpdate: () => {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting batch update`);
+        set({ batchMode: true });
+      },
+
+      endBatchUpdate: () => {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Ending batch update, triggering sync`);
+        set({ batchMode: false });
+        get().syncToCloud();
+      },
 
       updateRating: (pokemonId: string, rating: Rating) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] UpdateRating called for Pokemon ${pokemonId}`);
@@ -101,8 +118,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
         }));
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from updateRating`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       incrementBattleCount: (pokemonId: string) => {
@@ -128,8 +144,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattlesLastUpdated: now
         }));
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from incrementTotalBattles`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       setTotalBattles: (count: number) => {
@@ -163,8 +178,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           totalBattles: 0,
           totalBattlesLastUpdated: now
         });
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from clearAllRatings`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => {
@@ -200,8 +214,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           return state;
         });
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from addPendingBattle`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       removePendingBattle: (pokemonId: number) => {
@@ -210,15 +223,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           pendingBattles: state.pendingBattles.filter(id => id !== pokemonId)
         }));
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from removePendingBattle`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       clearAllPendingBattles: () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ClearAllPendingBattles called`);
         set({ pendingBattles: [] });
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from clearAllPendingBattles`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       isPokemonPending: (pokemonId: number) => {
@@ -247,8 +258,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         const finalLength = get().refinementQueue.length;
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from queueBattlesForReorder`);
-        get().syncToCloud();
+        // No longer triggers sync directly
         
         return finalLength;
       },
@@ -265,8 +275,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           return { refinementQueue: newQueue };
         });
         
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from popRefinementBattle`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       hasRefinementBattles: () => {
@@ -280,8 +289,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       clearRefinementQueue: () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ClearRefinementQueue called`);
         set({ refinementQueue: [] });
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Triggering syncToCloud from clearRefinementQueue`);
-        get().syncToCloud();
+        // No longer triggers sync directly
       },
 
       setInitiatePendingBattle: (value: boolean) => {
@@ -346,6 +354,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
       syncToCloud: async () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC TO CLOUD CALLED =====`);
+        
+        const stateForCheck = get();
+        if (stateForCheck.batchMode) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Batch mode is active, deferring sync.`);
+          return;
+        }
+
         if (syncTimeout) {
           console.log(`🚨🚨🚨 [SYNC_AUDIT] Clearing existing sync timeout`);
           clearTimeout(syncTimeout);
