@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { Cloud, WifiOff, Loader2 } from 'lucide-react';
 
 export const LastSyncDisplay = () => {
@@ -32,21 +32,21 @@ export const LastSyncDisplay = () => {
       };
     }
     const date = new Date(lastSyncTime);
-    const timeAgo = formatDistanceToNow(date, { addSuffix: true });
+    const formattedTime = format(date, 'h:mm:ss a');
     
     // Consider a sync recent if it was in the last 5 minutes
     const isRecent = (Date.now() - date.getTime()) < 5 * 60 * 1000;
 
     if (isRecent) {
         return {
-            text: `Last sync: ${timeAgo}`,
+            text: `Last sync: ${formattedTime}`,
             icon: <Cloud className="h-4 w-4 text-green-500" />,
             textColor: 'text-green-700',
         };
     }
     
     return {
-        text: `Last sync: ${timeAgo}`,
+        text: `Last sync: ${formattedTime}`,
         icon: <Cloud className="h-4 w-4 text-gray-400" />,
         textColor: 'text-gray-500',
     };
