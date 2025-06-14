@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import {
