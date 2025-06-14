@@ -5,17 +5,17 @@ import { formatDistanceToNow } from 'date-fns';
 import { Cloud, WifiOff } from 'lucide-react';
 
 export const LastSyncDisplay = () => {
-  const lastSyncTimestamp = useTrueSkillStore(state => state.lastSyncTimestamp);
+  const lastSyncTime = useTrueSkillStore(state => state.lastSyncTime);
 
   const getSyncStatus = () => {
-    if (!lastSyncTimestamp) {
+    if (!lastSyncTime) {
       return {
         text: 'Never synced',
         icon: <WifiOff className="h-4 w-4 text-yellow-500" />,
         textColor: 'text-yellow-600',
       };
     }
-    const date = new Date(lastSyncTimestamp);
+    const date = new Date(lastSyncTime);
     const timeAgo = formatDistanceToNow(date, { addSuffix: true });
     
     // Consider a sync recent if it was in the last 5 minutes
