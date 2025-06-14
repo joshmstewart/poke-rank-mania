@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
@@ -64,13 +63,7 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
         Congratulations! You've completed {battlesCompleted} battles.
       </p>
       
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <h3 className="font-semibold text-blue-900 mb-2">📊 Rankings Info</h3>
-        <p className="text-blue-800 text-sm">
-          Showing {finalRankings?.length || 0} Pokémon ranked through TrueSkill system. 
-          These rankings are synced with Manual mode and include all battles completed across sessions.
-        </p>
-      </div>
+      {/* Rankings info box removed as requested. */}
 
       {finalRankings && finalRankings.length > 0 ? (
         <RankingDisplayContainer

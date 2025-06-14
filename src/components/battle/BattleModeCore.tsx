@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import BattleModeProvider from "./BattleModeProvider";
 import BattleModeContainer from "./BattleModeContainer";
@@ -89,11 +88,7 @@ const BattleModeCore: React.FC = () => {
     return (
       <BattleModeProvider allPokemon={allPokemon}>
         <div className="w-full">
-          {/* DEBUG INFO: Show dataset completeness indicator */}
-          <div className="text-center py-2 bg-muted/30 text-xs text-muted-foreground">
-            Dataset: {allPokemon.length} Pokemon loaded 
-            {allPokemon.length >= 1000 ? " ✅ Complete" : " ⚠️ May be incomplete"}
-          </div>
+          {/* DEBUG INFO: Dataset completeness indicator removed as requested. */}
           <BattleModeContainer
             allPokemon={allPokemon}
             initialBattleType={initialBattleType}
