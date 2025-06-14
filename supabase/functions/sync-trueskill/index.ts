@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { sessionId, ratings, totalBattles, totalBattlesLastUpdated, pendingBattles, lastUpdated } = await req.json();
+    const { sessionId, ratings, totalBattles, totalBattlesLastUpdated, pendingBattles, refinementQueue, lastUpdated } = await req.json();
 
     if (!sessionId) {
       return new Response(
@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[Edge Function syncTrueSkill] Syncing sessionId: ${sessionId} with ${Object.keys(ratings || {}).length} ratings, ${totalBattles || 0} battles, ${(pendingBattles || []).length} pending battles`);
+    console.log(`[Edge Function syncTrueSkill] Syncing sessionId: ${sessionId} with ${Object.keys(ratings || {}).length} ratings, ${totalBattles || 0} battles, ${(pendingBattles || []).length} pending battles, and ${(refinementQueue || []).length} refinement items.`);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
         total_battles: totalBattles || 0,
         total_battles_last_updated: totalBattlesLastUpdated || new Date().getTime(),
         pending_battles: pendingBattles || [],
+        refinement_queue: refinementQueue || [],
         last_updated: lastUpdated || new Date().toISOString()
       }, {
         onConflict: 'session_id'

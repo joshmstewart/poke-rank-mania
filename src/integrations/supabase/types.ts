@@ -232,8 +232,10 @@ export type Database = {
           last_updated: string
           pending_battles: Json | null
           ratings_data: Json
+          refinement_queue: Json
           session_id: string | null
           total_battles: number
+          total_battles_last_updated: number
           user_id: string | null
         }
         Insert: {
@@ -242,8 +244,10 @@ export type Database = {
           last_updated?: string
           pending_battles?: Json | null
           ratings_data?: Json
+          refinement_queue?: Json
           session_id?: string | null
           total_battles?: number
+          total_battles_last_updated?: number
           user_id?: string | null
         }
         Update: {
@@ -252,8 +256,10 @@ export type Database = {
           last_updated?: string
           pending_battles?: Json | null
           ratings_data?: Json
+          refinement_queue?: Json
           session_id?: string | null
           total_battles?: number
+          total_battles_last_updated?: number
           user_id?: string | null
         }
         Relationships: []
