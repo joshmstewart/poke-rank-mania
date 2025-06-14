@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import {
@@ -5,13 +6,20 @@ import {
   closestCenter,
   DragOverlay,
   defaultDropAnimationSideEffects,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
+  arrayMove,
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
-import { useDragAndDrop } from "@/hooks/battle/useDragAndDrop";
 
 interface DraggableMilestoneGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -31,22 +39,52 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Rendering with ${displayRankings.length} Pokemon`);
   console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
 
-  // Only use drag and drop if onManualReorder is provided
-  const { sensors, handleDragEnd } = useDragAndDrop({
-    displayRankings,
-    onManualReorder: onManualReorder || (() => {
-      console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] No manual reorder handler - drag disabled`);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+        delay: 0,
+        tolerance: 2,
+      },
     }),
-    onLocalReorder: onLocalReorder || (() => {})
-  });
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 50,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleDragStart = (event: any) => {
-    const activePokemon = displayRankings.find(p => p.id === event.active.id);
-    setActivePokemon(activePokemon || null);
+    const { active } = event;
+    const pokemon = displayRankings.find(p => p.id.toString() === active.id);
+    setActivePokemon(pokemon || null);
   };
 
-  const handleDragEndWithCleanup = (event: any) => {
-    handleDragEnd(event);
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = displayRankings.findIndex(p => p.id.toString() === active.id);
+      const newIndex = displayRankings.findIndex(p => p.id.toString() === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Perform local reorder for optimistic UI update
+        if (onLocalReorder) {
+          const newOrder = arrayMove(displayRankings, oldIndex, newIndex);
+          onLocalReorder(newOrder);
+        }
+
+        // Trigger manual reorder for backend logic
+        if (onManualReorder) {
+          const draggedPokemonId = displayRankings[oldIndex].id;
+          onManualReorder(draggedPokemonId, oldIndex, newIndex);
+        }
+      }
+    }
     setActivePokemon(null);
   };
 
@@ -103,7 +141,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
-        onDragEnd={handleDragEndWithCleanup}
+        onDragEnd={handleDragEnd}
       >
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 

@@ -71,7 +71,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
   const sortableResult = useSortable({ 
-    id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id) : `static-${pokemon.id}`,
+    id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`,
     disabled: !isDraggable || isOpen,
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
