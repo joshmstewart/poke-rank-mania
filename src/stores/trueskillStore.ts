@@ -38,6 +38,7 @@ interface TrueSkillStore {
   hasRating: (pokemonId: string) => boolean;
   clearAllRatings: () => void;
   forceScoreBetweenNeighbors: (pokemonId: string, higherNeighborId?: string, lowerNeighborId?: string) => void;
+  processBattleOutcomes: (updates: { pokemonId: string; newRating: Rating }[]) => void;
   
   // Pending battles actions
   addPendingBattle: (pokemonId: number) => void;
@@ -106,18 +107,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
 
       incrementBattleCount: (pokemonId: string) => {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] IncrementBattleCount called for Pokemon ${pokemonId}`);
-        const now = Date.now();
-        set((state) => ({
-          ratings: {
-            ...state.ratings,
-            [pokemonId]: {
-              ...state.ratings[pokemonId],
-              battleCount: (state.ratings[pokemonId]?.battleCount || 0) + 1,
-              lastUpdated: now
-            }
-          }
-        }));
+        console.log(`[DEPRECATED] incrementBattleCount for ${pokemonId} is now part of atomic operations.`);
       },
 
       incrementTotalBattles: () => {
@@ -187,6 +177,24 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         
         const newRating = new Rating(targetScore, 8.333); // Use default sigma
         get().updateRating(pokemonId, newRating);
+      },
+
+      processBattleOutcomes: (updates: { pokemonId: string; newRating: Rating }[]) => {
+        const now = Date.now();
+        set(state => {
+          const newRatings = { ...state.ratings };
+          updates.forEach(({ pokemonId, newRating }) => {
+            const currentRating = newRatings[pokemonId] || { battleCount: 0 };
+            newRatings[pokemonId] = {
+              mu: newRating.mu,
+              sigma: newRating.sigma,
+              battleCount: currentRating.battleCount + 1,
+              lastUpdated: now,
+            };
+          });
+
+          return { ratings: newRatings };
+        });
       },
 
       addPendingBattle: (pokemonId: number) => {
