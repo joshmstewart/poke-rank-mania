@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
 import { useBattleRankings } from "@/hooks/battle/useBattleRankings";
+import { Button } from "@/components/ui/button";
 
 interface BattleContentMilestoneProps {
   battlesCompleted: number;
@@ -95,10 +97,10 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
           enableDragAndDrop={true}
         />
       ) : (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4 text-center">
           <h3 className="font-bold">⚠️ No Pokemon Rankings Available</h3>
           <p>The TrueSkill ranking system hasn't generated Pokemon data yet. This could mean:</p>
-          <ul className="list-disc list-inside mt-2">
+          <ul className="list-disc list-inside mt-2 text-left w-fit mx-auto">
             <li>No battles have been completed in this session</li>
             <li>TrueSkill store is not properly populated</li>
             <li>Rankings generation is not using the centralized store</li>
@@ -106,6 +108,9 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
           <p className="mt-2">
             <strong>Debug info:</strong> finalRankings length = {finalRankings?.length || 0}, rankingGenerated = {rankingGenerated}
           </p>
+          <Button onClick={onContinueBattles} className="mt-4">
+            Continue Battling
+          </Button>
         </div>
       )}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentRenderer from "./BattleContentRenderer";
@@ -27,7 +26,18 @@ const BattleModeContainer: React.FC<BattleModeContainerProps> = ({
   
   const [selectedGeneration, setSelectedGeneration] = useState(0);
   const [battleLog, setBattleLog] = useState<string[]>([]);
-  const { totalBattles } = useTrueSkillStore();
+  const { totalBattles, smartSync, waitForHydration } = useTrueSkillStore();
+
+  useEffect(() => {
+    const performSync = async () => {
+      console.log('SYNC_TRIGGER: Waiting for hydration...');
+      await waitForHydration();
+      console.log('SYNC_TRIGGER: Hydration complete. Performing smart sync.');
+      await smartSync();
+      console.log('SYNC_TRIGGER: Smart sync complete.');
+    };
+    performSync();
+  }, [smartSync, waitForHydration]);
 
   const handleGenerationChange = useCallback((gen: number) => {
     console.log(`🚀 [CONTAINER_SIMPLIFIED] Generation changed to: ${gen}`);
