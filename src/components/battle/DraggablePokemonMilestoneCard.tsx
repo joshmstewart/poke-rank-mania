@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { useDraggable } from '@dnd-kit/core';
@@ -100,10 +99,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
   const transition = !isAvailableContext ? sortable.transition : undefined;
 
+  // Fix Issue 1: Available cards should remain visible when dragging
+  // Fix Issue 2: Ranked cards should have better opacity handling during sort
+  const getOpacity = () => {
+    if (isAvailableContext) {
+      // For available cards, keep them visible when dragging
+      return isDragging ? 0.7 : 1;
+    } else {
+      // For ranked cards, use a more subtle opacity change
+      return isDragging ? 0.3 : 1;
+    }
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: getOpacity(),
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
