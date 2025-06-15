@@ -88,64 +88,61 @@ export const useCloudSync = () => {
         console.log(
           `🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`
         );
+        // For anonymous users, we now mark as reconciled during hydration.
+        // If not reconciled for some reason, we do it here to be safe.
+        if (!useTrueSkillStore.getState().sessionReconciled) {
+          setSessionReconciled(true);
+        }
         return;
       }
 
-      // If session is already reconciled from a previous check, we can skip this.
+      // Thanks to our new hydration logic, this check is now the main gatekeeper.
       if (useTrueSkillStore.getState().sessionReconciled) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session already reconciled, skipping heavy logic.`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session already reconciled, skipping.`);
         return;
       }
 
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== HEALING SYNC & RECONCILE FLOW =====`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== NEW RECONCILIATION FLOW =====`);
       try {
         const localSessionId = useTrueSkillStore.getState().sessionId;
-        const localTotalBattles = useTrueSkillStore.getState().totalBattles;
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('trueskill_session_id')
           .eq('id', effectiveUserId)
           .single();
-
+        
         if (profileError && profileError.code !== 'PGRST116') throw profileError;
 
         const profileSessionId = profile?.trueskill_session_id;
 
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Local Session: ${localSessionId} (${localTotalBattles} battles)`);
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Profile Session: ${profileSessionId}`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Local Session ID on device: ${localSessionId}`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud Profile Session ID: ${profileSessionId}`);
 
-        if (profileSessionId && profileSessionId !== localSessionId) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Session ID mismatch. Checking which session is better.`);
-          const { data: cloudSessionData, error: functionError } = await supabase.functions.invoke('get-trueskill', {
-            body: { sessionId: profileSessionId },
-          });
-          if (functionError) throw functionError;
-
-          const cloudTotalBattles = cloudSessionData?.totalBattles || 0;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud session ${profileSessionId} has ${cloudTotalBattles} battles.`);
-
-          if (cloudTotalBattles > localTotalBattles) {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud is richer. Switching to ${profileSessionId}.`);
-            toast({ title: 'Syncing Your Account', description: 'Loading more recent progress from the cloud...', duration: 4000 });
-            setSessionId(profileSessionId);
-            await smartSync();
-          } else {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Local is richer. Healing profile to use ${localSessionId}.`);
-            const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
-            if (updateError) throw updateError;
-            toast({ title: 'Account Synced', description: 'Your progress has been linked with your account.', duration: 3000 });
-            await smartSync();
+        if (profileSessionId) {
+          // Cloud is the source of truth. User has a session linked to their account.
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud profile has session ${profileSessionId}. This is the source of truth.`);
+          if (profileSessionId !== localSessionId) {
+            toast({ title: 'Syncing Your Account', description: 'Loading your progress from the cloud...', duration: 4000 });
           }
-        } else if (!profileSessionId && localSessionId) {
+          // Set the authoritative session ID from the cloud. If it's different, this will reset local data.
+          setSessionId(profileSessionId); 
+          // smartSync will now load cloud data into the (potentially just-cleared) local state.
+          await smartSync();
+
+        } else if (localSessionId) {
+          // User has no session in the cloud, but has an anonymous one on this device. Link it.
           console.log(`🚨🚨🚨 [SYNC_AUDIT] No session on profile. Linking local session ${localSessionId}.`);
           const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
           if (updateError) throw updateError;
-          toast({ title: 'Account Synced', description: 'Your local progress has been linked to your account.', duration: 3000 });
+          toast({ title: 'Account Synced', description: 'Your local progress is now linked to your account.', duration: 3000 });
+          // Sync to ensure local data is pushed to the cloud under the new account association.
           await smartSync();
         } else {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Sessions aligned. Performing standard sync.`);
-          await smartSync();
+          // Should not happen, as a sessionId is always generated. But as a fallback:
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] No cloud session and no local session. This is a fresh start.`);
+           const newSessionId = useTrueSkillStore.getState().sessionId;
+           await supabase.from('profiles').update({ trueskill_session_id: newSessionId }).eq('id', effectiveUserId);
         }
 
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Reconciliation complete. Unlocking writes.`);
@@ -153,7 +150,7 @@ export const useCloudSync = () => {
       } catch (error) {
         console.error('🚨🚨🚨 [SYNC_AUDIT] CRITICAL: Reconciliation failed:', error);
         toast({ title: 'Sync Error', description: 'Could not synchronize your account data. Writes are paused.', variant: 'destructive'});
-        setSessionReconciled(false);
+        setSessionReconciled(false); // Keep it locked
       }
     };
 
