@@ -335,24 +335,63 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
         const data = await loadTrueSkillSession();
         if (data && data.ratings_data) {
-          // Ensure types are correct before hydrating the store
+          // ========== TYPE SAFETY & CONVERSION ==========
+
+          // Ratings: must be Record<string, TrueSkillRating>
           let safeRatings: Record<string, TrueSkillRating> = {};
-          if (typeof data.ratings_data === 'object' && data.ratings_data !== null && !Array.isArray(data.ratings_data)) {
-            safeRatings = data.ratings_data;
+          if (
+            typeof data.ratings_data === 'object' &&
+            data.ratings_data !== null &&
+            !Array.isArray(data.ratings_data)
+          ) {
+            Object.entries(data.ratings_data).forEach(([k, v]) => {
+              if (
+                typeof v === 'object' &&
+                v !== null &&
+                typeof (v as any).mu === 'number' &&
+                typeof (v as any).sigma === 'number'
+              ) {
+                safeRatings[k] = {
+                  mu: (v as any).mu,
+                  sigma: (v as any).sigma,
+                  battleCount: (v as any).battleCount ?? 0,
+                  lastUpdated: (v as any).lastUpdated ?? Date.now(),
+                };
+              }
+            });
           }
+
+          // PendingBattles: number[]
           let safePendingBattles: number[] = [];
           if (Array.isArray(data.pending_battles)) {
-            safePendingBattles = data.pending_battles;
+            safePendingBattles = (data.pending_battles as unknown[])
+              .filter((v): v is number => typeof v === 'number');
           }
+
+          // RefinementQueue: RefinementBattle[]
           let safeRefinementQueue: RefinementBattle[] = [];
           if (Array.isArray(data.refinement_queue)) {
-            safeRefinementQueue = data.refinement_queue;
+            safeRefinementQueue = (data.refinement_queue as unknown[])
+              .filter((v): v is RefinementBattle =>
+                  typeof v === 'object' &&
+                  v !== null &&
+                  typeof (v as any).primaryPokemonId === 'number' &&
+                  typeof (v as any).opponentPokemonId === 'number' &&
+                  typeof (v as any).priority === 'number'
+              )
+              .map((v) => ({
+                  primaryPokemonId: (v as any).primaryPokemonId,
+                  opponentPokemonId: (v as any).opponentPokemonId,
+                  priority: (v as any).priority,
+              }));
           }
 
           set({
             ratings: safeRatings,
             totalBattles: typeof data.total_battles === 'number' ? data.total_battles : 0,
-            totalBattlesLastUpdated: typeof data.total_battles_last_updated === 'number' ? data.total_battles_last_updated : Date.now(),
+            totalBattlesLastUpdated: typeof data.total_battles_last_updated === 'number'
+              ? data.total_battles_last_updated
+              : Date.now(),
             pendingBattles: safePendingBattles,
             refinementQueue: safeRefinementQueue,
             isHydrated: true
