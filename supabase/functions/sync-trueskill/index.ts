@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { sessionId, ratings, totalBattles, totalBattlesLastUpdated, pendingBattles, refinementQueue, lastUpdated } = await req.json();
+    const body = await req.json();
+    const { sessionId, ratings, totalBattles, totalBattlesLastUpdated, pendingBattles, refinementQueue, lastUpdated } = body;
 
     if (!sessionId) {
       return new Response(
@@ -34,8 +35,20 @@ Deno.serve(async (req) => {
         }
       );
     }
-
-    console.log(`[Edge Function syncTrueSkill] Syncing sessionId: ${sessionId} with ${Object.keys(ratings || {}).length} ratings, ${totalBattles || 0} battles, ${(pendingBattles || []).length} pending battles, and ${(refinementQueue || []).length} refinement items.`);
+    
+    console.log(`[Edge Function syncTrueSkill] ===== SYNC RECEIVED =====`);
+    console.log(`[Edge Function syncTrueSkill] Session ID: ${sessionId}`);
+    console.log(`[Edge Function syncTrueSkill] Ratings count: ${Object.keys(ratings || {}).length}`);
+    console.log(`[Edge Function syncTrueSkill] Total Battles: ${totalBattles || 0}`);
+    console.log(`[Edge Function syncTrueSkill] Pending Battles: ${(pendingBattles || []).length}`);
+    console.log(`[Edge Function syncTrueSkill] Refinement Queue: ${(refinementQueue || []).length}`);
+    
+    if (Object.keys(ratings || {}).length > 0) {
+        const firstRatingKey = Object.keys(ratings)[0];
+        console.log(`[Edge Function syncTrueSkill] Sample rating for ${firstRatingKey}:`, ratings[firstRatingKey]);
+    } else {
+        console.log(`[Edge Function syncTrueSkill] No ratings data in this payload.`);
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
