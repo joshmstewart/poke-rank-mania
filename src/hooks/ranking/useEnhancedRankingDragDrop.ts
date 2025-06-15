@@ -133,21 +133,26 @@ export const useEnhancedRankingDragDrop = (
 
       if (!pokemon) return;
 
-      // Determine insertion index
-      let insertionIndex = localRankings.length; // Default to end of list
+      let insertionIndex = -1;
 
-      const isDroppingOnRankedItem = over.data.current?.type === 'ranked-pokemon';
-      const isDroppingOnRankingsContainer = over.data.current?.type === 'rankings-container' || over.data.current?.type === 'rankings-grid';
-
-      if (isDroppingOnRankedItem) {
-        const overPokemonId = Number(over.id);
-        const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
-        if (targetIndex !== -1) {
-          insertionIndex = targetIndex;
+      // Case 1: Dropping on the main ranking grid container
+      if (overId === 'rankings-grid-drop-zone') {
+        insertionIndex = localRankings.length; // Add to the end
+      } else {
+        // Case 2: Dropping on an existing ranked Pokemon
+        const overPokemonId = Number(overId);
+        // Check if overId is a valid number and corresponds to a ranked Pokemon
+        if (!isNaN(overPokemonId) && localRankings.some(p => p.id === overPokemonId)) {
+          const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
+          if (targetIndex !== -1) {
+            insertionIndex = targetIndex;
+          }
         }
-      } else if (isDroppingOnRankingsContainer) {
-        // If the list is empty, it goes to index 0. Otherwise, to the end.
-        insertionIndex = localRankings.length > 0 ? localRankings.length : 0;
+      }
+
+      // If we didn't find a valid drop target in the rankings area, abort.
+      if (insertionIndex === -1) {
+        return;
       }
 
       const isAlreadyRanked = localRankings.some(p => p.id === pokemonId);

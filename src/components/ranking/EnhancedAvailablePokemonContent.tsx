@@ -33,11 +33,11 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   totalPages,
   allRankedPokemon = [] // Default to empty array
 }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: 'enhanced-available-drop-zone',
     data: {
       type: 'available-container',
-      accepts: 'ranked-pokemon'
+      accepts: 'ranked-pokemon' // Kept for potential future use (e.g., un-ranking)
     }
   });
 
@@ -129,9 +129,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   return (
     <div 
       ref={setNodeRef}
-      className={`flex-1 overflow-y-auto p-4 transition-colors ${
-        isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''
-      }`}
+      className="flex-1 overflow-y-auto p-4 transition-colors"
     >
       <div className="space-y-4">
         {renderContent()}
