@@ -99,11 +99,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
   const transition = !isAvailableContext ? sortable.transition : undefined;
 
-  // Simplified opacity handling - let the wrapper handle most cases
+  // CRITICAL FIX: Completely remove opacity handling from this component when in ranked context
+  // Let the parent wrapper (SortableRankedCard) handle all drag styling
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging && isAvailableContext ? 0.7 : 1, // Only handle available context specially
+    // ONLY handle opacity for available context - ranked context is handled by wrapper
+    opacity: isDragging && isAvailableContext ? 0.7 : 1,
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
@@ -111,6 +113,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     willChange: 'transform' as const,
     backfaceVisibility: 'hidden' as const,
   };
+
+  console.log(`🐛 [CARD_DEBUG] ${pokemon.name} - context: ${context}, isDragging: ${isDragging}, opacity: ${style.opacity}`);
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 

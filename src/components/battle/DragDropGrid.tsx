@@ -38,19 +38,34 @@ const SortableRankedCard: React.FC<{
     },
   });
 
+  // DEBUG: Add extensive logging to identify the opacity issue
+  console.log(`🐛 [DRAGDROP_DEBUG] Card ${pokemon.name}: isDragging=${isDragging}, transform=${transform ? 'has transform' : 'no transform'}`);
+
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.3 : 1, // Changed from 0 to 0.3 to keep cards visible
-    zIndex: isDragging ? 100 : 'auto',
+    // CRITICAL FIX: Use higher opacity for dragging state and ensure it's never 0
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    // Add important styles to prevent other CSS from overriding
+    visibility: 'visible',
+    display: 'block',
   };
 
+  console.log(`🐛 [DRAGDROP_DEBUG] Card ${pokemon.name} final style:`, style);
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      {...listeners}
+      className={`${isDragging ? 'drag-active' : ''}`}
+    >
       <DraggablePokemonMilestoneCard
         pokemon={pokemon}
         index={index}
-        isPending={false} // This was the previous behavior
+        isPending={false}
         showRank={true}
         isDraggable={true}
         isAvailable={false}
@@ -61,7 +76,6 @@ const SortableRankedCard: React.FC<{
   );
 };
 
-
 const DragDropGrid: React.FC<DragDropGridProps> = ({
   displayRankings,
   localPendingRefinements,
@@ -70,6 +84,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   availablePokemon = []
 }) => {
   const sortableItems = displayRankings.map(p => String(p.id));
+
+  console.log(`🐛 [DRAGDROP_DEBUG] DragDropGrid rendering with ${displayRankings.length} rankings`);
 
   return (
     <SortableContext
@@ -84,7 +100,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           </div>
         ) : (
           displayRankings.map((pokemon, index) => {
-            const isPending = localPendingRefinements.has(pokemon.id);
+            console.log(`🐛 [DRAGDROP_DEBUG] Rendering card for ${pokemon.name} at index ${index}`);
             return (
               <SortableRankedCard
                 key={pokemon.id}
