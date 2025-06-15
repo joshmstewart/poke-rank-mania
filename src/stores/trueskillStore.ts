@@ -171,13 +171,17 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         let targetScore: number;
         
         if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
+          // Score should be between the two neighbors
           targetScore = (higherNeighborScore + lowerNeighborScore) / 2;
         } else if (higherNeighborScore !== undefined) {
-          targetScore = higherNeighborScore + 1.0;
-        } else if (lowerNeighborScore !== undefined) {
-          targetScore = lowerNeighborScore - 1.0;
+          // Dropped at the end of the list, score should be lower than the neighbor above it
+          targetScore = higherNeighborScore - 1.0;
+        } else if (lowerNeighborId !== undefined) {
+          // Dropped at the beginning of the list, score should be higher than the neighbor below it
+          targetScore = lowerNeighborScore + 1.0;
         } else {
-          targetScore = 25.0; // Default TrueSkill rating
+          // Only item in the list or an error occurred, use default
+          targetScore = 25.0;
         }
         
         const newRating = new Rating(targetScore, 8.333); // Use default sigma

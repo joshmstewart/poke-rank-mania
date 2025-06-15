@@ -31,6 +31,7 @@ export const useEnhancedManualReorder = (
     sourceIndex: number,
     destinationIndex: number
   ) => {
+    console.log(`[DEBUG] Reordering pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}. Current rankings count: ${finalRankings?.length}`);
     if (!finalRankings || finalRankings.length === 0) {
       return;
     }
@@ -92,11 +93,15 @@ export const useEnhancedManualReorder = (
       const higherNeighbor = destinationIndex > 0 ? workingRankings[destinationIndex - 1] : undefined;
       const lowerNeighbor = destinationIndex < workingRankings.length - 1 ? workingRankings[destinationIndex + 1] : undefined;
       
+      console.log('[DEBUG] Neighbors found:', { higher: higherNeighbor?.name, lower: lowerNeighbor?.name });
+      
       const targetScore = calculateScoreBetweenNeighbors(
         higherNeighbor?.score,
         lowerNeighbor?.score
       );
       
+      console.log(`[DEBUG] Calculated target score: ${targetScore}`);
+
       // Force the score in TrueSkill store
       forceScoreBetweenNeighbors(
         draggedPokemonId.toString(),
