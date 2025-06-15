@@ -70,9 +70,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
+  // When context is 'ranked', it's inside DragDropGrid's SortableContext, so it shouldn't be sortable itself.
+  const isSelfSortable = context !== 'ranked';
+
   const sortableResult = useSortable({ 
     id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`,
-    disabled: !isDraggable || isOpen,
+    disabled: !isDraggable || isOpen || !isSelfSortable,
     data: {
       type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
       pokemon: pokemon,
@@ -92,14 +95,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   } = sortableResult;
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: isSelfSortable ? CSS.Transform.toString(transform) : undefined,
+    transition: isSelfSortable ? transition : undefined,
     opacity: isDragging ? 0.4 : 1,
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
-    willChange: 'transform',
+    willChange: 'transform' as const,
     backfaceVisibility: 'hidden' as const,
   };
 
@@ -137,7 +140,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   return (
     <div
-      ref={setNodeRef}
+      ref={isSelfSortable ? setNodeRef : null}
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
@@ -146,8 +149,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable && !isOpen ? attributes : {})}
-      {...(isDraggable && !isOpen ? listeners : {})}
+      {...(isDraggable && !isOpen && isSelfSortable ? attributes : {})}
+      {...(isDraggable && !isOpen && isSelfSortable ? listeners : {})}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
@@ -275,11 +278,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           src={pokemon.image} 
           alt={pokemon.name}
           className={`w-20 h-20 object-contain transition-all duration-200 ${
-            isDragging ? 'scale-110' : ''
+            isDragging && isSelfSortable ? 'scale-110' : ''
           }`}
           style={{ 
             transform: 'translateZ(0)',
-            willChange: isDragging ? 'transform' : 'auto'
+            willChange: isDragging && isSelfSortable ? 'transform' : 'auto'
           }}
           loading="lazy"
           onError={(e) => {
@@ -291,7 +294,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       
       {/* Pokemon info */}
       <div className={`bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100 ${
-        isDragging ? 'bg-blue-50' : ''
+        isDragging && isSelfSortable ? 'bg-blue-50' : ''
       }`}>
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
           {pokemon.name}

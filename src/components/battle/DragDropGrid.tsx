@@ -4,9 +4,11 @@ import { useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
+  useSortable,
 } from '@dnd-kit/sortable';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { SortablePokemonCard } from '@/components/ranking/SortablePokemonCard';
+import DraggablePokemonMilestoneCard from '@/components/battle/DraggablePokemonMilestoneCard';
+import { CSS } from '@dnd-kit/utilities';
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -15,6 +17,51 @@ interface DragDropGridProps {
   onMarkAsPending: (pokemonId: number) => void;
   availablePokemon?: any[];
 }
+
+const SortableRankedCard: React.FC<{
+  pokemon: Pokemon | RankedPokemon;
+  index: number;
+  allRankedPokemon: (Pokemon | RankedPokemon)[];
+}> = ({ pokemon, index, allRankedPokemon }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: String(pokemon.id),
+    data: {
+      type: 'ranked-pokemon',
+      pokemon: pokemon,
+      context: 'ranked',
+    },
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0 : 1, // Hide the original while dragging
+    zIndex: isDragging ? 100 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <DraggablePokemonMilestoneCard
+        pokemon={pokemon}
+        index={index}
+        isPending={false} // This was the previous behavior
+        showRank={true}
+        isDraggable={true}
+        isAvailable={false}
+        context="ranked"
+        allRankedPokemon={allRankedPokemon}
+      />
+    </div>
+  );
+};
+
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
   displayRankings,
@@ -48,15 +95,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           displayRankings.map((pokemon, index) => {
             const isPending = localPendingRefinements.has(pokemon.id);
             return (
-              <SortablePokemonCard
+              <SortableRankedCard
                 key={pokemon.id}
                 pokemon={pokemon}
                 index={index}
-                isPending={isPending}
-                showRank={true}
-                isDraggable={true}
-                isAvailable={false}
-                context="ranked"
                 allRankedPokemon={displayRankings}
               />
             );
