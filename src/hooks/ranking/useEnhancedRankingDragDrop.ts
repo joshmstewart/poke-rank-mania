@@ -99,80 +99,57 @@ export const useEnhancedRankingDragDrop = (
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
+    const activeDataType = active.data.current?.type;
+    const overDataType = over.data.current?.type;
 
-    console.log(`[DragEnd] Active: ${activeId}, Over: ${overId}, Over data:`, over.data.current);
+    console.log(`[DragEnd] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`, over.data.current);
 
-    // Prevent dropping an available item onto another available item
-    if (activeId.startsWith('available-') && overId.startsWith('available-')) {
-        return;
-    }
+    if (active.id === over.id) return;
+    if (activeDataType === 'available-pokemon' && overDataType === 'available-pokemon') return;
 
-    // === DROPPING A RANKED CARD (reorder) ===
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
-      const activePokemonId = Number(activeId);
-      const overPokemonId = Number(overId);
-      
-      if (activePokemonId === overPokemonId) return;
+    // --- Scenario 1: Reordering within the ranked list ---
+    if (activeDataType === 'ranked-pokemon' && overDataType === 'ranked-pokemon') {
+      const activePokemonId = Number(active.id);
+      const overPokemonId = Number(over.id);
 
       const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
 
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        // 1. Move in local array for UI
         const newOrder = arrayMove(localRankings, oldIndex, newIndex);
-        updateLocalRankings(newOrder);
-
-        // 2. Immediately recalculate score + update store
-        handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        updateLocalRankings(newOrder); // Optimistic UI update
+        handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex); // Persist change
       }
       return;
     }
 
-    // === DROPPING AN AVAILABLE CARD (add to rankings) ===
-    if (activeId.startsWith('available-')) {
-      console.log('[DragEnd] Handling drop from available list');
+    // --- Scenario 2: Dropping a new Pokemon into the ranked list ---
+    if (activeDataType === 'available-pokemon') {
       const pokemonId = parseInt(activeId.replace('available-', ''), 10);
-      const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
+      const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
 
-      if (!pokemon) {
-        console.error('[DragEnd] Dragged pokemon not found in available list.');
-        return;
-      }
-      console.log(`[DragEnd] Dragged pokemon: ${pokemon.name} (ID: ${pokemonId})`);
+      if (!pokemonToAdd) return;
+      if (localRankings.some(p => p.id === pokemonId)) return; // Already ranked
 
       let insertionIndex = -1;
-      const overDataType = over.data.current?.type;
 
-      // Case 1: Dropping on the main ranking grid container
-      if (overId === 'rankings-grid-drop-zone' || overDataType === 'rankings-grid') {
-        console.log('[DragEnd] Dropped on rankings-grid container');
-        insertionIndex = localRankings.length; // Add to the end
-      } else {
-        // Case 2: Dropping on an existing ranked Pokemon
-        console.log(`[DragEnd] Dropped on item with id: ${overId}`);
+      // Dropped onto an existing ranked pokemon
+      if (overDataType === 'ranked-pokemon') {
         const overPokemonId = Number(overId);
-        if (!isNaN(overPokemonId)) {
-           const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
-           if (targetIndex !== -1) {
-             insertionIndex = targetIndex;
-             console.log(`[DragEnd] Target is ranked item at index: ${targetIndex}`);
-           }
+        const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
+        if (targetIndex !== -1) {
+          insertionIndex = targetIndex;
         }
+      } 
+      // Dropped onto the ranking grid container itself
+      else if (overId === 'rankings-grid-drop-zone' || overDataType === 'rankings-grid') {
+        insertionIndex = localRankings.length;
       }
 
-      // If we didn't find a valid drop target in the rankings area, abort.
-      if (insertionIndex === -1) {
-        console.log('[DragEnd] No valid insertion point found. Aborting move.');
-        return;
-      }
-
-      console.log(`[DragEnd] Determined insertion index: ${insertionIndex}`);
-      const isAlreadyRanked = localRankings.some(p => p.id === pokemonId);
-      if (!isAlreadyRanked) {
-          console.log('[DragEnd] Calling moveFromAvailableToRankings...');
-          moveFromAvailableToRankings(pokemonId, insertionIndex, pokemon);
+      if (insertionIndex !== -1) {
+        moveFromAvailableToRankings(pokemonId, insertionIndex, pokemonToAdd);
       } else {
-          console.log('[DragEnd] Pokemon is already ranked. Aborting.');
+        console.log('[DragEnd] Could not determine insertion point for available pokemon.');
       }
       return;
     }
