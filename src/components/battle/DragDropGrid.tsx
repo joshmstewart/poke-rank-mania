@@ -46,31 +46,38 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   return (
     <div 
       ref={setNodeRef}
-      className={`transition-colors ${isOver ? 'bg-yellow-50/50' : ''}`}
+      className={`transition-colors min-h-36 ${isOver ? 'bg-yellow-50/50' : ''}`}
     >
       <SortableContext 
         items={sortableItems}
         strategy={rectSortingStrategy}
       >
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-          {displayRankings.map((pokemon, index) => {
-            const isPending = localPendingRefinements.has(pokemon.id);
-            const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
-            
-            return (
-              <DraggablePokemonMilestoneCard
-                key={pokemon.id}
-                pokemon={pokemon}
-                index={index}
-                isPending={isPending}
-                showRank={true}
-                isDraggable={true}
-                isAvailable={false}
-                context="ranked"
-                allRankedPokemon={displayRankings}
-              />
-            );
-          })}
+          {displayRankings.length === 0 ? (
+            <div className="h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-white text-gray-400 animate-fade-in select-none opacity-75">
+              <span className="mb-1 text-2xl">🡆</span>
+              <span>Drop Pokémon here to start ranking!</span>
+            </div>
+          ) : (
+            displayRankings.map((pokemon, index) => {
+              const isPending = localPendingRefinements.has(pokemon.id);
+              const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
+              
+              return (
+                <DraggablePokemonMilestoneCard
+                  key={pokemon.id}
+                  pokemon={pokemon}
+                  index={index}
+                  isPending={isPending}
+                  showRank={true}
+                  isDraggable={true}
+                  isAvailable={false}
+                  context="ranked"
+                  allRankedPokemon={displayRankings}
+                />
+              );
+            })
+          )}
         </div>
       </SortableContext>
     </div>
@@ -78,3 +85,4 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
 };
 
 export default DragDropGrid;
+

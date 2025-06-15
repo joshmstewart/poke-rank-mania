@@ -118,74 +118,62 @@ export const useEnhancedRankingDragDrop = (
     // Handle drag from available to rankings with optimistic updates
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
-      
-      const isValidDropTarget = (
-        overId === 'rankings-drop-zone' || 
+      // Accept ANY OVER TARGET that is on the rankings-grid, rankings-drop-zone, or rankings container (let's improve this logic)
+      const overIsRankingZone = (
+        overId === 'rankings-drop-zone' ||
         overId === 'rankings-grid-drop-zone' ||
         over.data?.current?.type === 'rankings-container' ||
-        over.data?.current?.type === 'rankings-grid' ||
-        over.data?.current?.accepts?.includes('available-pokemon') ||
-        (!overId.startsWith('available-') && 
-         !overId.startsWith('collision-placeholder-') &&
-         !isNaN(parseInt(overId)) && 
-         localRankings.some(p => p.id === parseInt(overId)))
+        over.data?.current?.type === 'rankings-grid'
       );
-      
-      if (isValidDropTarget) {
-        const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
-        if (pokemon) {
-          const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
-          
-          let insertionPosition = localRankings.length;
-          if (!overId.startsWith('available-') && 
-              !overId.startsWith('collision-placeholder-') &&
-              !isNaN(parseInt(overId))) {
-            const targetPokemonId = parseInt(overId);
-            const targetIndex = localRankings.findIndex(p => p.id === targetPokemonId);
-            if (targetIndex !== -1) {
-              insertionPosition = targetIndex;
-            }
-          }
+      // If rankings are empty, any drop onto "rankings-drop-zone" or "rankings-grid-drop-zone" should add as first entry
+      // If target is any ranking card, the code below will find correct drop position
 
-          if (isActuallyInRankings) {
-            // OPTIMISTIC UI UPDATE: Update visual state immediately
-            const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
-            const newRankings = arrayMove(localRankings, currentIndex, insertionPosition);
-            console.log('%cReordering existing Pokemon in rankings', 'color: green', {
-              pokemonId,
-              currentIndex,
-              insertionPosition,
-              newRankingsLength: newRankings.length
-            });
-            updateLocalRankings(newRankings);
-            
-            // ASYNCHRONOUS CALCULATION: Update TrueSkill in background
-            setTimeout(() => {
-              handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
-            }, 0);
-          } else {
-            // OPTIMISTIC UI UPDATE: Add to rankings immediately
-            const newRankings = [...localRankings];
-            newRankings.splice(insertionPosition, 0, {
-              ...pokemon,
-              score: 25.0,
-              rank: insertionPosition + 1
-            });
-            console.log('%cAdding new Pokemon to rankings', 'color: purple', {
-              pokemonId,
-              insertionPosition,
-              newRankingsLength: newRankings.length
-            });
-            updateLocalRankings(newRankings);
-            
-            // BACKGROUND OPERATION: Move from available (includes TrueSkill update)
-            setTimeout(() => {
-              moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
-            }, 0);
-          }
-          
-          return;
+      let insertionPosition = localRankings.length; // by default put at the end
+
+      if (overIsRankingZone && localRankings.length === 0) {
+        // Rankings are empty, drop as first entry
+        insertionPosition = 0;
+      } else if (
+        !overId.startsWith('available-') &&
+        !overId.startsWith('collision-placeholder-') &&
+        !isNaN(parseInt(overId)) &&
+        localRankings.some(p => p.id === parseInt(overId))
+      ) {
+        // Dropping onto a Pokémon card in rankings
+        const targetIndex = localRankings.findIndex(p => p.id === parseInt(overId));
+        if (targetIndex !== -1) {
+          insertionPosition = targetIndex;
         }
+      }
+
+      const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
+      if (pokemon) {
+        const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
+
+        if (isActuallyInRankings) {
+          // OPTIMISTIC UI UPDATE: Update visual state immediately
+          const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
+          const newRankings = arrayMove(localRankings, currentIndex, insertionPosition);
+          updateLocalRankings(newRankings);
+
+          setTimeout(() => {
+            handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
+          }, 0);
+        } else if (overIsRankingZone || insertionPosition !== localRankings.length) {
+          // Drop into empty rankings or onto a ranking target
+          const newRankings = [...localRankings];
+          newRankings.splice(insertionPosition, 0, {
+            ...pokemon,
+            score: 25.0,
+            rank: insertionPosition + 1
+          });
+          updateLocalRankings(newRankings);
+
+          setTimeout(() => {
+            moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
+          }, 0);
+        }
+        // else: dropped onto an invalid target (do nothing)
       }
       return;
     }
@@ -194,35 +182,20 @@ export const useEnhancedRankingDragDrop = (
     if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
-      
+
       const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
-      
+
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log('%cReordering within rankings', 'color: green', {
-          activePokemonId,
-          overPokemonId,
-          oldIndex,
-          newIndex,
-          localRankingsLength: localRankings.length
-        });
-        
-        // OPTIMISTIC UI UPDATE: Reorder visually immediately using arrayMove
         const newOrder = arrayMove(localRankings, oldIndex, newIndex);
-        console.log('%cOptimistic newOrder created', 'color: green', {
-          newOrderLength: newOrder.length,
-          first3Pokemon: newOrder.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
-        });
         updateLocalRankings(newOrder);
-        
-        // ASYNCHRONOUS CALCULATION: Update TrueSkill scores in background
+
         setTimeout(() => {
-          console.log('%cExecuting TrueSkill calculation', 'color: purple', { activePokemonId });
           handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
         }, 0);
       }
     }
-    
+
     console.log('%c=== DRAG END COMPLETE ===', 'color: red; font-weight: bold');
   }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
 
