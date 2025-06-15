@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, TopNOption } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleGeneration } from "./useBattleGeneration";
 import { useBattleRankings } from "./useBattleRankings";
@@ -16,7 +16,6 @@ export const useBattleStateCore = (
   console.log(`🔧 [BATTLE_STATE_CORE] Initializing with ${allPokemon.length} Pokemon`);
   
   // DEPRECATED: This hook is now a no-op, all persistence is via TrueSkill store.
-  useBattleStatePersistence();
   
   const { getAllRatings, totalBattles } = useTrueSkillStore();
   
@@ -34,7 +33,7 @@ export const useBattleStateCore = (
   const [finalRankings, setFinalRankings] = useState<any[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<any[]>([]);
   const [battleHistory, setBattleHistory] = useState<any[]>([]);
-  const [activeTier, setActiveTier] = useState<any>("All");
+  const [activeTier, setActiveTier] = useState<TopNOption>("All");
   const [isBattleTransitioning, setIsBattleTransitioning] = useState(false);
   const [isAnyProcessing, setIsAnyProcessing] = useState(false);
   const [isProcessingResult, setIsProcessingResult] = useState(false);
@@ -363,7 +362,7 @@ export const useBattleStateCore = (
     startNewBattle();
   }, [startNewBattle]);
   const resetMilestoneInProgress = useCallback(() => {}, []);
-  const handleManualReorder = useCallback(() => {}, []);
+  const handleManualReorder = useCallback((draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => {}, []);
 
   return {
     currentBattle,

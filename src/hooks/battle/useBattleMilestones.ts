@@ -2,6 +2,11 @@
 import { useCallback, useMemo } from "react";
 import { isMilestone, getNextMilestone, getMilestoneProgress, generateMilestones } from "@/utils/battleMilestones";
 
+export type Milestone = {
+  value: number;
+  label: string;
+};
+
 export const useBattleMilestones = (battlesCompleted: number = 0) => {
   // Generate milestones dynamically based on current battle count
   const milestones = useMemo(() => {

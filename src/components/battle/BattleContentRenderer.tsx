@@ -95,9 +95,12 @@ const BattleContentRenderer: React.FC<BattleContentRendererProps> = ({
         selectedPokemon={selectedPokemon}
         battlesCompleted={battlesCompleted}
         battleType={battleType}
-        handlePokemonSelect={handlePokemonSelect}
-        handleTripletSelectionComplete={handleTripletSelectionComplete}
+        onPokemonSelect={handlePokemonSelect}
+        onTripletSelectionComplete={handleTripletSelectionComplete}
         isAnyProcessing={isAnyProcessing}
+        battleHistory={battleHistory}
+        onGoBack={goBack}
+        milestones={milestones.map((m) => m.value)}
       />
     );
   }
