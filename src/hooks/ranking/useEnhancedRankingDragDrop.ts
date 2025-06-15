@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
@@ -133,23 +134,27 @@ export const useEnhancedRankingDragDrop = (
 
       let insertionIndex = -1;
 
+      console.log(`[DragEnd] Handling drop of AVAILABLE pokemon ${pokemonId}. Over ID: ${overId}, Over Type: ${overDataType}`);
+
       // Dropped onto an existing ranked pokemon
       if (overDataType === 'ranked-pokemon') {
         const overPokemonId = Number(overId);
         const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
         if (targetIndex !== -1) {
           insertionIndex = targetIndex;
+          console.log(`[DragEnd] Insertion target is ranked-pokemon. Index: ${insertionIndex}`);
         }
       } 
       // Dropped onto the ranking grid container itself
       else if (overId === 'rankings-grid-drop-zone' || overDataType === 'rankings-grid') {
         insertionIndex = localRankings.length;
+        console.log(`[DragEnd] Insertion target is rankings-grid. Index: ${insertionIndex}`);
       }
 
       if (insertionIndex !== -1) {
         moveFromAvailableToRankings(pokemonId, insertionIndex, pokemonToAdd);
       } else {
-        console.log('[DragEnd] Could not determine insertion point for available pokemon.');
+        console.log('[DragEnd] Could not determine insertion point for available pokemon. over data:', over.data.current);
       }
       return;
     }

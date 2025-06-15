@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
 import {
@@ -74,7 +73,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
     }
   });
 
