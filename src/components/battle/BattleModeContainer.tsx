@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentRenderer from "./BattleContentRenderer";
 import { BattleLogDisplay } from "./BattleLogDisplay";
@@ -132,6 +133,16 @@ const BattleModeContainerContent: React.FC<{
     battleState.setBattleType(type);
   }, [handleBattleTypeChange, battleState]);
 
+  const milestonesForRenderer = useMemo(() => {
+    if (!Array.isArray(battleState.milestones)) {
+      return [];
+    }
+    // The error indicates battleState.milestones is number[], so we convert it to Milestone[]
+    return (battleState.milestones as any[]).map(m =>
+      typeof m === 'number' ? { value: m, label: String(m) } : m
+    );
+  }, [battleState.milestones]);
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
       <div className="flex flex-col space-y-4">
@@ -155,7 +166,7 @@ const BattleModeContainerContent: React.FC<{
           selectedGeneration={selectedGeneration}
           finalRankings={battleState.finalRankings}
           activeTier={battleState.activeTier as TopNOption}
-          milestones={battleState.milestones}
+          milestones={milestonesForRenderer}
           rankingGenerated={battleState.rankingGenerated}
           isAnyProcessing={battleState.isAnyProcessing}
           setSelectedGeneration={wrappedHandleGenerationChange}
