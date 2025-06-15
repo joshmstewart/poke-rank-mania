@@ -411,6 +411,32 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         // Hydrate from user record, then sync
         await get().smartSync();
       },
+
+      mergeCloudData: (cloudData: any) => {
+        // No-op for now. Implement merging logic here if needed in the future.
+        console.log('[SYNC_AUDIT] mergeCloudData called but not implemented');
+      },
+      waitForHydration: async () => {
+        // Returns when isHydrated is true
+        const ensureHydrated = () =>
+          new Promise<void>((resolve) => {
+            const unsub = useTrueSkillStore.subscribe(
+              (state) => state.isHydrated,
+              (isHydrated) => {
+                if (isHydrated) {
+                  unsub();
+                  resolve();
+                }
+              }
+            );
+            // In case already hydrated
+            if (get().isHydrated) {
+              unsub();
+              resolve();
+            }
+          });
+        return await ensureHydrated();
+      },
     }),
     {
       name: 'trueskill-storage',
