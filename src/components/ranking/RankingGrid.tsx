@@ -1,6 +1,7 @@
+
 import React from "react";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { RankedPokemon } from "@/services/pokemon";
@@ -8,6 +9,7 @@ import { Star } from "lucide-react";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { CSS } from '@dnd-kit/utilities';
 
 interface RankingGridProps {
   rankedPokemon: RankedPokemon[];
@@ -118,6 +120,51 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
   );
 };
 
+// Create a sortable wrapper that handles opacity correctly
+const SortableRankingCard: React.FC<{
+  pokemon: RankedPokemon;
+  index: number;
+  allRankedPokemon: RankedPokemon[];
+}> = ({ pokemon, index, allRankedPokemon }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: String(pokemon.id),
+    data: {
+      type: 'ranked-pokemon',
+      pokemon: pokemon,
+      context: 'ranked',
+    },
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1, // Keep cards visible when dragging
+    zIndex: isDragging ? 100 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <DraggablePokemonMilestoneCard
+        pokemon={pokemon}
+        index={index}
+        isPending={false}
+        showRank={true}
+        isDraggable={true}
+        isAvailable={false}
+        context="ranked"
+        allRankedPokemon={allRankedPokemon}
+      />
+    </div>
+  );
+};
+
 export const RankingGrid: React.FC<RankingGridProps> = ({
   rankedPokemon,
   onReorder,
@@ -191,13 +238,10 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
       <SortableContext items={rankedPokemon.map(p => String(p.id))} strategy={verticalListSortingStrategy}>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {rankedPokemon.map((pokemon, index) => (
-            <DraggablePokemonMilestoneCard
+            <SortableRankingCard
               key={pokemon.id}
               pokemon={pokemon}
               index={index}
-              showRank={true}
-              isDraggable={isDraggable}
-              context="ranked"
               allRankedPokemon={rankedPokemon}
             />
           ))}
