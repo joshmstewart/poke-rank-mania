@@ -420,8 +420,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         // Returns when isHydrated is true
         const ensureHydrated = () =>
           new Promise<void>((resolve) => {
-            let unsub: () => void;
-            unsub = useTrueSkillStore.subscribe(
+            if (get().isHydrated) {
+              resolve();
+              return;
+            }
+            const unsub = useTrueSkillStore.subscribe(
               (state) => state.isHydrated,
               (isHydrated) => {
                 if (isHydrated) {
@@ -430,11 +433,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
                 }
               }
             );
-            // In case already hydrated
-            if (get().isHydrated) {
-              unsub();
-              resolve();
-            }
           });
         return await ensureHydrated();
       },
