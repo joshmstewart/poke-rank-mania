@@ -8,18 +8,14 @@ export const useCloudSync = () => {
   const { user, session } = useAuth();
   const {
     smartSync,
-    getAllRatings,
     isHydrated,
-    sessionId,
     setSessionId,
     syncInProgress,
     setSyncStatus,
     setSessionReconciled,
   } = useTrueSkillStore((state) => ({
     smartSync: state.smartSync,
-    getAllRatings: state.getAllRatings,
     isHydrated: state.isHydrated,
-    sessionId: state.sessionId,
     setSessionId: state.setSessionId,
     syncInProgress: state.syncInProgress,
     setSyncStatus: state.setSyncStatus,
@@ -78,31 +74,36 @@ export const useCloudSync = () => {
   // Main sync and session reconciliation logic
   useEffect(() => {
     const syncAndReconcile = async () => {
-      if (!isHydrated) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet`);
-        return;
-      }
+      // The isHydrated check is removed from here because for logged-in users,
+      // this effect is the *source* of hydration.
 
       const effectiveUserId = user?.id || session?.user?.id;
       if (!effectiveUserId) {
         console.log(
           `🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`
         );
-        // For anonymous users, we now mark as reconciled during hydration.
-        // If not reconciled for some reason, we do it here to be safe.
-        if (!useTrueSkillStore.getState().sessionReconciled) {
-          setSessionReconciled(true);
+        // For anonymous users, if they aren't hydrated, we mark them as such.
+        // This handles fresh visits with no localStorage.
+        if (!useTrueSkillStore.getState().isHydrated) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Marking anonymous user as hydrated.`);
+          useTrueSkillStore.setState({ sessionReconciled: true, isHydrated: true });
         }
         return;
       }
 
-      // Thanks to our new hydration logic, this check is now the main gatekeeper.
+      // Gatekeeper to prevent re-reconciliation.
       if (useTrueSkillStore.getState().sessionReconciled) {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session already reconciled, skipping.`);
+        // If we are reconciled but not hydrated, it means something went wrong.
+        // Let's force hydration to unblock the app.
+        if (!isHydrated) {
+          console.warn(`🚨🚨🚨 [SYNC_AUDIT] Reconciled but not hydrated. Forcing hydration flag.`);
+          useTrueSkillStore.setState({ isHydrated: true });
+        }
         return;
       }
 
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== NEW RECONCILIATION FLOW =====`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== NEW RECONCILIATION FLOW TRIGGERED =====`);
       try {
         const localSessionId = useTrueSkillStore.getState().sessionId;
 
@@ -127,7 +128,7 @@ export const useCloudSync = () => {
           }
           // Set the authoritative session ID from the cloud. If it's different, this will reset local data.
           setSessionId(profileSessionId); 
-          // smartSync will now load cloud data into the (potentially just-cleared) local state.
+          // smartSync will now load cloud data and mark as hydrated.
           await smartSync();
 
         } else if (localSessionId) {
@@ -136,13 +137,15 @@ export const useCloudSync = () => {
           const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
           if (updateError) throw updateError;
           toast({ title: 'Account Synced', description: 'Your local progress is now linked to your account.', duration: 3000 });
-          // Sync to ensure local data is pushed to the cloud under the new account association.
+          // Sync to ensure local data is pushed and state is hydrated.
           await smartSync();
         } else {
           // Should not happen, as a sessionId is always generated. But as a fallback:
           console.log(`🚨🚨🚨 [SYNC_AUDIT] No cloud session and no local session. This is a fresh start.`);
            const newSessionId = useTrueSkillStore.getState().sessionId;
            await supabase.from('profiles').update({ trueskill_session_id: newSessionId }).eq('id', effectiveUserId);
+           // Hydrate the app after linking.
+           await smartSync();
         }
 
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Reconciliation complete. Unlocking writes.`);
@@ -151,11 +154,15 @@ export const useCloudSync = () => {
         console.error('🚨🚨🚨 [SYNC_AUDIT] CRITICAL: Reconciliation failed:', error);
         toast({ title: 'Sync Error', description: 'Could not synchronize your account data. Writes are paused.', variant: 'destructive'});
         setSessionReconciled(false); // Keep it locked
+        // Still mark as hydrated to unblock UI, even on failure.
+        if (!isHydrated) {
+            useTrueSkillStore.setState({ isHydrated: true });
+        }
       }
     };
 
     syncAndReconcile();
-  }, [user?.id, session?.user?.id, isHydrated, setSessionId, smartSync, setSessionReconciled]);
+  }, [user?.id, session?.user?.id, setSessionId, smartSync, setSessionReconciled, isHydrated]);
 
   const triggerManualSync = useCallback(async () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== MANUAL SYNC TRIGGERED =====`);
