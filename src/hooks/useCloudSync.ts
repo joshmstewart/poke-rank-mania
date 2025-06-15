@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -86,14 +85,16 @@ export const useCloudSync = () => {
       attempt++;
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Attempting reconciliation (Attempt ${attempt}/${MAX_RETRIES})`);
 
-      // Initial checks that should not be retried if they fail, as they depend on external state.
-      if (!useTrueSkillStore.getState().isHydrated) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet. Will wait for hydration.`);
-        // The isHydrated dependency in the useEffect will re-trigger this.
-        return;
+      const effectiveUserId = user?.id || session?.user?.id;
+
+      // CRITICAL FIX: For authenticated users, the cloud sync IS the hydration process.
+      // We must only wait for localStorage hydration if the user is anonymous.
+      const isAnonymous = !effectiveUserId;
+      if (isAnonymous && !useTrueSkillStore.getState().isHydrated) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED (ANONYMOUS): Store not hydrated from localStorage yet. Will wait.`);
+        return; // This is correct for anonymous users who rely on persist middleware.
       }
 
-      const effectiveUserId = user?.id || session?.user?.id;
       if (!effectiveUserId) {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`);
         return; // No reconciliation needed for anonymous users
