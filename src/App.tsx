@@ -12,6 +12,7 @@ import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProv
 import { SplashPage } from "@/components/splash/SplashPage";
 import { useSplashLoader } from "@/hooks/useSplashLoader";
 import { useAuth } from "@/contexts/auth/useAuth";
+import { useCloudSync } from '@/hooks/useCloudSync';
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -21,6 +22,9 @@ function AppContent() {
   const unmountDetectedRef = useRef(false);
   const intervalRefs = useRef<NodeJS.Timeout[]>([]);
   const lastLogTime = useRef(0);
+
+  // Initialize cloud sync. This hook will manage the lifecycle of session reconciliation and syncing.
+  useCloudSync();
 
   renderCount.current += 1;
 
