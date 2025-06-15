@@ -74,6 +74,8 @@ interface TrueSkillStore {
 const SYNC_DEBOUNCE_DELAY = 1500;
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 
+const generateSessionId = () => crypto.randomUUID();
+
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
     (set, get) => ({
