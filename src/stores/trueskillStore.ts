@@ -67,6 +67,9 @@ interface TrueSkillStore {
   mergeCloudData: (cloudData: any) => void;
   waitForHydration: () => Promise<void>;
   restoreSessionFromCloud: (userId: string) => Promise<void>;
+
+  // --- DIAGNOSTIC SELF-TEST ---
+  runCloudSyncDiagnostics: () => Promise<void>;
 }
 
 const generateSessionId = () => crypto.randomUUID();
@@ -435,6 +438,80 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             });
           });
         return await ensureHydrated();
+      },
+      
+      // --- DIAGNOSTIC SELF-TEST ---
+      runCloudSyncDiagnostics: async () => {
+        const TEST_POKEMON_ID = "123456";
+        const TEST_MU = 77.77;
+        const TEST_SIGMA = 6.66;
+
+        console.log("%c[DIAG] Starting TrueSkill Cloud Sync Diagnostics...", "color: teal; font-weight: bold;");
+        // 1. Backup entire local state
+        const backup = {
+          ratings: { ...get().ratings },
+          pendingBattles: [...get().pendingBattles],
+          refinementQueue: [...get().refinementQueue],
+          totalBattles: get().totalBattles,
+          totalBattlesLastUpdated: get().totalBattlesLastUpdated,
+        };
+        console.log("[DIAG] Backed up current state:", backup);
+
+        // 2. Add dummy rating and sync to cloud
+        get().updateRating(TEST_POKEMON_ID, { mu: TEST_MU, sigma: TEST_SIGMA });
+        console.log("[DIAG] Wrote dummy rating for Pokemon:", TEST_POKEMON_ID);
+        await get().syncToCloud();
+        console.log("[DIAG] Synced to cloud.");
+
+        // 3. Clear local ratings (simulate logout/device switch)
+        set({
+          ratings: {},
+          pendingBattles: [],
+          refinementQueue: [],
+          totalBattles: 0,
+          totalBattlesLastUpdated: Date.now(),
+        });
+        console.log("[DIAG] Local store cleared. Should be empty now.");
+
+        // 4. Reload from cloud
+        await get().loadFromCloud();
+        console.log("[DIAG] Loaded from cloud.");
+
+        // 5. Validate dummy rating is present
+        const ratings = get().ratings;
+        const found = !!ratings[TEST_POKEMON_ID] && ratings[TEST_POKEMON_ID].mu === TEST_MU && ratings[TEST_POKEMON_ID].sigma === TEST_SIGMA;
+        if (found) {
+          console.log("%c[DIAG] ✅ Cloud sync diagnostic succeeded! Rating is present after reload.", "color: green; font-weight: bold;");
+        } else {
+          console.error("[DIAG] ❌ Cloud sync diagnostic failed! Rating was NOT found after reload.");
+        }
+        // 6. Clean up: remove test rating and restore original data
+        set({
+          ratings: backup.ratings,
+          pendingBattles: backup.pendingBattles,
+          refinementQueue: backup.refinementQueue,
+          totalBattles: backup.totalBattles,
+          totalBattlesLastUpdated: backup.totalBattlesLastUpdated,
+        });
+        console.log("[DIAG] Store restored to previous state. Diagnostics complete.");
+
+        // Show a toast for user feedback (if available)
+        try {
+          // Lazy import so we don't break SSR/tests
+          const { toast } = await import("@/hooks/use-toast");
+          toast({
+            title: found
+              ? "Cloud Sync Test Succeeded"
+              : "Cloud Sync Test Failed",
+            description: found
+              ? "Cloud saving and loading are working as expected! See console for details."
+              : "Cloud test failed (see console for details, please report this bug).",
+            variant: found ? "default" : "destructive",
+            duration: 7000,
+          });
+        } catch (e) {
+          // Ignore toast errors in case it's not available in some contexts
+        }
       },
     }),
     {
