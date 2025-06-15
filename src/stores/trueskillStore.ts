@@ -65,9 +65,10 @@ interface TrueSkillStore {
   mergeCloudData: (cloudData: any) => void;
   waitForHydration: () => Promise<void>;
   restoreSessionFromCloud: (userId: string) => Promise<void>;
+  
+  // New action
+  setSessionId: (newId: string) => void;
 }
-
-const generateSessionId = () => crypto.randomUUID();
 
 // Debounce delay for syncing to the server (in milliseconds)
 const SYNC_DEBOUNCE_DELAY = 1500;
@@ -86,6 +87,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       totalBattles: 0,
       totalBattlesLastUpdated: Date.now(),
       initiatePendingBattle: false,
+
+      setSessionId: (newId: string) => {
+        const oldId = get().sessionId;
+        if (oldId !== newId) {
+          console.log(`🚨🚨🚨 [SESSION_ID_FIX] Changing Session ID from (old): ${oldId} to (new): ${newId}`);
+          set({ sessionId: newId });
+        }
+      },
 
       updateRating: (pokemonId: string, rating: Rating) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] UpdateRating called for Pokemon ${pokemonId}`);

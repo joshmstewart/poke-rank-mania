@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -18,12 +17,13 @@ interface BattleData {
 export const useCloudSync = () => {
   const { user, session } = useAuth();
   // Using a selector to prevent unnecessary re-renders from state changes we don't care about here.
-  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore(
+  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud, setSessionId } = useTrueSkillStore(
     (state) => ({
       smartSync: state.smartSync,
       getAllRatings: state.getAllRatings,
       isHydrated: state.isHydrated,
       restoreSessionFromCloud: state.restoreSessionFromCloud,
+      setSessionId: state.setSessionId,
     })
   );
   const hasPerformedAuthCleanup = useRef(false);
@@ -36,6 +36,10 @@ export const useCloudSync = () => {
     if (effectiveUserId && !hasPerformedAuthCleanup.current) {
       console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Authenticated user detected. Ensuring sync readiness.');
       
+      // CRITICAL CHANGE: Set the session ID to the user's ID to fetch correct data
+      console.log(`🚨🚨🚨 [SESSION_ID_FIX] Overwriting session ID with authenticated user ID: ${effectiveUserId}`);
+      setSessionId(effectiveUserId);
+
       // 1. Clear any potential stale data from an anonymous session.
       console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Clearing anonymous data from localStorage to prevent conflicts.');
       localStorage.removeItem('trueskill-storage');
@@ -50,7 +54,7 @@ export const useCloudSync = () => {
       // 3. Mark cleanup as done to prevent it from running again.
       hasPerformedAuthCleanup.current = true;
     }
-  }, [user, session, isHydrated]);
+  }, [user, session, isHydrated, setSessionId]);
 
   useEffect(() => {
     const checkEdgeFunctionHealth = async () => {
