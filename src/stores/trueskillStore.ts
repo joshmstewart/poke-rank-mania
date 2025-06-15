@@ -1,6 +1,7 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Rating } from 'ts-trueskill';
+import { rate, Rating } from 'ts-trueskill';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -67,6 +68,7 @@ interface TrueSkillStore {
   restoreSessionFromCloud: (userId: string) => Promise<void>;
   
   // New action
+  processBattle: (teams: string[][], ranks?: number[]) => void;
   setSessionId: (newId: string) => void;
   clearLocalStateForAuthUser: () => void;
 }
@@ -311,6 +313,45 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       setInitiatePendingBattle: (value: boolean) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] SetInitiatePendingBattle called with value: ${value}`);
         set({ initiatePendingBattle: value });
+      },
+
+      processBattle: (teams: string[][], ranks?: number[]) => {
+        console.log(`[TrueSkill Store] Processing battle result for teams:`, teams);
+        const state = get();
+        const now = Date.now();
+
+        // Get current ratings for all participants
+        const currentRatingsTeams = teams.map(team =>
+          team.map(id => state.getRating(id))
+        );
+
+        // Calculate new ratings
+        const newRatingsTeams = rate(currentRatingsTeams, { ranks });
+
+        const newRatingsState: Record<string, TrueSkillRating> = { ...state.ratings };
+
+        // Update ratings for all participants
+        teams.forEach((team, teamIndex) => {
+          team.forEach((id, playerIndex) => {
+            const newRating = newRatingsTeams[teamIndex][playerIndex];
+            newRatingsState[id] = {
+              mu: newRating.mu,
+              sigma: newRating.sigma,
+              battleCount: (state.ratings[id]?.battleCount || 0) + 1,
+              lastUpdated: now,
+            };
+          });
+        });
+        
+        // All participants battled, so increment total battles once.
+        set({
+          ratings: newRatingsState,
+          totalBattles: state.totalBattles + 1,
+          totalBattlesLastUpdated: now,
+        });
+
+        console.log(`[TrueSkill Store] Battle processed. New total battles: ${get().totalBattles}`);
+        get().syncToCloud();
       },
 
       mergeCloudData: (cloudData: any) => {

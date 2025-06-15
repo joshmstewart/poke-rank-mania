@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -8,7 +7,6 @@ import { useBattleMilestones } from "./useBattleMilestones";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
 import { useBattleStatePersistence } from "@/hooks/useBattleStatePersistence";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
-import { useBattleResultProcessor } from "./useBattleResultProcessor";
 
 export const useBattleStateCore = (
   allPokemon: Pokemon[],
@@ -20,7 +18,7 @@ export const useBattleStateCore = (
   // DEPRECATED: This hook is now a no-op, all persistence is via TrueSkill store.
   useBattleStatePersistence();
   
-  const { getAllRatings, totalBattles } = useTrueSkillStore();
+  const { totalBattles, processBattle } = useTrueSkillStore();
   
   // CRITICAL FIX: The source of truth for battle count is now the TrueSkill store.
   const [battlesCompleted, setBattlesCompleted] = useState(totalBattles);
@@ -49,12 +47,6 @@ export const useBattleStateCore = (
   
   // CRITICAL: Get shared refinement queue
   const refinementQueue = useSharedRefinementQueue();
-
-  // CRITICAL: Add battle result processor
-  const { processResult: processBattleResult } = useBattleResultProcessor(
-    battleResults,
-    setBattleResults
-  );
 
   // Sync local state when store changes. This ensures UI updates correctly.
   useEffect(() => {
@@ -165,12 +157,6 @@ export const useBattleStateCore = (
   const handlePokemonSelect = useCallback((pokemonId: number) => {
     console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== Pokemon Selection =====`);
     console.log(`🎯🎯🎯 [POKEMON_SELECT] Pokemon ${pokemonId} selected`);
-    console.log(`🎯🎯🎯 [POKEMON_SELECT] Current battle: ${currentBattle.map(p => `${p.name}(${p.id})`).join(' vs ')}`);
-    
-    // CRITICAL: Log store state at the moment of Pokemon selection
-    const selectRatings = getAllRatings();
-    const selectRatingCount = Object.keys(selectRatings).length;
-    console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${selectRatingCount} ratings at moment of selection`);
     
     if (isProcessingResult) {
       console.log(`🎯🎯🎯 [POKEMON_SELECT] Already processing, ignoring selection`);
@@ -183,94 +169,107 @@ export const useBattleStateCore = (
     if (battleType === "pairs" && newSelection.length === 1) {
       console.log(`🎯🎯🎯 [POKEMON_SELECT] Pairs battle completed`);
       
-      const newBattlesCompleted = battlesCompleted + 1;
-      console.log(`🎯🎯🎯 [POKEMON_SELECT] New battles completed: ${newBattlesCompleted}`);
-      
-      // Add current battle Pokemon to recently used IMMEDIATELY
       addToRecentlyUsed(currentBattle);
       
-      // CRITICAL: Process battle result using the proper processor
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ===== CALLING BATTLE PROCESSOR =====`);
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Selections: ${newSelection}`);
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Battle type: ${battleType}`);
-      console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] Current battle Pokemon: ${currentBattle.map(p => `${p.name}(${p.id})`).join(', ')}`);
-      
-      const battleResult = processBattleResult(newSelection, battleType, currentBattle);
-      
-      if (battleResult) {
-        console.log(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ✅ Battle result processed successfully`);
-        
-        // Update state
-        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
-        setBattlesCompleted(newBattlesCompleted);
-        setSelectedPokemon([]);
-        
-        // CRITICAL: Log store state immediately after battle completion but before milestone check
-        const postBattleRatings = getAllRatings();
-        const postBattleCount = Object.keys(postBattleRatings).length;
-        console.log(`🎯🎯🎯 [POKEMON_SELECT] ===== POST-BATTLE STORE STATE =====`);
-        console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${postBattleCount} ratings after battle #${newBattlesCompleted}`);
-        
-        // Check for milestone BEFORE starting next battle
-        const hitMilestone = checkForMilestone(newBattlesCompleted);
-        
-        if (hitMilestone) {
-          console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
-          setShowingMilestone(true);
-          
-          // Generate rankings from TrueSkill store
-          const rankings = generateRankingsFromTrueSkill();
-          setFinalRankings(rankings);
-          setRankingGenerated(true);
-          
-          // CRITICAL: Log store state during milestone processing
-          const milestoneRatings = getAllRatings();
-          const milestoneCount = Object.keys(milestoneRatings).length;
-          console.log(`🎯🎯🎯 [POKEMON_SELECT] Store has ${milestoneCount} ratings during milestone processing`);
-        } else {
-          console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
-          setTimeout(() => {
-            startNewBattle();
-          }, 100);
-        }
+      // NEW: Centralized battle processing
+      const winnerId = newSelection[0];
+      const loser = currentBattle.find(p => p.id !== winnerId);
+      if (loser) {
+        console.log(`🔥🔥🔥 [BATTLE_PROCESSOR] Processing pair battle. Winner: ${winnerId}, Loser: ${loser.id}`);
+        processBattle([[String(winnerId)], [String(loser.id)]]);
       } else {
-        console.error(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ❌ Battle result processing failed`);
+        console.error(`🔥🔥🔥 [BATTLE_PROCESSOR] Could not find loser in pair battle.`);
+      }
+      
+      setBattleHistory(prev => [...prev, { battle: currentBattle, selected: newSelection }]);
+      setSelectedPokemon([]); // Reset selection for next battle
+        
+      // Use the store's battle count for milestone check.
+      const newBattlesCompleted = totalBattles + 1;
+        
+      // Check for milestone BEFORE starting next battle
+      const hitMilestone = checkForMilestone(newBattlesCompleted);
+      
+      if (hitMilestone) {
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
+        setShowingMilestone(true);
+        
+        // Generate rankings from TrueSkill store
+        const rankings = generateRankingsFromTrueSkill();
+        setFinalRankings(rankings);
+        setRankingGenerated(true);
+      } else {
+        console.log(`🎯🎯🎯 [POKEMON_SELECT] No milestone hit, starting next battle`);
+        setTimeout(() => {
+          startNewBattle();
+        }, 100);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromTrueSkill, getAllRatings, processBattleResult]);
+  }, [
+    selectedPokemon, 
+    battleType, 
+    currentBattle, 
+    isProcessingResult, 
+    addToRecentlyUsed, 
+    processBattle,
+    totalBattles,
+    battleHistory, 
+    checkForMilestone, 
+    startNewBattle, 
+    generateRankingsFromTrueSkill
+  ]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
     if (battleType === "triplets" && selectedPokemon.length === 2) {
       console.log(`🎯 [TRIPLET_SELECT] Triplet battle completed, processing result`);
       
-      const newBattlesCompleted = battlesCompleted + 1;
-      
       addToRecentlyUsed(currentBattle);
       
-      // Process triplet battle result
-      const battleResult = processBattleResult(selectedPokemon, battleType, currentBattle);
+      // NEW: Centralized battle processing
+      const winnerId = selectedPokemon[0];
+      const runnerUpId = selectedPokemon[1];
+      const loser = currentBattle.find(p => p.id !== winnerId && p.id !== runnerUpId);
+
+      if (loser) {
+        console.log(`🔥🔥🔥 [BATTLE_PROCESSOR] Processing triplet battle. Ranks: ${winnerId}, ${runnerUpId}, ${loser.id}`);
+        processBattle(
+          [[String(winnerId)], [String(runnerUpId)], [String(loser.id)]],
+          [0, 1, 2] // Ranks: 0=1st, 1=2nd, 2=3rd
+        );
+      } else {
+         console.error(`🔥🔥🔥 [BATTLE_PROCESSOR] Could not find loser in triplet battle.`);
+      }
       
-      if (battleResult) {
-        setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
-        setBattlesCompleted(newBattlesCompleted);
-        setSelectedPokemon([]);
+      setBattleHistory(prev => [...prev, { battle: currentBattle, selected: selectedPokemon }]);
+      setSelectedPokemon([]);
         
-        const hitMilestone = checkForMilestone(newBattlesCompleted);
-        
-        if (hitMilestone) {
-          setShowingMilestone(true);
-          const rankings = generateRankingsFromTrueSkill();
-          setFinalRankings(rankings);
-          setRankingGenerated(true);
-        } else {
-          setTimeout(() => {
-            startNewBattle();
-          }, 100);
-        }
+      const newBattlesCompleted = totalBattles + 1;
+      const hitMilestone = checkForMilestone(newBattlesCompleted);
+      
+      if (hitMilestone) {
+        setShowingMilestone(true);
+        const rankings = generateRankingsFromTrueSkill();
+        setFinalRankings(rankings);
+        setRankingGenerated(true);
+      } else {
+        setTimeout(() => {
+          startNewBattle();
+        }, 100);
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromTrueSkill, processBattleResult]);
+  }, [
+    battleType,
+    selectedPokemon,
+    currentBattle,
+    totalBattles,
+    addToRecentlyUsed,
+    processBattle,
+    battleHistory,
+    checkForMilestone,
+    startNewBattle,
+    generateRankingsFromTrueSkill,
+  ]);
 
   // CRITICAL FIX: Listen for refinement queue updates and force new battles
   useEffect(() => {
@@ -323,6 +322,7 @@ export const useBattleStateCore = (
       setSelectedPokemon([]);
       setBattleHistory(prev => prev.slice(0, -1));
       setBattleResults(prev => prev.slice(0, -1));
+      // This is imperfect as it doesn't revert TrueSkill, but it's a simple UI undo
       setBattlesCompleted(prev => prev - 1);
     }
   }, [battleHistory]);
