@@ -457,8 +457,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         };
         console.log("[DIAG] Backed up current state:", backup);
 
-        // 2. Add dummy rating and sync to cloud
-        get().updateRating(TEST_POKEMON_ID, { mu: TEST_MU, sigma: TEST_SIGMA });
+        // 2. Add dummy rating and sync to cloud (use proper Rating instance)
+        get().updateRating(TEST_POKEMON_ID, new Rating(TEST_MU, TEST_SIGMA));
         console.log("[DIAG] Wrote dummy rating for Pokemon:", TEST_POKEMON_ID);
         await get().syncToCloud();
         console.log("[DIAG] Synced to cloud.");
