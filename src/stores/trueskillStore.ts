@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { StateStorage, persist } from 'zustand/middleware';
+import { StateStorage, persist, createJSONStorage } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -576,7 +576,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
     }),
     {
       name: 'trueskill-storage',
-      storage: conditionalStorage,
+      storage: createJSONStorage(() => conditionalStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // This logic now only runs for ANONYMOUS users
