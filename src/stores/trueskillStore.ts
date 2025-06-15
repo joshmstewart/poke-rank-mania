@@ -68,6 +68,7 @@ interface TrueSkillStore {
   
   // New action
   setSessionId: (newId: string) => void;
+  clearLocalStateForAuthUser: () => void;
 }
 
 // Debounce delay for syncing to the server (in milliseconds)
@@ -96,6 +97,17 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           console.log(`🚨🚨🚨 [SESSION_ID_FIX] Changing Session ID from (old): ${oldId} to (new): ${newId}`);
           set({ sessionId: newId });
         }
+      },
+
+      clearLocalStateForAuthUser: () => {
+        console.log(`🚨🚨🚨 [AUTH_HYDRATION_FIX] Clearing local state before syncing authenticated user data.`);
+        set({
+          ratings: {},
+          pendingBattles: [],
+          refinementQueue: [],
+          totalBattles: 0,
+          totalBattlesLastUpdated: 0,
+        });
       },
 
       updateRating: (pokemonId: string, rating: Rating) => {

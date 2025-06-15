@@ -17,13 +17,15 @@ interface BattleData {
 export const useCloudSync = () => {
   const { user, session } = useAuth();
   // Using a selector to prevent unnecessary re-renders from state changes we don't care about here.
-  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud, setSessionId } = useTrueSkillStore(
+  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud, setSessionId, sessionId, clearLocalStateForAuthUser } = useTrueSkillStore(
     (state) => ({
       smartSync: state.smartSync,
       getAllRatings: state.getAllRatings,
       isHydrated: state.isHydrated,
       restoreSessionFromCloud: state.restoreSessionFromCloud,
       setSessionId: state.setSessionId,
+      sessionId: state.sessionId,
+      clearLocalStateForAuthUser: state.clearLocalStateForAuthUser,
     })
   );
   const hasPerformedAuthCleanup = useRef(false);
@@ -32,29 +34,30 @@ export const useCloudSync = () => {
   useEffect(() => {
     const effectiveUserId = user?.id || session?.user?.id;
     
-    // This effect should only run once per authenticated session.
-    if (effectiveUserId && !hasPerformedAuthCleanup.current) {
-      console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Authenticated user detected. Ensuring sync readiness.');
+    // This effect should only run when an authenticated user is detected and their
+    // ID does not match the session ID currently in the store. This indicates
+    // a transition from an anonymous session to an authenticated one.
+    if (effectiveUserId && sessionId !== effectiveUserId) {
+      console.log('🚨🚨🚨 [AUTH_TRANSITION] User ID / Session ID mismatch detected. Handling transition.');
+      console.log(`- Store Session ID: ${sessionId}`);
+      console.log(`- Auth User ID:     ${effectiveUserId}`);
       
-      // CRITICAL CHANGE: Set the session ID to the user's ID to fetch correct data
-      console.log(`🚨🚨🚨 [SESSION_ID_FIX] Overwriting session ID with authenticated user ID: ${effectiveUserId}`);
+      // Step 1: Clear any stale data from the previous anonymous session.
+      // This is a local-only operation and does not sync to the cloud.
+      clearLocalStateForAuthUser();
+
+      // Step 2: Set the session ID to the correct user ID. This will trigger
+      // a re-render and stop this effect from running in a loop.
       setSessionId(effectiveUserId);
 
-      // 1. Clear any potential stale data from an anonymous session.
-      console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Clearing anonymous data from localStorage to prevent conflicts.');
-      localStorage.removeItem('trueskill-storage');
-      
-      // 2. Force hydration status to true to unblock the main sync effect.
-      // This is safe because for authenticated users, the source of truth is always the cloud.
+      // Step 3: If the store wasn't hydrated, force it to true to unblock
+      // the main sync logic which relies on this flag.
       if (!isHydrated) {
-        console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Forcing isHydrated=true to break deadlock and start cloud sync.');
+        console.log('🚨🚨🚨 [AUTH_TRANSITION] Forcing isHydrated=true to start cloud sync.');
         useTrueSkillStore.setState({ isHydrated: true });
       }
-      
-      // 3. Mark cleanup as done to prevent it from running again.
-      hasPerformedAuthCleanup.current = true;
     }
-  }, [user, session, isHydrated, setSessionId]);
+  }, [user, session, isHydrated, sessionId, setSessionId, clearLocalStateForAuthUser]);
 
   useEffect(() => {
     const checkEdgeFunctionHealth = async () => {
