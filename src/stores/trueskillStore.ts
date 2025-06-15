@@ -60,6 +60,7 @@ interface TrueSkillStore {
   // Mode switch coordination
   setInitiatePendingBattle: (value: boolean) => void;
   setSyncStatus: (inProgress: boolean) => void;
+  setSessionReconciled: (reconciled: boolean) => void;
   
   // Simplified cloud sync action
   syncToCloud: () => Promise<void>;
