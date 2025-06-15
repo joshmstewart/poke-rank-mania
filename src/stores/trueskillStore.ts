@@ -326,8 +326,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       },
 
       loadFromCloud: async () => {
-        // Loads session for logged-in user only
-        const session = (await supabase.auth.getSession()).data?.session;
+        const { data: { session } } = await supabase.auth.getSession();
         const userId = session?.user?.id;
         if (!userId) {
           console.log('[SYNC_AUDIT] User not logged in, skipping cloud load.');
@@ -336,12 +335,26 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         }
         const data = await loadTrueSkillSession();
         if (data && data.ratings_data) {
+          // Ensure types are correct before hydrating the store
+          let safeRatings: Record<string, TrueSkillRating> = {};
+          if (typeof data.ratings_data === 'object' && data.ratings_data !== null && !Array.isArray(data.ratings_data)) {
+            safeRatings = data.ratings_data;
+          }
+          let safePendingBattles: number[] = [];
+          if (Array.isArray(data.pending_battles)) {
+            safePendingBattles = data.pending_battles;
+          }
+          let safeRefinementQueue: RefinementBattle[] = [];
+          if (Array.isArray(data.refinement_queue)) {
+            safeRefinementQueue = data.refinement_queue;
+          }
+
           set({
-            ratings: data.ratings_data,
-            totalBattles: data.total_battles,
-            totalBattlesLastUpdated: data.total_battles_last_updated,
-            pendingBattles: data.pending_battles || [],
-            refinementQueue: data.refinement_queue || [],
+            ratings: safeRatings,
+            totalBattles: typeof data.total_battles === 'number' ? data.total_battles : 0,
+            totalBattlesLastUpdated: typeof data.total_battles_last_updated === 'number' ? data.total_battles_last_updated : Date.now(),
+            pendingBattles: safePendingBattles,
+            refinementQueue: safeRefinementQueue,
             isHydrated: true
           });
         } else {
