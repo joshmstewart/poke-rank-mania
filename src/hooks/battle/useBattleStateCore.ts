@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { Pokemon } from "@/services/pokemon";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { useBattleGeneration } from "./useBattleGeneration";
 import { useBattleRankings } from "./useBattleRankings";
@@ -32,7 +32,7 @@ export const useBattleStateCore = (
   const [battleResults, setBattleResults] = useState<any[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
   const [rankingGenerated, setRankingGenerated] = useState(false);
-  const [finalRankings, setFinalRankings] = useState<any[]>([]);
+  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [confidenceScores, setConfidenceScores] = useState<any[]>([]);
   const [battleHistory, setBattleHistory] = useState<any[]>([]);
   const [activeTier, setActiveTier] = useState<any>("All");
@@ -217,9 +217,8 @@ export const useBattleStateCore = (
           console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
           setShowingMilestone(true);
           
-          // Generate rankings from actual battle history
-          const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: newSelection }];
-          const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+          // Generate rankings from TrueSkill store
+          const rankings = generateRankingsFromTrueSkill();
           setFinalRankings(rankings);
           setRankingGenerated(true);
           
@@ -237,7 +236,7 @@ export const useBattleStateCore = (
         console.error(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ❌ Battle result processing failed`);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processBattleResult]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromTrueSkill, getAllRatings, processBattleResult]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
@@ -260,8 +259,7 @@ export const useBattleStateCore = (
         
         if (hitMilestone) {
           setShowingMilestone(true);
-          const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: selectedPokemon }];
-          const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+          const rankings = generateRankingsFromTrueSkill();
           setFinalRankings(rankings);
           setRankingGenerated(true);
         } else {
@@ -271,7 +269,7 @@ export const useBattleStateCore = (
         }
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processBattleResult]);
+  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromTrueSkill, processBattleResult]);
 
   // CRITICAL FIX: Listen for refinement queue updates and force new battles
   useEffect(() => {
@@ -342,11 +340,11 @@ export const useBattleStateCore = (
   }, [battlesCompleted, battleResults, finalRankings]);
 
   const generateRankings = useCallback(() => {
-    console.log(`📊 [GENERATE_RANKINGS] Generating rankings from ${battleResults.length} results`);
-    const rankings = generateRankingsFromBattleHistory(battleHistory);
+    console.log(`📊 [GENERATE_RANKINGS] Generating rankings from TrueSkill store`);
+    const rankings = generateRankingsFromTrueSkill();
     setFinalRankings(rankings);
     setRankingGenerated(true);
-  }, [generateRankingsFromBattleHistory, battleHistory]);
+  }, [generateRankingsFromTrueSkill]);
 
   const performFullBattleReset = useCallback(() => {
     performCompleteReset();
