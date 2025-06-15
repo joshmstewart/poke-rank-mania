@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DndContext, DragOverlay, closestCenter, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { LoadingState } from "./LoadingState";
@@ -140,8 +139,6 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
             <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
               <RankingsSection 
                 displayRankings={displayRankings}
-                onManualReorder={handleManualReorder}
-                onLocalReorder={handleLocalReorder}
                 pendingRefinements={new Set()}
                 availablePokemon={filteredAvailablePokemon}
               />
