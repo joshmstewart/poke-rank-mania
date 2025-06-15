@@ -1,5 +1,7 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
+import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
@@ -70,33 +72,37 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  // When context is 'ranked', it's inside DragDropGrid's SortableContext, so it shouldn't be sortable itself.
-  const isSelfSortable = context !== 'ranked';
+  // If context is 'available', we want to use useDraggable because there's no SortableContext.
+  // If context is 'ranked', the parent SortableRankedCard handles sorting.
+  const isAvailableContext = context === 'available';
 
-  const sortableResult = useSortable({ 
-    id: isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`,
-    disabled: !isDraggable || isOpen || !isSelfSortable,
-    data: {
-      type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
-      pokemon: pokemon,
-      source: context,
-      index,
-      isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
-    }
+  const id = isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`;
+  const data = {
+    type: isAvailableContext ? 'available-pokemon' : 'ranked-pokemon',
+    pokemon: pokemon,
+    source: context,
+    index,
+    isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
+  };
+
+  const draggable = useDraggable({
+    id,
+    data,
+    disabled: !isDraggable || isOpen || !isAvailableContext,
   });
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = sortableResult;
+  
+  const sortable = useSortable({ 
+    id,
+    data,
+    disabled: !isDraggable || isOpen || isAvailableContext,
+  });
+  
+  const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
+  const transition = !isAvailableContext ? sortable.transition : undefined;
 
   const style = {
-    transform: isSelfSortable ? CSS.Transform.toString(transform) : undefined,
-    transition: isSelfSortable ? transition : undefined,
+    transform: CSS.Transform.toString(transform),
+    transition,
     opacity: isDragging ? 0.4 : 1,
     minHeight: '140px',
     minWidth: '140px',
@@ -140,7 +146,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   return (
     <div
-      ref={isSelfSortable ? setNodeRef : null}
+      ref={isAvailableContext ? setNodeRef : null}
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
@@ -149,8 +155,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable && !isOpen && isSelfSortable ? attributes : {})}
-      {...(isDraggable && !isOpen && isSelfSortable ? listeners : {})}
+      {...(isDraggable && !isOpen && isAvailableContext ? attributes : {})}
+      {...(isDraggable && !isOpen && isAvailableContext ? listeners : {})}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
