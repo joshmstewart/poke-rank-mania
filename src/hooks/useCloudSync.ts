@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -14,6 +15,7 @@ export const useCloudSync = () => {
     setSessionId,
     syncInProgress,
     setSyncStatus,
+    setSessionReconciled,
   } = useTrueSkillStore((state) => ({
     smartSync: state.smartSync,
     getAllRatings: state.getAllRatings,
@@ -22,6 +24,7 @@ export const useCloudSync = () => {
     setSessionId: state.setSessionId,
     syncInProgress: state.syncInProgress,
     setSyncStatus: state.setSyncStatus,
+    setSessionReconciled: state.setSessionReconciled,
   }));
 
   useEffect(() => {
@@ -86,8 +89,7 @@ export const useCloudSync = () => {
         console.log(
           `🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`
         );
-        // Potentially load anonymous session here if desired in the future.
-        // For now, we only sync for logged-in users to fix the primary issue.
+        setSessionReconciled(false); // Can't be reconciled without a user
         return;
       }
 
@@ -156,11 +158,18 @@ export const useCloudSync = () => {
         } else {
           console.log(`🚨🚨🚨 [SYNC_AUDIT] Session ID is aligned.`);
         }
+        
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session reconciliation complete. Unlocking writes.`);
+        setSessionReconciled(true);
+
       } catch (error) {
         console.error(
           '🚨🚨🚨 [SYNC_AUDIT] Failed to fetch profile for reconciliation:',
           error
         );
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ Session not reconciled due to error. Writes will be blocked.`);
+        setSessionReconciled(false); // Keep writes blocked
+        return; // Exit here.
       }
 
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting main smart sync.`);
@@ -184,7 +193,7 @@ export const useCloudSync = () => {
     };
 
     syncAndReconcile();
-  }, [user?.id, session?.user?.id, isHydrated]); // Re-run when user or hydration state changes
+  }, [user?.id, session?.user?.id, isHydrated, sessionId, setSessionId, setSessionReconciled, getAllRatings, smartSync]); // Re-run when user or hydration state changes
 
   const triggerManualSync = useCallback(async () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== MANUAL SYNC TRIGGERED =====`);

@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -29,6 +28,7 @@ interface TrueSkillStore {
   totalBattles: number;
   totalBattlesLastUpdated: number;
   initiatePendingBattle: boolean;
+  sessionReconciled: boolean;
   
   // Actions
   setSessionId: (newSessionId: string) => void;
@@ -85,6 +85,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       totalBattles: 0,
       totalBattlesLastUpdated: Date.now(),
       initiatePendingBattle: false,
+      sessionReconciled: false,
 
       setSessionId: (newSessionId: string) => {
         const oldSessionId = get().sessionId;
@@ -293,6 +294,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         set({ syncInProgress: inProgress });
       },
 
+      setSessionReconciled: (reconciled: boolean) => {
+        set({ sessionReconciled: reconciled });
+      },
+
       mergeCloudData: (cloudData: any) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== TIMESTAMP-BASED MERGE =====`);
         const currentState = get();
@@ -353,6 +358,11 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
         const state = get();
         
+        if (!state.sessionReconciled) {
+          console.warn(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Session not yet reconciled. Aborting write.`);
+          return;
+        }
+
         if (state.syncInProgress) {
           console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync already in progress, aborting`);
           return;
