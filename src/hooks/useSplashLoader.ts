@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/auth/useAuth';
 
 interface SplashLoaderState {
   isLoading: boolean;
@@ -15,49 +14,47 @@ export const useSplashLoader = () => {
     progress: 0
   });
   
-  const { loading } = useAuth();
-  const startTime = useRef(Date.now());
-  const minDisplayTime = 2000;
   const hasStarted = useRef(false);
-  const isCompleted = useRef(false);
+  const startTime = useRef(Date.now());
+  const minDisplayTime = 2000; // 2 seconds minimum
 
   useEffect(() => {
-    // CRITICAL FIX: Only run once when auth is ready and not already started
-    if (loading || hasStarted.current || isCompleted.current) {
+    // CRITICAL FIX: Make splash completely independent and time-based
+    if (hasStarted.current) {
       return;
     }
 
     hasStarted.current = true;
-    console.log('🔄 [SPLASH_LOADER] Starting simplified splash sequence');
+    console.log('🔄 [SPLASH_LOADER] Starting independent splash sequence');
 
-    const runSimplifiedSplash = async () => {
+    const runSplashSequence = async () => {
       try {
-        // Phase 1: Quick startup sequence
+        // Phase 1: Quick startup
         setState(prev => ({ 
           ...prev, 
-          loadingStatus: 'Loading authentication...', 
-          progress: 20 
+          loadingStatus: 'Loading system...', 
+          progress: 25 
         }));
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Phase 2: System preparation
+        // Phase 2: Preparation
         setState(prev => ({ 
           ...prev, 
-          loadingStatus: 'Preparing system...', 
-          progress: 50 
+          loadingStatus: 'Preparing interface...', 
+          progress: 60 
         }));
         
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 600));
         
         // Phase 3: Final setup
         setState(prev => ({ 
           ...prev, 
-          loadingStatus: 'Finalizing...', 
-          progress: 80 
+          loadingStatus: 'Almost ready...', 
+          progress: 90 
         }));
         
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 400));
         
         // Phase 4: Complete
         setState(prev => ({ 
@@ -66,18 +63,17 @@ export const useSplashLoader = () => {
           progress: 100 
         }));
         
-        // Wait for minimum display time
+        // Ensure minimum display time
         const elapsed = Date.now() - startTime.current;
         const remaining = Math.max(0, minDisplayTime - elapsed);
         
         if (remaining > 0) {
-          console.log(`🔍 [SPLASH_LOADER] Waiting ${remaining}ms for minimum display time`);
+          console.log(`🔍 [SPLASH_LOADER] Waiting ${remaining}ms for minimum display`);
           await new Promise(resolve => setTimeout(resolve, remaining));
         }
         
-        // Mark as completed and finish
-        isCompleted.current = true;
-        console.log('✅ [SPLASH_LOADER] Splash sequence complete - transitioning to app');
+        // Always complete after sequence
+        console.log('✅ [SPLASH_LOADER] Splash sequence complete - showing app');
         
         setState(prev => ({ 
           ...prev, 
@@ -85,20 +81,19 @@ export const useSplashLoader = () => {
         }));
         
       } catch (error) {
-        console.error('🔄 [SPLASH_LOADER] Splash sequence failed:', error);
-        // Even on error, complete the splash
-        isCompleted.current = true;
+        console.error('🔄 [SPLASH_LOADER] Splash sequence error:', error);
+        // Force complete even on error
         setState(prev => ({ 
           ...prev, 
           isLoading: false,
-          loadingStatus: 'Loading complete',
+          loadingStatus: 'Ready!',
           progress: 100
         }));
       }
     };
 
-    runSimplifiedSplash();
-  }, [loading]); // FIXED: Only depend on stable auth loading state
+    runSplashSequence();
+  }, []); // CRITICAL: Empty dependency array - run only once
 
   return state;
 };

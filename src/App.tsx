@@ -1,5 +1,4 @@
-
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import BattleMode from "@/components/battle/BattleModeCore";
 import AppHeader from "@/components/layout/AppHeader";
@@ -100,15 +99,25 @@ function AppContent() {
 }
 
 function AppWithSplash() {
-  // Now we can safely use the splash loader since we're inside the AuthProvider
   const { isLoading, loadingStatus, progress } = useSplashLoader();
+  const [forceShowApp, setForceShowApp] = useState(false);
   
-  // Show splash page during loading
-  if (isLoading) {
+  // CRITICAL FAILSAFE: Force show app after maximum time
+  useEffect(() => {
+    const failsafeTimer = setTimeout(() => {
+      console.log('🚨 [FAILSAFE] Force showing app after timeout');
+      setForceShowApp(true);
+    }, 8000); // 8 seconds maximum
+    
+    return () => clearTimeout(failsafeTimer);
+  }, []);
+  
+  // Show splash page during loading (unless forced)
+  if (isLoading && !forceShowApp) {
     return <SplashPage loadingStatus={loadingStatus} progress={progress} />;
   }
   
-  // Once splash is done, show the main app content
+  // Show the main app content
   return (
     <PokemonRankerProvider>
       <RefinementQueueProvider>
