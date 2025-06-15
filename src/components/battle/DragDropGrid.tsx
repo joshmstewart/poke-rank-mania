@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   SortableContext,
@@ -36,12 +35,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     }
   });
 
-  // Include ranked Pokemon IDs AND available Pokemon IDs for proper collision detection
-  const sortableItems = [
-    ...displayRankings.map(p => p.id),
-    ...availablePokemon.map(p => `available-${p.id}`),
-    ...Array.from({length: 10}, (_, i) => `collision-placeholder-${i}`)
-  ];
+  // Only ranked Pokemon IDs are sortable for the grid reordering effect
+  const sortableItems = displayRankings.map(p => p.id);
 
   return (
     <div 
@@ -85,4 +80,3 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
 };
 
 export default DragDropGrid;
-
