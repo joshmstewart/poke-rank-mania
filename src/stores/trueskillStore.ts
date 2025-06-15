@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { StateStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,43 +72,6 @@ interface TrueSkillStore {
 }
 
 const generateSessionId = () => crypto.randomUUID();
-
-const isAuthenticated = () => {
-    try {
-        // This key is specific to the Supabase project
-        const key = `sb-irgivbujlgezbxosxqgb-auth-token`;
-        const token = localStorage.getItem(key);
-        if (!token) return false;
-        const parsedToken = JSON.parse(token);
-        return !!parsedToken.access_token;
-    } catch (e) {
-        // If parsing fails or localStorage is not available, assume not authenticated
-        return false;
-    }
-};
-
-const conditionalStorage: StateStorage = {
-  getItem: (name) => {
-    if (isAuthenticated()) {
-      console.log('🔐 [AUTH_STORAGE] Authenticated user: SKIPPING localStorage read.');
-      return null;
-    }
-    console.log('👤 [AUTH_STORAGE] Anonymous user: Reading from localStorage.');
-    return localStorage.getItem(name);
-  },
-  setItem: (name, value) => {
-    if (isAuthenticated()) {
-        console.log('🔐 [AUTH_STORAGE] Authenticated user: SKIPPING localStorage write.');
-    } else {
-        console.log('👤 [AUTH_STORAGE] Anonymous user: Writing to localStorage.');
-        localStorage.setItem(name, value);
-    }
-  },
-  removeItem: (name) => {
-    console.log(`🗑️ [AUTH_STORAGE] Removing '${name}' from localStorage.`);
-    localStorage.removeItem(name);
-  },
-};
 
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
@@ -505,8 +468,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
           if (error) {
             console.warn(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state, using local.`, error.message);
-            set({ isHydrated: true });
-            // Don't throw, just proceed with local data.
+            // Don't throw, just proceed. App will be marked as hydrated in `finally`.
           }
           
           if (result && result.success) {
@@ -515,14 +477,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             
             get().mergeCloudData(result);
             
-            // Sync the potentially merged data back to the cloud.
-            await get().syncToCloud();
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Merge complete. Any subsequent user action will trigger a sync.`);
           } else {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] No data from cloud or call failed. Using local state only.`);
-            set({ isHydrated: true });
           }
-          
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync complete - hydration flag set`);
           
         } catch (error) {
           console.error(`🚨🚨🚨 [SYNC_AUDIT] Smart sync failed:`, error);
@@ -531,10 +489,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             description: 'Could not sync with the cloud. Check console for details.',
             variant: 'destructive',
           });
-          set({ isHydrated: true }); // Ensure app doesn't hang
         } finally {
-          set({ syncInProgress: false });
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync operation complete`);
+          // CRITICAL: Mark hydration as complete HERE. This unblocks the UI after cloud sync attempt.
+          set({ isHydrated: true, syncInProgress: false });
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync operation complete. Hydration is now marked as TRUE.`);
         }
       },
 
@@ -576,28 +534,40 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
     }),
     {
       name: 'trueskill-storage',
-      storage: conditionalStorage,
       onRehydrateStorage: () => (state) => {
+        const supabaseAuthToken = localStorage.getItem('sb-irgivbujlgezbxosxqgb-auth-token');
+
         if (state) {
-          // This logic now only runs for ANONYMOUS users
-          if ('batchMode' in state) {
-            delete (state as any).batchMode;
+          if (supabaseAuthToken) {
+            console.log(`🚨🚨🚨 [HYDRATION_BYPASS] Auth token found. Resetting state and deferring hydration until cloud sync completes.`);
+            // A user is logged in. The cloud is the source of truth.
+            // Reset state BUT DO NOT mark as hydrated yet. This is the key fix.
+            state.ratings = {};
+            state.pendingBattles = [];
+            state.refinementQueue = [];
+            state.totalBattles = 0;
+            state.totalBattlesLastUpdated = 0;
+            state.lastSyncTime = 0;
+            state.sessionReconciled = false; // CRITICAL: This MUST be false to trigger cloud sync.
+            state.isHydrated = false; // CRITICAL: Defer hydration until smartSync is done.
+            
+            console.log(`🚨🚨🚨 [HYDRATION_BYPASS] State has been reset. Waiting for useCloudSync to populate and set hydration flag.`);
+          } else {
+            console.log(`🚨🚨🚨 [HYDRATION] Anonymous user. Hydrating from localStorage.`);
+            // This is an anonymous user. The localStorage is their source of truth.
+            state.sessionReconciled = true; // No cloud profile to reconcile with.
+            state.isHydrated = true; // Hydrated from local storage.
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete for anonymous user.`);
           }
-          const now = Date.now();
-          Object.keys(state.ratings).forEach(pokemonId => {
-            if (!state.ratings[pokemonId].lastUpdated) {
-              state.ratings[pokemonId].lastUpdated = now;
-            }
-          });
-          
-          if (!state.totalBattlesLastUpdated) {
-            state.totalBattlesLastUpdated = now;
-          }
-          
-          state.isHydrated = true;
-          console.log(`👤 [SYNC_AUDIT] Anonymous Zustand hydration complete.`);
         } else {
-          console.log(`🔐 [SYNC_AUDIT] Authenticated user. Skipping hydration from storage. Awaiting cloud sync.`);
+          // This case happens if there's no localStorage data at all.
+           if (!supabaseAuthToken) {
+             // This is a fresh anonymous user. Their state is the default initial state.
+             // We need useCloudSync to mark them as hydrated.
+             console.log(`🚨🚨🚨 [HYDRATION] No state found in storage for anonymous user. Relying on useCloudSync to set hydration.`);
+           } else {
+             console.log(`🚨🚨🚨 [HYDRATION] No state found in storage for logged-in user. Relying on useCloudSync to set hydration.`);
+           }
         }
       }
     }
