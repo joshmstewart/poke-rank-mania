@@ -478,9 +478,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             
             get().mergeCloudData(result);
             
-            // REMOVED: The call to syncToCloud() was causing recursive loops.
-            // SmartSync's job is to GET and MERGE data. User actions will trigger a save (syncToCloud).
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Merge complete. Any subsequent user action will trigger a sync.`);
+            // Sync the potentially merged data back to the cloud.
+            await get().syncToCloud();
           } else {
             console.log(`🚨🚨🚨 [SYNC_AUDIT] No data from cloud or call failed. Using local state only.`);
             set({ isHydrated: true });
@@ -545,31 +544,34 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
 
         if (state) {
           if (supabaseAuthToken) {
-            console.log(`🚨🚨🚨 [HYDRATION_BYPASS] Auth token found. Bypassing localStorage data and forcing a clean state for cloud sync.`);
-            // A user is logged in. The cloud is the source of truth.
-            // We MUST clear any state that came from localStorage to prevent conflicts.
-            // The existing sessionId is preserved to allow linking an anonymous session to a new account.
-            state.ratings = {};
-            state.pendingBattles = [];
-            state.refinementQueue = [];
-            state.totalBattles = 0;
-            state.totalBattlesLastUpdated = 0;
-            state.lastSyncTime = 0;
-            state.sessionReconciled = false; // CRITICAL: This MUST be false to trigger cloud sync.
-            
-            console.log(`🚨🚨🚨 [HYDRATION_BYPASS] State has been reset. Ready for cloud reconciliation.`);
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] User session token found. Marking session as unreconciled to force cloud check.`);
+            // When a user is logged in, we can't trust the local data until we've
+            // compared it with the cloud. Mark it for reconciliation.
+            state.sessionReconciled = false;
           } else {
-            console.log(`🚨🚨🚨 [HYDRATION] Anonymous user. Hydrating from localStorage.`);
-            // This is an anonymous user. The localStorage is their source of truth.
-            state.sessionReconciled = true; // No cloud profile to reconcile with.
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Anonymous session detected. No reconciliation needed.`);
+            // Anonymous users don't have a cloud profile to reconcile with.
+            state.sessionReconciled = true; 
           }
 
-          // This ensures that even if we bypass, the hydration status is correctly set.
+          // Common hydration logic for both authenticated and anonymous users
+          if ('batchMode' in state) {
+            delete (state as any).batchMode;
+          }
+          // Migrate old data without timestamps
+          const now = Date.now();
+          Object.keys(state.ratings).forEach(pokemonId => {
+            if (!state.ratings[pokemonId].lastUpdated) {
+              state.ratings[pokemonId].lastUpdated = now;
+            }
+          });
+          
+          if (!state.totalBattlesLastUpdated) {
+            state.totalBattlesLastUpdated = now;
+          }
+          
           state.isHydrated = true;
           console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete. Session reconciled: ${state.sessionReconciled}`);
-        } else {
-          // This case happens if there's no localStorage data at all.
-          console.log(`🚨🚨🚨 [HYDRATION] No state found in storage. Initializing fresh state.`);
         }
       }
     }
