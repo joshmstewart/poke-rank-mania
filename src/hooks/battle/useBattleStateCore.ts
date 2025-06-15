@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -43,7 +44,7 @@ export const useBattleStateCore = (
 
   // Use smaller hooks
   const { generateNewBattle, addToRecentlyUsed, resetRecentlyUsed } = useBattleGeneration(allPokemon);
-  const { generateRankingsFromBattleHistory } = useBattleRankings();
+  const { generateRankingsFromTrueSkill } = useBattleRankings();
   const { milestones, checkForMilestone } = useBattleMilestones();
   
   // CRITICAL: Get shared refinement queue
