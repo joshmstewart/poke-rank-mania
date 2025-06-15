@@ -1,6 +1,5 @@
 import React from "react";
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
@@ -105,18 +104,11 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
 
             {/* Rankings Card */}
             <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
-              <SortableContext 
-                items={displayRankings.map(p => p.id.toString())} 
-                strategy={verticalListSortingStrategy}
-              >
-                <RankingsSection
-                  displayRankings={displayRankings}
-                  onManualReorder={handleManualReorder}
-                  onLocalReorder={handleLocalReorder}
-                  pendingRefinements={new Set()}
-                  availablePokemon={enhancedAvailablePokemon}
-                />
-              </SortableContext>
+              <RankingsSection
+                displayRankings={displayRankings}
+                pendingRefinements={new Set()}
+                availablePokemon={enhancedAvailablePokemon}
+              />
             </Card>
           </div>
         </div>

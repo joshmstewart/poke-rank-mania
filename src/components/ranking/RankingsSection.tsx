@@ -6,16 +6,12 @@ import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
-  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
-  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   pendingRefinements?: Set<number>;
   availablePokemon?: any[];
 }
 
 export const RankingsSection: React.FC<RankingsSectionProps> = ({
   displayRankings,
-  onManualReorder,
-  onLocalReorder,
   pendingRefinements = new Set(),
   availablePokemon = []
 }) => {
@@ -30,12 +26,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
 
   const handleMarkAsPending = (pokemonId: number) => {
     // For manual mode, we don't need special pending logic like battle mode
-  };
-
-  const handleLocalReorderWrapper = (newRankings: (Pokemon | RankedPokemon)[]) => {
-    if (onLocalReorder) {
-      onLocalReorder(newRankings);
-    }
   };
 
   return (
@@ -58,8 +48,6 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
           displayRankings={displayRankings}
           localPendingRefinements={pendingRefinements}
           pendingBattleCounts={new Map()}
-          onManualReorder={onManualReorder || (() => {})}
-          onLocalReorder={handleLocalReorderWrapper}
           onMarkAsPending={handleMarkAsPending}
           availablePokemon={availablePokemon}
         />
@@ -67,4 +55,3 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
     </div>
   );
 };
-
