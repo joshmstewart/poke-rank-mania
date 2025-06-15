@@ -1,9 +1,20 @@
+
 import React from "react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+} from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
+  arrayMove,
 } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
 
@@ -26,24 +37,55 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  // Set up a droppable zone that accepts available Pokemon
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'rankings-grid-drop-zone',
-    data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  });
+  // We do our own DndContext/SortableContext (was missing before!)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 2 },
+    })
+  );
 
-  // Only ranked Pokemon IDs are sortable for the grid reordering effect
+  const [activeId, setActiveId] = React.useState<number | null>(null);
+
+  // Only ranked Pokémon IDs as sortable items
   const sortableItems = displayRankings.map(p => p.id);
 
+  // Save dragged Pokémon (for overlay)
+  const activePokemon = activeId !== null
+    ? displayRankings.find((p) => p.id === activeId)
+    : null;
+
+  // Handle drag events in this grid!
+  const handleDragStart = (event: DragStartEvent) => {
+    const dragIdStr = event.active.id.toString();
+    const dragId = Number(dragIdStr);
+    setActiveId(dragId);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
+
+    const activeIdx = displayRankings.findIndex(p => p.id === Number(active.id));
+    const overIdx = displayRankings.findIndex(p => p.id === Number(over.id));
+    if (activeIdx === -1 || overIdx === -1) return;
+
+    // Move in local list for immediate feedback
+    const newOrder = arrayMove(displayRankings, activeIdx, overIdx);
+    onLocalReorder(newOrder);
+
+    // Update score/order in store immediately
+    onManualReorder(Number(active.id), activeIdx, overIdx);
+  };
+
   return (
-    <div 
-      ref={setNodeRef}
-      className={`transition-colors min-h-36 ${isOver ? 'bg-yellow-50/50' : ''}`}
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
-      <SortableContext 
+      <SortableContext
         items={sortableItems}
         strategy={rectSortingStrategy}
       >
@@ -57,7 +99,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
             displayRankings.map((pokemon, index) => {
               const isPending = localPendingRefinements.has(pokemon.id);
               const pendingCount = pendingBattleCounts.get(pokemon.id) || 0;
-              
               return (
                 <DraggablePokemonMilestoneCard
                   key={pokemon.id}
@@ -75,7 +116,21 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           )}
         </div>
       </SortableContext>
-    </div>
+      <DragOverlay>
+        {activePokemon ? (
+          <DraggablePokemonMilestoneCard
+            pokemon={activePokemon}
+            index={displayRankings.findIndex(p => p.id === activePokemon.id)}
+            isPending={localPendingRefinements.has(activePokemon.id)}
+            showRank={true}
+            isDraggable={false}
+            isAvailable={false}
+            context="ranked"
+            allRankedPokemon={displayRankings}
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 };
 
