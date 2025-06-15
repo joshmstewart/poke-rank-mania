@@ -284,11 +284,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           src={pokemon.image} 
           alt={pokemon.name}
           className={`w-20 h-20 object-contain transition-all duration-200 ${
-            isDragging && isSelfSortable ? 'scale-110' : ''
+            isDragging && isAvailableContext ? 'scale-110' : ''
           }`}
           style={{ 
             transform: 'translateZ(0)',
-            willChange: isDragging && isSelfSortable ? 'transform' : 'auto'
+            willChange: isDragging && isAvailableContext ? 'transform' : 'auto'
           }}
           loading="lazy"
           onError={(e) => {
@@ -300,7 +300,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       
       {/* Pokemon info */}
       <div className={`bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100 ${
-        isDragging && isSelfSortable ? 'bg-blue-50' : ''
+        isDragging && isAvailableContext ? 'bg-blue-50' : ''
       }`}>
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
           {pokemon.name}
