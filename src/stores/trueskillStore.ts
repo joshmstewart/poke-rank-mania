@@ -540,31 +540,21 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
     {
       name: 'trueskill-storage',
       onRehydrateStorage: () => (state) => {
-        // SECURITY CHECKPOINT: We directly check localStorage for a user session token.
-        // This is the only way to prevent rehydrating stale local data for logged-in users
-        // before the React app and its hooks have a chance to run.
         const supabaseAuthToken = localStorage.getItem('sb-irgivbujlgezbxosxqgb-auth-token');
 
-        if (supabaseAuthToken && state) {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] SECURITY CHECKPOINT: User session token found. Purging local state to force cloud sync.`);
-            // A user is logged in. DO NOT rehydrate from this potentially stale localStorage.
-            // Instead, reset the state to a clean slate. `useCloudSync` will populate it from the cloud.
-            state.ratings = {};
-            state.pendingBattles = [];
-            state.refinementQueue = [];
-            state.totalBattles = 0;
-            state.totalBattlesLastUpdated = 0;
-            state.lastSyncTime = 0;
-            // Mark as "hydrated" from Zustand's perspective, but the state itself is clean.
-            // The app will wait for the real cloud data.
-            state.isHydrated = true;
-            state.sessionReconciled = false; // Not reconciled until useCloudSync runs.
-            return; // Stop further processing of stale data.
-        }
-
         if (state) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Anonymous session detected. Proceeding with hydration from localStorage.`);
-          // REMOVED batchMode property from state if it exists
+          if (supabaseAuthToken) {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] User session token found. Marking session as unreconciled to force cloud check.`);
+            // When a user is logged in, we can't trust the local data until we've
+            // compared it with the cloud. Mark it for reconciliation.
+            state.sessionReconciled = false;
+          } else {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Anonymous session detected. No reconciliation needed.`);
+            // Anonymous users don't have a cloud profile to reconcile with.
+            state.sessionReconciled = true; 
+          }
+
+          // Common hydration logic for both authenticated and anonymous users
           if ('batchMode' in state) {
             delete (state as any).batchMode;
           }
@@ -581,7 +571,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           state.isHydrated = true;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete for anonymous session.`);
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete. Session reconciled: ${state.sessionReconciled}`);
         }
       }
     }
