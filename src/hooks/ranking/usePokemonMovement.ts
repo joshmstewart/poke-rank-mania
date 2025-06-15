@@ -12,11 +12,13 @@ export const usePokemonMovement = (
     insertionPosition: number,
     pokemon: any
   ): Promise<boolean> => {
+    console.log(`[Move] Attempting to move ${pokemon.name} (ID: ${pokemonId}) to position ${insertionPosition}`);
     try {
       // Step 1: Remove from available list atomically
       let removalSuccess = false;
       setAvailablePokemon(prev => {
         const pokemonExists = prev.some(p => p.id === pokemonId);
+        console.log(`[Move] Checking available list. Pokemon ${pokemonId} exists: ${pokemonExists}`);
         if (pokemonExists) {
           removalSuccess = true;
           return prev.filter(p => p.id !== pokemonId);
@@ -25,9 +27,12 @@ export const usePokemonMovement = (
       });
       
       if (!removalSuccess) {
+        console.error(`[Move] Failed to remove ${pokemon.name} from available list (not found).`);
+        toast({ title: "Move Error", description: `${pokemon.name} could not be found in the available list.`, variant: 'destructive' });
         return false;
       }
       
+      console.log(`[Move] Removed ${pokemon.name} from available list. Adding to rankings.`);
       // Step 2: Add to rankings using the enhanced manual reorder
       handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
       
@@ -40,6 +45,7 @@ export const usePokemonMovement = (
       return true;
       
     } catch (error) {
+      console.error('[Move] Error during moveFromAvailableToRankings:', error);
       // Rollback: Try to restore Pokemon to available list
       setAvailablePokemon(prev => {
         const pokemonExists = prev.some(p => p.id === pokemonId);

@@ -6,7 +6,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
+import { SortablePokemonCard } from '@/components/ranking/SortablePokemonCard';
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -31,7 +31,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     }
   });
 
-  const sortableItems = displayRankings.map(p => p.id);
+  const sortableItems = displayRankings.map(p => String(p.id));
 
   return (
     <SortableContext
@@ -48,7 +48,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           displayRankings.map((pokemon, index) => {
             const isPending = localPendingRefinements.has(pokemon.id);
             return (
-              <DraggablePokemonMilestoneCard
+              <SortablePokemonCard
                 key={pokemon.id}
                 pokemon={pokemon}
                 index={index}
