@@ -1,14 +1,11 @@
 
 import { useCallback } from 'react';
-import { useTrueSkillStore } from '@/stores/trueskillStore';
-import { Rating } from 'ts-trueskill';
 import { toast } from '@/hooks/use-toast';
 
 export const usePokemonMovement = (
   setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
   handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void
 ) => {
-  const { updateRating } = useTrueSkillStore();
 
   const moveFromAvailableToRankings = useCallback(async (
     pokemonId: number,
@@ -16,11 +13,7 @@ export const usePokemonMovement = (
     pokemon: any
   ): Promise<boolean> => {
     try {
-      // Step 1: Add default rating to TrueSkill store
-      const defaultRating = new Rating(25.0, 8.333);
-      updateRating(pokemonId.toString(), defaultRating);
-      
-      // Step 2: Remove from available list atomically
+      // Step 1: Remove from available list atomically
       let removalSuccess = false;
       setAvailablePokemon(prev => {
         const pokemonExists = prev.some(p => p.id === pokemonId);
@@ -35,7 +28,7 @@ export const usePokemonMovement = (
         return false;
       }
       
-      // Step 3: Add to rankings using the enhanced manual reorder
+      // Step 2: Add to rankings using the enhanced manual reorder
       handleEnhancedManualReorder(pokemonId, -1, insertionPosition);
       
       toast({
@@ -65,7 +58,7 @@ export const usePokemonMovement = (
       
       return false;
     }
-  }, [setAvailablePokemon, handleEnhancedManualReorder, updateRating]);
+  }, [setAvailablePokemon, handleEnhancedManualReorder]);
 
   return {
     moveFromAvailableToRankings

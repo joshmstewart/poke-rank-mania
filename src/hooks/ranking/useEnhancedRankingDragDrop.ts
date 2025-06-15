@@ -152,16 +152,8 @@ export const useEnhancedRankingDragDrop = (
           updateLocalRankings(newRankings);
           handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
         } else if (overIsRankingZone || insertionPosition !== localRankings.length) {
-          const newRankings = [...localRankings];
-          newRankings.splice(insertionPosition, 0, {
-            ...pokemon,
-            score: 25.0,
-            rank: insertionPosition + 1
-          });
-          updateLocalRankings(newRankings);
-          setTimeout(() => {
-            moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
-          }, 0);
+          // MODIFICATION: No optimistic update. Call move function directly.
+          moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
         }
       }
       return;

@@ -18,9 +18,11 @@ export const useEnhancedManualReorder = (
     if (higherNeighborScore !== undefined && lowerNeighborScore !== undefined) {
       return (higherNeighborScore + lowerNeighborScore) / 2;
     } else if (higherNeighborScore !== undefined) {
-      return higherNeighborScore + 1.0;
+      // Dropped at the end of the list, score should be lower than the neighbor above it
+      return higherNeighborScore - 1.0;
     } else if (lowerNeighborScore !== undefined) {
-      return lowerNeighborScore - 1.0;
+      // Dropped at the beginning of the list, score should be higher than the neighbor below it
+      return lowerNeighborScore + 1.0;
     } else {
       return 25.0; // Default TrueSkill rating
     }
@@ -32,7 +34,7 @@ export const useEnhancedManualReorder = (
     destinationIndex: number
   ) => {
     console.log(`[DEBUG] Reordering pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}. Current rankings count: ${finalRankings?.length}`);
-    if (!finalRankings || finalRankings.length === 0) {
+    if (!finalRankings) {
       return;
     }
 
@@ -43,10 +45,12 @@ export const useEnhancedManualReorder = (
       // Handle new Pokemon being added (sourceIndex === -1)
       if (sourceIndex === -1) {
         const allRatings = getAllRatings();
-        const pokemonRating = allRatings[draggedPokemonId.toString()];
+        let pokemonRating = allRatings[draggedPokemonId.toString()];
         
         if (!pokemonRating) {
-          return;
+          // If rating doesn't exist, create a temporary default for processing.
+          // It will be properly set by forceScoreBetweenNeighbors.
+          pokemonRating = { mu: 25.0, sigma: 8.333, battleCount: 0, lastUpdated: Date.now() };
         }
 
         // Find the actual Pokemon data from existing rankings or create new entry
