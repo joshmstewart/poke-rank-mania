@@ -99,22 +99,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
   const transition = !isAvailableContext ? sortable.transition : undefined;
 
-  // Fix Issue 1: Available cards should remain visible when dragging
-  // Fix Issue 2: Ranked cards should have better opacity handling during sort
-  const getOpacity = () => {
-    if (isAvailableContext) {
-      // For available cards, keep them visible when dragging
-      return isDragging ? 0.7 : 1;
-    } else {
-      // For ranked cards, use a more subtle opacity change
-      return isDragging ? 0.3 : 1;
-    }
-  };
-
+  // Simplified opacity handling - let the wrapper handle most cases
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: getOpacity(),
+    opacity: isDragging && isAvailableContext ? 0.7 : 1, // Only handle available context specially
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',

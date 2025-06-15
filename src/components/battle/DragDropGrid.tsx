@@ -41,7 +41,7 @@ const SortableRankedCard: React.FC<{
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0 : 1, // Hide the original while dragging
+    opacity: isDragging ? 0.3 : 1, // Changed from 0 to 0.3 to keep cards visible
     zIndex: isDragging ? 100 : 'auto',
   };
 
