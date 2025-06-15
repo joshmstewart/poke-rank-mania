@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -58,6 +59,7 @@ interface TrueSkillStore {
   
   // Mode switch coordination
   setInitiatePendingBattle: (value: boolean) => void;
+  setSyncStatus: (inProgress: boolean) => void;
   
   // Simplified cloud sync action
   syncToCloud: () => Promise<void>;
@@ -282,6 +284,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
       setInitiatePendingBattle: (value: boolean) => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] SetInitiatePendingBattle called with value: ${value}`);
         set({ initiatePendingBattle: value });
+      },
+
+      setSyncStatus: (inProgress: boolean) => {
+        if (!inProgress) {
+            console.error(`🚨🚨🚨 [SYNC_AUDIT] Forcefully resetting sync status to false.`);
+        }
+        set({ syncInProgress: inProgress });
       },
 
       mergeCloudData: (cloudData: any) => {
