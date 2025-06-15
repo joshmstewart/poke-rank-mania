@@ -23,6 +23,12 @@ export const useEnhancedRankingDragDrop = (
     cardProps: null,
   });
 
+  // Use the new batching actions from the store
+  const { startBatchUpdate, endBatchUpdate } = useTrueSkillStore(state => ({
+    startBatchUpdate: state.startBatchUpdate,
+    endBatchUpdate: state.endBatchUpdate,
+  }));
+
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
     setAvailablePokemon,
@@ -98,6 +104,8 @@ export const useEnhancedRankingDragDrop = (
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     console.log('%c=== DRAG END START ===', 'color: red; font-weight: bold');
     
+    startBatchUpdate(); // Start batching updates
+
     try {
       console.log('%cDragEnd event:', 'color: blue', { 
         activeId: event.active.id, 
@@ -225,9 +233,10 @@ export const useEnhancedRankingDragDrop = (
         }
       }
     } finally {
+      endBatchUpdate(); // End batching and trigger a single sync
       console.log('%c=== DRAG END COMPLETE ===', 'color: red; font-weight: bold');
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings, startBatchUpdate, endBatchUpdate]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
