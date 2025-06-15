@@ -25,24 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyPhoneOtp: authService.verifyPhoneOtp,
   }), [user, session, loading]);
 
-  // Communicate auth state to parent wrapper and handle cleanup
+  // Communicate auth state to parent wrapper
   useEffect(() => {
-    // If a user is authenticated, we must ensure no anonymous data is lingering.
-    // This handles the case where a user logs in.
-    if (authState === 'AUTHENTICATED') {
-      try {
-        if (localStorage.getItem('trueskill-storage')) {
-          console.log('🚨 [AUTH_CLEANUP] Authenticated user detected with legacy anonymous storage. Clearing and reloading for a clean state.');
-          localStorage.removeItem('trueskill-storage');
-          // Reload the page to force the store to re-initialize without persistence.
-          window.location.reload();
-          return; // Stop execution to prevent side-effects before reload
-        }
-      } catch (error) {
-        console.error('🚨 [AUTH_CLEANUP] Failed to check or clear localStorage:', error);
-      }
-    }
-
     // Check if state actually changed
     if (lastAuthStateRef.current !== authState) {
       lastAuthStateRef.current = authState;
