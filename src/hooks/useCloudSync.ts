@@ -1,5 +1,5 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +26,31 @@ export const useCloudSync = () => {
       restoreSessionFromCloud: state.restoreSessionFromCloud,
     })
   );
+  const hasPerformedAuthCleanup = useRef(false);
+
+  // CRITICAL FIX: Handle auth state changes to break hydration deadlocks
+  useEffect(() => {
+    const effectiveUserId = user?.id || session?.user?.id;
+    
+    // This effect should only run once per authenticated session.
+    if (effectiveUserId && !hasPerformedAuthCleanup.current) {
+      console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Authenticated user detected. Ensuring sync readiness.');
+      
+      // 1. Clear any potential stale data from an anonymous session.
+      console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Clearing anonymous data from localStorage to prevent conflicts.');
+      localStorage.removeItem('trueskill-storage');
+      
+      // 2. Force hydration status to true to unblock the main sync effect.
+      // This is safe because for authenticated users, the source of truth is always the cloud.
+      if (!isHydrated) {
+        console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Forcing isHydrated=true to break deadlock and start cloud sync.');
+        useTrueSkillStore.setState({ isHydrated: true });
+      }
+      
+      // 3. Mark cleanup as done to prevent it from running again.
+      hasPerformedAuthCleanup.current = true;
+    }
+  }, [user, session, isHydrated]);
 
   useEffect(() => {
     const checkEdgeFunctionHealth = async () => {
