@@ -1,6 +1,5 @@
-
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { StateStorage, persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +72,43 @@ interface TrueSkillStore {
 }
 
 const generateSessionId = () => crypto.randomUUID();
+
+const isAuthenticated = () => {
+    try {
+        // This key is specific to the Supabase project
+        const key = `sb-irgivbujlgezbxosxqgb-auth-token`;
+        const token = localStorage.getItem(key);
+        if (!token) return false;
+        const parsedToken = JSON.parse(token);
+        return !!parsedToken.access_token;
+    } catch (e) {
+        // If parsing fails or localStorage is not available, assume not authenticated
+        return false;
+    }
+};
+
+const conditionalStorage: StateStorage = {
+  getItem: (name) => {
+    if (isAuthenticated()) {
+      console.log('🔐 [AUTH_STORAGE] Authenticated user: SKIPPING localStorage read.');
+      return null;
+    }
+    console.log('👤 [AUTH_STORAGE] Anonymous user: Reading from localStorage.');
+    return localStorage.getItem(name);
+  },
+  setItem: (name, value) => {
+    if (isAuthenticated()) {
+        console.log('🔐 [AUTH_STORAGE] Authenticated user: SKIPPING localStorage write.');
+    } else {
+        console.log('👤 [AUTH_STORAGE] Anonymous user: Writing to localStorage.');
+        localStorage.setItem(name, value);
+    }
+  },
+  removeItem: (name) => {
+    console.log(`🗑️ [AUTH_STORAGE] Removing '${name}' from localStorage.`);
+    localStorage.removeItem(name);
+  },
+};
 
 export const useTrueSkillStore = create<TrueSkillStore>()(
   persist(
@@ -361,10 +397,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         const state = get();
         
         if (!state.sessionReconciled) {
-          console.warn(`🚨🚨🚨 [SYNC_AUDIT] ⚠️ SYNC WARNING: Session not yet reconciled. Proceeding with write anyway to prevent data loss. Data will be merged later.`);
-          // PREVIOUSLY: This was a hard block (`return;`). 
-          // NOW: We allow the sync to proceed to prevent losing user actions like drag-and-drop.
-          // The robust reconciliation logic will handle merging this data later.
+          console.warn(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Session not yet reconciled. Aborting write.`);
+          return;
         }
 
         if (state.syncInProgress) {
@@ -387,14 +421,6 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             refinementQueue: state.refinementQueue,
             lastUpdated: new Date().toISOString()
           };
-
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Payload to be sent:`, {
-            sessionId: payload.sessionId,
-            ratingsCount: Object.keys(payload.ratings).length,
-            totalBattles: payload.totalBattles,
-            pendingBattlesCount: payload.pendingBattles.length,
-            refinementQueueCount: payload.refinementQueue.length,
-          });
 
           const { data, error } = await supabase.functions.invoke('sync-trueskill', {
             body: payload
@@ -550,26 +576,13 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
     }),
     {
       name: 'trueskill-storage',
+      storage: conditionalStorage,
       onRehydrateStorage: () => (state) => {
-        const supabaseAuthToken = localStorage.getItem('sb-irgivbujlgezbxosxqgb-auth-token');
-
         if (state) {
-          if (supabaseAuthToken) {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] User session token found. Marking session as unreconciled to force cloud check.`);
-            // When a user is logged in, we can't trust the local data until we've
-            // compared it with the cloud. Mark it for reconciliation.
-            state.sessionReconciled = false;
-          } else {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Anonymous session detected. No reconciliation needed.`);
-            // Anonymous users don't have a cloud profile to reconcile with.
-            state.sessionReconciled = true; 
-          }
-
-          // Common hydration logic for both authenticated and anonymous users
+          // This logic now only runs for ANONYMOUS users
           if ('batchMode' in state) {
             delete (state as any).batchMode;
           }
-          // Migrate old data without timestamps
           const now = Date.now();
           Object.keys(state.ratings).forEach(pokemonId => {
             if (!state.ratings[pokemonId].lastUpdated) {
@@ -582,7 +595,9 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           }
           
           state.isHydrated = true;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Zustand hydration complete. Session reconciled: ${state.sessionReconciled}`);
+          console.log(`👤 [SYNC_AUDIT] Anonymous Zustand hydration complete.`);
+        } else {
+          console.log(`🔐 [SYNC_AUDIT] Authenticated user. Skipping hydration from storage. Awaiting cloud sync.`);
         }
       }
     }
