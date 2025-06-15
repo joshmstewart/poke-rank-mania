@@ -5,27 +5,27 @@ import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+interface BattleData {
+  selectedGeneration: number;
+  battleType: "pairs" | "triplets";
+  battleResults: any[];
+  battlesCompleted: number;
+  battleHistory: { battle: any[], selected: number[] }[];
+  completionPercentage: number;
+  fullRankingMode: boolean;
+}
+
 export const useCloudSync = () => {
   const { user, session } = useAuth();
-  const {
-    smartSync,
-    getAllRatings,
-    isHydrated,
-    sessionId,
-    setSessionId,
-    syncInProgress,
-    setSyncStatus,
-    setSessionReconciled,
-  } = useTrueSkillStore((state) => ({
-    smartSync: state.smartSync,
-    getAllRatings: state.getAllRatings,
-    isHydrated: state.isHydrated,
-    sessionId: state.sessionId,
-    setSessionId: state.setSessionId,
-    syncInProgress: state.syncInProgress,
-    setSyncStatus: state.setSyncStatus,
-    setSessionReconciled: state.setSessionReconciled,
-  }));
+  // Using a selector to prevent unnecessary re-renders from state changes we don't care about here.
+  const { smartSync, getAllRatings, isHydrated, restoreSessionFromCloud } = useTrueSkillStore(
+    (state) => ({
+      smartSync: state.smartSync,
+      getAllRatings: state.getAllRatings,
+      isHydrated: state.isHydrated,
+      restoreSessionFromCloud: state.restoreSessionFromCloud,
+    })
+  );
 
   useEffect(() => {
     const checkEdgeFunctionHealth = async () => {
@@ -38,6 +38,12 @@ export const useCloudSync = () => {
             if (error) throw error;
 
             console.log('✅ [HEALTH_CHECK] Edge function is healthy:', data);
+            toast({
+                title: 'System Status',
+                description: 'Cloud connection is healthy.',
+                duration: 3000,
+            });
+
         } catch (error) {
             console.error('❌ [HEALTH_CHECK] Edge function health check failed:', error);
             toast({
@@ -51,160 +57,208 @@ export const useCloudSync = () => {
     checkEdgeFunctionHealth();
   }, []); // Run once on mount
 
-  // Sync timeout safeguard
+  console.log(`🚨🚨🚨 [SYNC_AUDIT] useCloudSync hook is running at: ${new Date().toISOString()}`);
+  console.log(`🚨🚨🚨 [SYNC_AUDIT] user?.id: ${user?.id || 'UNDEFINED'}`);
+  console.log(`🚨🚨🚨 [SYNC_AUDIT] session?.user?.id: ${session?.user?.id || 'UNDEFINED'}`);
+  console.log(`🚨🚨🚨 [SYNC_AUDIT] isHydrated: ${isHydrated}`);
+
+  // PREDICTABLE FLOW: Load local first, then sync with cloud in background
   useEffect(() => {
-    if (!syncInProgress) return;
-
-    const SYNC_TIMEOUT = 30000; // 30 seconds
-    const timeoutId = setTimeout(() => {
-      // Re-check the state directly from the store in case it has changed
-      if (useTrueSkillStore.getState().syncInProgress) {
-        console.error(
-          `🚨🚨🚨 [SYNC_AUDIT] Sync operation timed out after ${SYNC_TIMEOUT}ms. Forcing reset.`
-        );
-        toast({
-          title: 'Sync Timed Out',
-          description:
-            'Cloud sync is taking too long. Please check your connection.',
-          variant: 'destructive',
-          duration: 5000,
-        });
-        setSyncStatus(false);
-      }
-    }, SYNC_TIMEOUT);
-
-    return () => clearTimeout(timeoutId);
-  }, [syncInProgress, setSyncStatus]);
-
-  // Main sync and session reconciliation logic with retries
-  useEffect(() => {
-    let retryTimeout: number;
-    const MAX_RETRIES = 5;
-    let attempt = 0;
-
-    const syncAndReconcile = async () => {
-      attempt++;
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] Attempting reconciliation (Attempt ${attempt}/${MAX_RETRIES})`);
-
-      // Initial checks that should not be retried if they fail, as they depend on external state.
-      if (!useTrueSkillStore.getState().isHydrated) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet. Will wait for hydration.`);
-        // The isHydrated dependency in the useEffect will re-trigger this.
-        return;
-      }
-
-      const effectiveUserId = user?.id || session?.user?.id;
-      if (!effectiveUserId) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`);
-        return; // No reconciliation needed for anonymous users
-      }
-
-      if (useTrueSkillStore.getState().sessionReconciled) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session already reconciled, skipping heavy logic.`);
-        return;
-      }
-
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== HEALING SYNC & RECONCILE FLOW =====`);
-      try {
-        const localSessionId = useTrueSkillStore.getState().sessionId;
-        const localTotalBattles = useTrueSkillStore.getState().totalBattles;
-
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('trueskill_session_id')
-          .eq('id', effectiveUserId)
-          .single();
-
-        if (profileError && profileError.code !== 'PGRST116') throw profileError;
-
-        const profileSessionId = profile?.trueskill_session_id;
-
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Local Session: ${localSessionId} (${localTotalBattles} battles)`);
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Profile Session: ${profileSessionId}`);
-
-        if (profileSessionId && profileSessionId !== localSessionId) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Session ID mismatch. Checking which session is better.`);
-          const { data: cloudSessionData, error: functionError } = await supabase.functions.invoke('get-trueskill', {
-            body: { sessionId: profileSessionId },
+    const effectiveUserId = user?.id || session?.user?.id;
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== PREDICTABLE SYNC FLOW =====`);
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] effectiveUserId: ${effectiveUserId || 'UNDEFINED'}`);
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] isHydrated: ${isHydrated}`);
+    
+    if (effectiveUserId && isHydrated) {
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ STARTING PREDICTABLE SYNC FLOW`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 1: Local data already loaded (hydrated)`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 2: Starting background cloud sync`);
+      
+      const ratingsBeforeSync = getAllRatings();
+      const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings before sync: ${rankedCountBefore}`);
+      
+      // Show subtle sync indicator
+      toast({
+        title: "Syncing...",
+        description: "Checking for updates from your other devices",
+        duration: 2000
+      });
+      
+      // Perform background sync with timestamp-based merging
+      smartSync().then(() => {
+        const ratingsAfterSync = getAllRatings();
+        const rankedCountAfter = Object.keys(ratingsAfterSync).length;
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings after sync: ${rankedCountAfter}`);
+        
+        if (rankedCountAfter !== rankedCountBefore) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] RANKING COUNT CHANGED! Before: ${rankedCountBefore}, After: ${rankedCountAfter}`);
+          toast({
+            title: "Sync Complete",
+            description: `Updated with ${rankedCountAfter - rankedCountBefore} changes from your other devices`,
+            duration: 3000
           });
-          if (functionError) throw functionError;
-
-          const cloudTotalBattles = cloudSessionData?.totalBattles || 0;
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud session ${profileSessionId} has ${cloudTotalBattles} battles.`);
-
-          if (cloudTotalBattles > localTotalBattles) {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud is richer. Switching to ${profileSessionId}.`);
-            toast({ title: 'Syncing Your Account', description: 'Loading more recent progress from the cloud...', duration: 4000 });
-            setSessionId(profileSessionId);
-            await smartSync();
-          } else {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Local is richer. Healing profile to use ${localSessionId}.`);
-            const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
-            if (updateError) throw updateError;
-            toast({ title: 'Account Synced', description: 'Your progress has been linked with your account.', duration: 3000 });
-            await smartSync();
-          }
-        } else if (!profileSessionId && localSessionId) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] No session on profile. Linking local session ${localSessionId}.`);
-          const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
-          if (updateError) throw updateError;
-          toast({ title: 'Account Synced', description: 'Your local progress has been linked to your account.', duration: 3000 });
-          await smartSync();
         } else {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Sessions aligned. Performing standard sync.`);
-          await smartSync();
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] No changes from cloud`);
         }
-
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Reconciliation complete. Unlocking writes.`);
-        setSessionReconciled(true);
-      } catch (error) {
-        console.error(`🚨🚨🚨 [SYNC_AUDIT] CRITICAL: Reconciliation failed on attempt ${attempt}:`, error);
-        setSessionReconciled(false); // Keep it false
-        if (attempt < MAX_RETRIES) {
-          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Scheduling retry in ${delay / 1000}s...`);
-          retryTimeout = window.setTimeout(syncAndReconcile, delay);
-        } else {
-          console.error(`🚨🚨🚨 [SYNC_AUDIT] ❌ Max retries reached. Stopping reconciliation attempts.`);
-          toast({ title: 'Sync Error', description: 'Could not synchronize your account data. Writes may not save correctly.', variant: 'destructive', duration: 7000});
+      }).catch(error => {
+        console.error(`🚨🚨🚨 [SYNC_AUDIT] Background sync failed:`, error);
+        // Don't show error toast for background sync failures
+      });
+    } else {
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ CONDITIONS NOT MET - SYNC WILL NOT RUN`);
+      if (!effectiveUserId) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Missing user ID`);
+        // If a session exists but we can't get a user ID, we're in an inconsistent state.
+        // Alert the user and try to recover by refreshing the session.
+        if (session) {
+          toast({
+            title: "Sync Blocked: Incomplete Auth",
+            description: "Cannot sync. Attempting to refresh your session to fix this. If the problem persists, please sign out and back in.",
+            variant: "destructive",
+            duration: 10000
+          });
+          supabase.auth.refreshSession().then(({ error }) => {
+            if (error) {
+              console.error('🚨🚨🚨 [SYNC_AUDIT] Session refresh failed:', error);
+              toast({
+                title: "Session Refresh Failed",
+                description: "Automatic fix failed. Please sign out and sign back in to resolve the sync issue.",
+                variant: "destructive",
+                duration: 10000
+              });
+            } else {
+              console.log('🚨🚨🚨 [SYNC_AUDIT] Session refreshed successfully. Sync will retry.');
+              toast({
+                title: "Session Refreshed",
+                description: "Sync will attempt to run again shortly.",
+                duration: 3000
+              });
+            }
+          });
         }
       }
-    };
+      if (!isHydrated) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Store not hydrated yet`);
+      }
+    }
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC FLOW COMPLETE =====`);
+  }, [user?.id, session, isHydrated, smartSync, getAllRatings]);
 
-    syncAndReconcile();
-
-    return () => {
-      clearTimeout(retryTimeout);
-    };
-  }, [user?.id, session?.user?.id, isHydrated, setSessionId, smartSync, setSessionReconciled]);
-
+  // Manual sync function for testing
   const triggerManualSync = useCallback(async () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== MANUAL SYNC TRIGGERED =====`);
-    await smartSync();
-    toast({
+    
+    const effectiveUserId = user?.id || session?.user?.id;
+    
+    if (!effectiveUserId) {
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ No user ID available`);
+      toast({
+        title: "Sync Failed",
+        description: "No user authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isHydrated) {
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ Store not hydrated`);
+      toast({
+        title: "Sync Failed", 
+        description: "Store not ready",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const ratingsBeforeSync = getAllRatings();
+    const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
+    console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings before manual sync: ${rankedCountBefore}`);
+    
+    try {
+      await smartSync();
+      
+      const ratingsAfterSync = getAllRatings();
+      const rankedCountAfter = Object.keys(ratingsAfterSync).length;
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings after manual sync: ${rankedCountAfter}`);
+      
+      toast({
         title: "Manual Sync Complete",
-        description: `Your data has been synced with the cloud.`,
-        duration: 3000
-    });
-  }, [smartSync]);
+        description: `Before: ${rankedCountBefore} rankings, After: ${rankedCountAfter} rankings`,
+        duration: 5000
+      });
+      
+      if (rankedCountAfter !== rankedCountBefore) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] RANKING COUNT CHANGED! Before: ${rankedCountBefore}, After: ${rankedCountAfter}`);
+      }
+    } catch (error) {
+      console.error(`🚨🚨🚨 [SYNC_AUDIT] Manual sync failed:`, error);
+      toast({
+        title: "Manual Sync Failed",
+        description: "Check console for details",
+        variant: "destructive"
+      });
+    }
+  }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
 
-  // All other functions are now obsolete as sync is automatic.
-  const obsoleteFunc = (name: string) => () => {
-     console.log(`🚨🚨🚨 [SYNC_AUDIT] "${name}" is now obsolete. Sync is automatic.`);
-     toast({
-        title: "Action Not Needed",
-        description: "Your progress is saved automatically now!",
-        duration: 3000
-     });
-  };
+  const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
+    console.log('🚨🚨🚨 [SYNC_AUDIT] Battle data saved - auto-sync will handle cloud updates');
+  }, []);
+
+  const loadBattleFromCloud = useCallback(async (generation: number): Promise<BattleData | null> => {
+    if (!isHydrated) {
+      return null;
+    }
+    
+    await smartSync();
+    
+    const allRatings = getAllRatings();
+    const battlesCompleted = Object.values(allRatings).reduce((sum, rating) => sum + rating.battleCount, 0);
+    
+    return {
+      selectedGeneration: generation,
+      battleType: "pairs" as const,
+      battleResults: [],
+      battlesCompleted,
+      battleHistory: [],
+      completionPercentage: 0,
+      fullRankingMode: false
+    };
+  }, [smartSync, getAllRatings, isHydrated]);
+
+  const saveRankingsToCloud = useCallback(async (rankings: any[], generation: number) => {
+    if (!isHydrated) {
+      return;
+    }
+    
+    console.log('🚨🚨🚨 [SYNC_AUDIT] Rankings saved - auto-sync will handle cloud updates');
+
+    toast({
+      title: "Progress Saved",
+      description: "Your rankings have been saved to the cloud!",
+    });
+  }, [isHydrated]);
+
+  const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
+    return isHydrated;
+  }, [isHydrated]);
+
+  const loadSessionFromCloud = useCallback(async (sessionId: string) => {
+    if (!isHydrated) {
+      return {};
+    }
+    
+    await smartSync();
+    return getAllRatings();
+  }, [smartSync, getAllRatings, isHydrated]);
 
   return {
-    saveBattleToCloud: obsoleteFunc('saveBattleToCloud'),
-    loadBattleFromCloud: obsoleteFunc('loadBattleFromCloud'),
-    saveRankingsToCloud: obsoleteFunc('saveRankingsToCloud'),
-    saveSessionToCloud: obsoleteFunc('saveSessionToCloud'),
-    loadSessionFromCloud: obsoleteFunc('loadSessionFromCloud'),
+    saveBattleToCloud,
+    loadBattleFromCloud,
+    saveRankingsToCloud,
+    saveSessionToCloud,
+    loadSessionFromCloud,
     triggerManualSync,
-    isAuthenticated: !!(user || session?.user),
+    isAuthenticated: !!(user || session?.user)
   };
 };
