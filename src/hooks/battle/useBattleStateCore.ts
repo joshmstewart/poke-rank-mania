@@ -5,7 +5,6 @@ import { useBattleGeneration } from "./useBattleGeneration";
 import { useBattleRankings } from "./useBattleRankings";
 import { useBattleMilestones } from "./useBattleMilestones";
 import { useSharedRefinementQueue } from "./useSharedRefinementQueue";
-import { useBattleStatePersistence } from "@/hooks/useBattleStatePersistence";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { useBattleResultProcessor } from "./useBattleResultProcessor";
 
@@ -43,7 +42,7 @@ export const useBattleStateCore = (
 
   // Use smaller hooks
   const { generateNewBattle, addToRecentlyUsed, resetRecentlyUsed } = useBattleGeneration(allPokemon);
-  const { generateRankingsFromBattleHistory } = useBattleRankings();
+  const { generateRankingsFromStore } = useBattleRankings();
   const { milestones, checkForMilestone } = useBattleMilestones();
   
   // CRITICAL: Get shared refinement queue
@@ -217,9 +216,8 @@ export const useBattleStateCore = (
           console.log(`🎯🎯🎯 [POKEMON_SELECT] Milestone hit, showing milestone screen`);
           setShowingMilestone(true);
           
-          // Generate rankings from actual battle history
-          const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: newSelection }];
-          const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+          // Generate rankings from the single source of truth: the TrueSkill store.
+          const rankings = generateRankingsFromStore();
           setFinalRankings(rankings);
           setRankingGenerated(true);
           
@@ -237,7 +235,7 @@ export const useBattleStateCore = (
         console.error(`🔥🔥🔥 [POKEMON_SELECT_CRITICAL] ❌ Battle result processing failed`);
       }
     }
-  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, getAllRatings, processBattleResult]);
+  }, [selectedPokemon, battleType, currentBattle, isProcessingResult, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromStore, getAllRatings, processBattleResult]);
 
   // Triplet selection handler
   const handleTripletSelectionComplete = useCallback(() => {
@@ -260,8 +258,7 @@ export const useBattleStateCore = (
         
         if (hitMilestone) {
           setShowingMilestone(true);
-          const newBattleHistory = [...battleHistory, { battle: currentBattle, selected: selectedPokemon }];
-          const rankings = generateRankingsFromBattleHistory(newBattleHistory);
+          const rankings = generateRankingsFromStore();
           setFinalRankings(rankings);
           setRankingGenerated(true);
         } else {
@@ -271,7 +268,7 @@ export const useBattleStateCore = (
         }
       }
     }
-  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromBattleHistory, processBattleResult]);
+  }, [battleType, selectedPokemon, currentBattle, battlesCompleted, checkForMilestone, startNewBattle, addToRecentlyUsed, battleHistory, generateRankingsFromStore, processBattleResult]);
 
   // CRITICAL FIX: Listen for refinement queue updates and force new battles
   useEffect(() => {
@@ -342,11 +339,11 @@ export const useBattleStateCore = (
   }, [battlesCompleted, battleResults, finalRankings]);
 
   const generateRankings = useCallback(() => {
-    console.log(`📊 [GENERATE_RANKINGS] Generating rankings from ${battleResults.length} results`);
-    const rankings = generateRankingsFromBattleHistory(battleHistory);
+    console.log(`📊 [GENERATE_RANKINGS] Generating rankings from TrueSkill store`);
+    const rankings = generateRankingsFromStore();
     setFinalRankings(rankings);
     setRankingGenerated(true);
-  }, [generateRankingsFromBattleHistory, battleHistory]);
+  }, [generateRankingsFromStore]);
 
   const performFullBattleReset = useCallback(() => {
     performCompleteReset();

@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -35,10 +34,6 @@ export const useCloudSync = () => {
     // This effect should only run once per authenticated session.
     if (effectiveUserId && !hasPerformedAuthCleanup.current) {
       console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Authenticated user detected. Ensuring sync readiness.');
-      
-      // 1. Clear any potential stale data from an anonymous session.
-      console.log('🚨🚨🚨 [AUTH_HYDRATION_FIX] Clearing anonymous data from localStorage to prevent conflicts.');
-      localStorage.removeItem('trueskill-storage');
       
       // 2. Force hydration status to true to unblock the main sync effect.
       // This is safe because for authenticated users, the source of truth is always the cloud.
@@ -97,39 +92,16 @@ export const useCloudSync = () => {
     if (effectiveUserId && isHydrated) {
       console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ STARTING PREDICTABLE SYNC FLOW`);
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 1: Local data already loaded (hydrated)`);
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 2: Starting background cloud sync`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Step 2: Background cloud sync check`);
       
       const ratingsBeforeSync = getAllRatings();
       const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
       console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings before sync: ${rankedCountBefore}`);
       
-      // Show subtle sync indicator
-      toast({
-        title: "Syncing...",
-        description: "Checking for updates from your other devices",
-        duration: 2000
-      });
+      // DISABLED: Automatic background sync is turned off to prevent data loss during active battle sessions.
+      // Syncing should be a deliberate user action (e.g., "Save Progress") rather than an automatic background task.
+      console.log('🚨🚨🚨 [SYNC_AUDIT] Automatic background sync is DISABLED. Sync must be triggered manually.');
       
-      // Perform background sync with timestamp-based merging
-      smartSync().then(() => {
-        const ratingsAfterSync = getAllRatings();
-        const rankedCountAfter = Object.keys(ratingsAfterSync).length;
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] Local rankings after sync: ${rankedCountAfter}`);
-        
-        if (rankedCountAfter !== rankedCountBefore) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] RANKING COUNT CHANGED! Before: ${rankedCountBefore}, After: ${rankedCountAfter}`);
-          toast({
-            title: "Sync Complete",
-            description: `Updated with ${rankedCountAfter - rankedCountBefore} changes from your other devices`,
-            duration: 3000
-          });
-        } else {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] No changes from cloud`);
-        }
-      }).catch(error => {
-        console.error(`🚨🚨🚨 [SYNC_AUDIT] Background sync failed:`, error);
-        // Don't show error toast for background sync failures
-      });
     } else {
       console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ CONDITIONS NOT MET - SYNC WILL NOT RUN`);
       if (!effectiveUserId) {
@@ -227,7 +199,7 @@ export const useCloudSync = () => {
   }, [user?.id, session?.user?.id, isHydrated, smartSync, getAllRatings]);
 
   const saveBattleToCloud = useCallback(async (battleData: BattleData) => {
-    console.log('🚨🚨🚨 [SYNC_AUDIT] Battle data saved - auto-sync will handle cloud updates');
+    console.log('🚨🚨🚨 [SYNC_AUDIT] Battle data saved locally. Auto-sync is disabled.');
   }, []);
 
   const loadBattleFromCloud = useCallback(async (generation: number): Promise<BattleData | null> => {
@@ -256,13 +228,16 @@ export const useCloudSync = () => {
       return;
     }
     
-    console.log('🚨🚨🚨 [SYNC_AUDIT] Rankings saved - auto-sync will handle cloud updates');
+    console.log('🚨🚨🚨 [SYNC_AUDIT] Rankings saved locally. Triggering manual sync.');
+
+    // Since auto-sync is off, we manually trigger a sync here as it's a clear user intent to save.
+    await triggerManualSync();
 
     toast({
       title: "Progress Saved",
       description: "Your rankings have been saved to the cloud!",
     });
-  }, [isHydrated]);
+  }, [isHydrated, triggerManualSync]);
 
   const saveSessionToCloud = useCallback(async (sessionId: string, sessionData: any) => {
     return isHydrated;

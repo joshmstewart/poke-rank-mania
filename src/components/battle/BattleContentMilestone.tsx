@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Pokemon, TopNOption, RankedPokemon } from "@/services/pokemon";
 import RankingDisplayContainer from "./RankingDisplayContainer";
+import { useBattleRankings } from "@/hooks/battle/useBattleRankings";
 
 interface BattleContentMilestoneProps {
-  finalRankings: Pokemon[] | RankedPokemon[];
   battlesCompleted: number;
   rankingGenerated: boolean;
   activeTier: TopNOption;
@@ -22,7 +22,6 @@ interface BattleContentMilestoneProps {
 }
 
 const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
-  finalRankings,
   battlesCompleted,
   rankingGenerated,
   activeTier,
@@ -40,7 +39,20 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
   onRankingsUpdate
 }) => {
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] ===== BattleContentMilestone RENDER =====`);
-  console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] finalRankings type: ${Array.isArray(finalRankings) ? 'array' : typeof finalRankings}`);
+
+  // Fetch rankings directly from the source of truth to avoid stale props
+  const { generateRankingsFromStore } = useBattleRankings();
+  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
+
+  useEffect(() => {
+    if (rankingGenerated) {
+      console.log('🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] `rankingGenerated` is true. Fetching fresh rankings from TrueSkill store.');
+      const freshRankings = generateRankingsFromStore();
+      setFinalRankings(freshRankings);
+      console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Fetched ${freshRankings.length} rankings.`);
+    }
+  }, [rankingGenerated, generateRankingsFromStore]);
+  
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] finalRankings length: ${finalRankings?.length || 0}`);
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] battlesCompleted: ${battlesCompleted}`);
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] rankingGenerated: ${rankingGenerated}`);
@@ -92,7 +104,7 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
             <li>Rankings generation is not using the centralized store</li>
           </ul>
           <p className="mt-2">
-            <strong>Debug info:</strong> finalRankings length = {finalRankings?.length || 0}
+            <strong>Debug info:</strong> finalRankings length = {finalRankings?.length || 0}, rankingGenerated = {rankingGenerated}
           </p>
         </div>
       )}
