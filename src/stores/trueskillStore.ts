@@ -424,15 +424,15 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               resolve();
               return;
             }
-            const unsub = useTrueSkillStore.subscribe(
-              (state) => state.isHydrated,
-              (isHydrated) => {
-                if (isHydrated) {
-                  unsub();
-                  resolve();
-                }
+            // Subscribe to the entire state and check manually,
+            // because Zustand's .subscribe((selector), (listener)) overload
+            // may not be available without subscribeWithSelector middleware.
+            const unsub = useTrueSkillStore.subscribe((state) => {
+              if (state.isHydrated) {
+                unsub();
+                resolve();
               }
-            );
+            });
           });
         return await ensureHydrated();
       },
