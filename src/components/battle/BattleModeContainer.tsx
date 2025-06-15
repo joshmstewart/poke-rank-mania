@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import BattleContentHeader from "./BattleContentHeader";
 import BattleContentRenderer from "./BattleContentRenderer";
 import { BattleLogDisplay } from "./BattleLogDisplay";
-import { Pokemon } from "@/services/pokemon";
+import { Pokemon, RankedPokemon, TopNOption } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "@/hooks/battle/types";
 import { useBattleStateSimplified } from "@/hooks/battle/useBattleStateSimplified";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { RefinementQueueProvider } from "./RefinementQueueProvider";
+import { useBattleManualReorder } from "@/hooks/battle/useBattleManualReorder";
 
 interface BattleModeContainerProps {
   allPokemon: Pokemon[];
@@ -98,6 +98,15 @@ const BattleModeContainerContent: React.FC<{
     addBattleLogEntry
   );
 
+  // This function has the correct signature for onRankingsUpdate, despite its potentially confusing name.
+  const onRankingsUpdateCallback = battleState.handleManualReorder as (updatedRankings: RankedPokemon[]) => void;
+
+  const { handleManualReorder } = useBattleManualReorder(
+    battleState.finalRankings,
+    onRankingsUpdateCallback,
+    false
+  );
+
   // CRITICAL FIX: Sync battle count from TrueSkill store
   useEffect(() => {
     console.log(`📊 [BATTLE_COUNT_SYNC] Syncing battle count: TrueSkill=${totalBattles}, battleState=${battleState.battlesCompleted}`);
@@ -145,14 +154,14 @@ const BattleModeContainerContent: React.FC<{
           battleHistory={battleState.battleHistory}
           selectedGeneration={selectedGeneration}
           finalRankings={battleState.finalRankings}
-          activeTier={battleState.activeTier}
+          activeTier={battleState.activeTier as TopNOption}
           milestones={battleState.milestones}
           rankingGenerated={battleState.rankingGenerated}
           isAnyProcessing={battleState.isAnyProcessing}
           setSelectedGeneration={wrappedHandleGenerationChange}
           setBattleType={wrappedHandleBattleTypeChange}
           setShowingMilestone={battleState.setShowingMilestone}
-          setActiveTier={battleState.setActiveTier}
+          setActiveTier={battleState.setActiveTier as React.Dispatch<React.SetStateAction<TopNOption>>}
           handlePokemonSelect={battleState.handlePokemonSelect}
           handleTripletSelectionComplete={battleState.handleTripletSelectionComplete}
           goBack={battleState.goBack}
@@ -162,8 +171,8 @@ const BattleModeContainerContent: React.FC<{
           suggestRanking={battleState.suggestRanking}
           removeSuggestion={battleState.removeSuggestion}
           resetMilestoneInProgress={battleState.resetMilestoneInProgress}
-          handleManualReorder={battleState.handleManualReorder}
-          onRankingsUpdate={() => {}}
+          handleManualReorder={handleManualReorder}
+          onRankingsUpdate={onRankingsUpdateCallback}
           setBattlesCompleted={setBattlesCompleted}
           setBattleResults={setBattleResults}
         />

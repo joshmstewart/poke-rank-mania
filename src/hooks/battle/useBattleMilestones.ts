@@ -9,8 +9,9 @@ export type Milestone = {
 
 export const useBattleMilestones = (battlesCompleted: number = 0) => {
   // Generate milestones dynamically based on current battle count
-  const milestones = useMemo(() => {
-    return generateMilestones(battlesCompleted);
+  const milestones: Milestone[] = useMemo(() => {
+    const milestoneValues = generateMilestones(battlesCompleted);
+    return milestoneValues.map(value => ({ value: value, label: String(value) }));
   }, [battlesCompleted]);
 
   const checkForMilestone = useCallback((newBattlesCompleted: number) => {
