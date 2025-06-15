@@ -9,7 +9,7 @@ export const useMilestoneManager = (battlesCompleted: number, allPokemon: Pokemo
   const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
   const [showingMilestone, setShowingMilestone] = useState(false);
   const lastMilestoneRef = useRef(0);
-  const { generateRankingsFromTrueSkill } = useBattleRankings();
+  const { generateRankingsFromBattleHistory } = useBattleRankings();
 
   useEffect(() => {
     // Prevent running on initial render or if Pokemon data isn't ready
@@ -22,12 +22,12 @@ export const useMilestoneManager = (battlesCompleted: number, allPokemon: Pokemo
       console.log(`🎉 [MILESTONE_MANAGER] Milestone reached: ${battlesCompleted} battles`);
       lastMilestoneRef.current = battlesCompleted;
 
-      const newRankings = generateRankingsFromTrueSkill();
+      const newRankings = generateRankingsFromBattleHistory([]);
       console.log(`🎉 [MILESTONE_MANAGER] Generated ${newRankings.length} rankings for milestone.`);
       setFinalRankings(newRankings);
       setShowingMilestone(true);
     }
-  }, [battlesCompleted, allPokemon, generateRankingsFromTrueSkill]);
+  }, [battlesCompleted, allPokemon, generateRankingsFromBattleHistory]);
 
   return {
     finalRankings,
@@ -36,4 +36,3 @@ export const useMilestoneManager = (battlesCompleted: number, allPokemon: Pokemo
     setShowingMilestone,
   };
 };
-

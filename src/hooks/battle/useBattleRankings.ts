@@ -9,8 +9,9 @@ export const useBattleRankings = () => {
   const { getAllRatings } = useTrueSkillStore();
   const { pokemonLookupMap } = usePokemonContext();
 
-  const generateRankingsFromTrueSkill = useCallback(() => {
-    console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== GENERATING MILESTONE RANKINGS FROM TRUESKILL =====`);
+  const generateRankingsFromBattleHistory = useCallback((battleHistory: any[]) => {
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] ===== GENERATING MILESTONE RANKINGS =====`);
+    console.log(`📊 [BATTLE_RANKINGS_FIXED] Battle history length: ${battleHistory?.length || 0}`);
     
     // Get all TrueSkill ratings from the centralized store
     const allRatings = getAllRatings();
@@ -69,6 +70,6 @@ export const useBattleRankings = () => {
   }, [getAllRatings, pokemonLookupMap]);
 
   return {
-    generateRankingsFromTrueSkill
+    generateRankingsFromBattleHistory
   };
 };
