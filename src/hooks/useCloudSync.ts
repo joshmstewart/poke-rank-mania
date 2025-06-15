@@ -76,143 +76,107 @@ export const useCloudSync = () => {
     return () => clearTimeout(timeoutId);
   }, [syncInProgress, setSyncStatus]);
 
-  // Main sync and session reconciliation logic
+  // Main sync and session reconciliation logic with retries
   useEffect(() => {
-    const syncAndReconcile = async () => {
-      const isAuth = !!(user || session?.user);
+    let retryTimeout: number;
+    const MAX_RETRIES = 5;
+    let attempt = 0;
 
-      // For anonymous users, we must wait for local storage to hydrate.
-      // After that, this hook has no more responsibilities for them.
-      if (!isAuth) {
-        if (!isHydrated) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 Anonymous user, awaiting local storage hydration.`);
-          return;
-        }
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 Anonymous user is hydrated. No cloud sync needed.`);
-        setSessionReconciled(false);
+    const syncAndReconcile = async () => {
+      attempt++;
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Attempting reconciliation (Attempt ${attempt}/${MAX_RETRIES})`);
+
+      // Initial checks that should not be retried if they fail, as they depend on external state.
+      if (!useTrueSkillStore.getState().isHydrated) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet. Will wait for hydration.`);
+        // The isHydrated dependency in the useEffect will re-trigger this.
         return;
       }
-      
-      // For authenticated users, if we are already hydrated, it means
-      // the initial cloud sync has completed. We don't need to run this full flow again.
-      if (isHydrated) {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Authenticated user already synced from cloud. Reconciliation logic will not re-run.`);
-          return;
+
+      const effectiveUserId = user?.id || session?.user?.id;
+      if (!effectiveUserId) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`);
+        return; // No reconciliation needed for anonymous users
       }
 
-      // If we reach here, we are an AUTHENTICATED, NON-HYDRATED user.
-      // This is the trigger for the initial cloud data load.
-      
-      console.log('🔐 [AUTH_CLEANUP] Clearing local trueskill-storage to prevent conflicts.');
-      localStorage.removeItem('trueskill-storage');
+      if (useTrueSkillStore.getState().sessionReconciled) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session already reconciled, skipping heavy logic.`);
+        return;
+      }
 
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== INITIAL CLOUD SYNC & RECONCILE =====`);
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] User ID: ${user?.id || session?.user?.id}`);
-      console.log(
-        `🚨🚨🚨 [SYNC_AUDIT] Current Store Session ID: ${sessionId}`
-      );
-
-      let reconciled = false;
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== HEALING SYNC & RECONCILE FLOW =====`);
       try {
-        const effectiveUserId = user?.id || session?.user?.id;
-        if (!effectiveUserId) { // Should not happen due to checks above, but for type safety
-            console.error("🚨🚨🚨 [SYNC_AUDIT] Logic error: User disappeared during sync flow.");
-            return;
-        }
-        
-        const { data: profile, error } = await supabase
+        const localSessionId = useTrueSkillStore.getState().sessionId;
+        const localTotalBattles = useTrueSkillStore.getState().totalBattles;
+
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('trueskill_session_id')
           .eq('id', effectiveUserId)
           .single();
 
-        if (error && error.code !== 'PGRST116') {
-          // Ignore 'exact one row' error if no profile
-          throw error;
-        }
+        if (profileError && profileError.code !== 'PGRST116') throw profileError;
 
         const profileSessionId = profile?.trueskill_session_id;
 
-        if (profileSessionId && profileSessionId !== sessionId) {
-          console.log(
-            `🚨🚨🚨 [SYNC_AUDIT] Session ID mismatch. Reconciling Store[${sessionId}] with Profile[${profileSessionId}]`
-          );
-          toast({
-            title: 'Syncing Your Account',
-            description: 'Loading your saved progress from the cloud...',
-            duration: 4000,
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Local Session: ${localSessionId} (${localTotalBattles} battles)`);
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] Profile Session: ${profileSessionId}`);
+
+        if (profileSessionId && profileSessionId !== localSessionId) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Session ID mismatch. Checking which session is better.`);
+          const { data: cloudSessionData, error: functionError } = await supabase.functions.invoke('get-trueskill', {
+            body: { sessionId: profileSessionId },
           });
-          setSessionId(profileSessionId);
-          reconciled = true;
-        } else if (!profileSessionId) {
-          console.log(
-            `🚨🚨🚨 [SYNC_AUDIT] No session on profile. Linking current session [${sessionId}] to user [${effectiveUserId}]`
-          );
-          try {
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ trueskill_session_id: sessionId })
-              .eq('id', effectiveUserId);
+          if (functionError) throw functionError;
 
+          const cloudTotalBattles = cloudSessionData?.totalBattles || 0;
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud session ${profileSessionId} has ${cloudTotalBattles} battles.`);
+
+          if (cloudTotalBattles > localTotalBattles) {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud is richer. Switching to ${profileSessionId}.`);
+            toast({ title: 'Syncing Your Account', description: 'Loading more recent progress from the cloud...', duration: 4000 });
+            setSessionId(profileSessionId);
+            await smartSync();
+          } else {
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Local is richer. Healing profile to use ${localSessionId}.`);
+            const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
             if (updateError) throw updateError;
-
-            toast({
-              title: 'Account Synced',
-              description:
-                'Your local progress has been linked to your account.',
-              duration: 3000,
-            });
-          } catch (err) {
-            console.error(
-              `🚨🚨🚨 [SYNC_AUDIT] Failed to link session to profile:`,
-              err
-            );
-            toast({
-              title: 'Sync Error',
-              description:
-                'Could not link your local progress to your account.',
-              variant: 'destructive',
-            });
+            toast({ title: 'Account Synced', description: 'Your progress has been linked with your account.', duration: 3000 });
+            await smartSync();
           }
+        } else if (!profileSessionId && localSessionId) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] No session on profile. Linking local session ${localSessionId}.`);
+          const { error: updateError } = await supabase.from('profiles').update({ trueskill_session_id: localSessionId }).eq('id', effectiveUserId);
+          if (updateError) throw updateError;
+          toast({ title: 'Account Synced', description: 'Your local progress has been linked to your account.', duration: 3000 });
+          await smartSync();
         } else {
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Session ID is aligned.`);
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Sessions aligned. Performing standard sync.`);
+          await smartSync();
         }
-        
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session reconciliation complete. Unlocking writes.`);
+
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Reconciliation complete. Unlocking writes.`);
         setSessionReconciled(true);
-
       } catch (error) {
-        console.error(
-          '🚨🚨🚨 [SYNC_AUDIT] Failed to fetch profile for reconciliation:',
-          error
-        );
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ Session not reconciled due to error. Writes will be blocked.`);
-        setSessionReconciled(false); // Keep writes blocked
-        return; // Exit here.
-      }
-
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting main smart sync.`);
-      const ratingsBeforeSync = getAllRatings();
-      const rankedCountBefore = Object.keys(ratingsBeforeSync).length;
-
-      await smartSync();
-
-      const ratingsAfterSync = getAllRatings();
-      const rankedCountAfter = Object.keys(ratingsAfterSync).length;
-
-      if (reconciled || rankedCountAfter !== rankedCountBefore) {
-        toast({
-          title: 'Sync Complete',
-          description: `Your progress is up to date. ${rankedCountAfter} Pokémon ranked.`,
-          duration: 3000,
-        });
-      } else {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] No new data from cloud.`);
+        console.error(`🚨🚨🚨 [SYNC_AUDIT] CRITICAL: Reconciliation failed on attempt ${attempt}:`, error);
+        setSessionReconciled(false); // Keep it false
+        if (attempt < MAX_RETRIES) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Scheduling retry in ${delay / 1000}s...`);
+          retryTimeout = window.setTimeout(syncAndReconcile, delay);
+        } else {
+          console.error(`🚨🚨🚨 [SYNC_AUDIT] ❌ Max retries reached. Stopping reconciliation attempts.`);
+          toast({ title: 'Sync Error', description: 'Could not synchronize your account data. Writes may not save correctly.', variant: 'destructive', duration: 7000});
+        }
       }
     };
 
     syncAndReconcile();
-  }, [user, session, isHydrated, sessionId, setSessionId, setSessionReconciled, getAllRatings, smartSync]);
+
+    return () => {
+      clearTimeout(retryTimeout);
+    };
+  }, [user?.id, session?.user?.id, isHydrated, setSessionId, smartSync, setSessionReconciled]);
 
   const triggerManualSync = useCallback(async () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== MANUAL SYNC TRIGGERED =====`);
