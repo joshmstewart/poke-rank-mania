@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { rate, Rating } from 'ts-trueskill';
@@ -326,7 +325,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         );
 
         // Calculate new ratings
-        const newRatingsTeams = rate(currentRatingsTeams, { ranks });
+        const newRatingsTeams = rate(currentRatingsTeams, ranks);
 
         const newRatingsState: Record<string, TrueSkillRating> = { ...state.ratings };
 

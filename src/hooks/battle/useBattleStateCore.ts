@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
@@ -18,7 +19,7 @@ export const useBattleStateCore = (
   // DEPRECATED: This hook is now a no-op, all persistence is via TrueSkill store.
   useBattleStatePersistence();
   
-  const { totalBattles, processBattle } = useTrueSkillStore();
+  const { totalBattles, processBattle, getAllRatings } = useTrueSkillStore();
   
   // CRITICAL FIX: The source of truth for battle count is now the TrueSkill store.
   const [battlesCompleted, setBattlesCompleted] = useState(totalBattles);
