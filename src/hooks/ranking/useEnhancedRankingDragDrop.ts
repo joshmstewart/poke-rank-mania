@@ -100,10 +100,17 @@ export const useEnhancedRankingDragDrop = (
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
+    // Prevent dropping an available item onto another available item
+    if (activeId.startsWith('available-') && overId.startsWith('available-')) {
+        return;
+    }
+
     // === DROPPING A RANKED CARD (reorder) ===
-    if (!activeId.startsWith('available-') && !overId.startsWith('available-') && !overId.startsWith('collision-placeholder-')) {
+    if (!activeId.startsWith('available-') && !overId.startsWith('available-')) {
       const activePokemonId = Number(activeId);
       const overPokemonId = Number(overId);
+      
+      if (activePokemonId === overPokemonId) return;
 
       const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
@@ -119,46 +126,37 @@ export const useEnhancedRankingDragDrop = (
       return;
     }
 
+    // === DROPPING AN AVAILABLE CARD (add to rankings) ===
     if (activeId.startsWith('available-')) {
-      const pokemonId = parseInt(activeId.replace('available-', ''));
-      // Accept ANY OVER TARGET that is on the rankings-grid, rankings-drop-zone, or rankings container (let's improve this logic)
-      const overIsRankingZone = (
-        overId === 'rankings-drop-zone' ||
-        overId === 'rankings-grid-drop-zone' ||
-        over.data?.current?.type === 'rankings-container' ||
-        over.data?.current?.type === 'rankings-grid'
-      );
-      let insertionPosition = localRankings.length;
-      if (overIsRankingZone && localRankings.length === 0) {
-        insertionPosition = 0;
-      } else if (
-        !overId.startsWith('available-') &&
-        !overId.startsWith('collision-placeholder-') &&
-        !isNaN(parseInt(overId)) &&
-        localRankings.some(p => p.id === parseInt(overId))
-      ) {
-        const targetIndex = localRankings.findIndex(p => p.id === parseInt(overId));
-        if (targetIndex !== -1) {
-          insertionPosition = targetIndex;
-        }
-      }
+      const pokemonId = parseInt(activeId.replace('available-', ''), 10);
       const pokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
-      if (pokemon) {
-        const isActuallyInRankings = localRankings.some(p => p.id === pokemonId);
 
-        if (isActuallyInRankings) {
-          const currentIndex = localRankings.findIndex(p => p.id === pokemonId);
-          const newRankings = arrayMove(localRankings, currentIndex, insertionPosition);
-          updateLocalRankings(newRankings);
-          handleEnhancedManualReorder(pokemonId, currentIndex, insertionPosition);
-        } else if (overIsRankingZone || insertionPosition !== localRankings.length) {
-          // MODIFICATION: No optimistic update. Call move function directly.
-          moveFromAvailableToRankings(pokemonId, insertionPosition, pokemon);
+      if (!pokemon) return;
+
+      // Determine insertion index
+      let insertionIndex = localRankings.length; // Default to end of list
+
+      const isDroppingOnRankedItem = over.data.current?.type === 'ranked-pokemon';
+      const isDroppingOnRankingsContainer = over.data.current?.type === 'rankings-container' || over.data.current?.type === 'rankings-grid';
+
+      if (isDroppingOnRankedItem) {
+        const overPokemonId = Number(over.id);
+        const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
+        if (targetIndex !== -1) {
+          insertionIndex = targetIndex;
         }
+      } else if (isDroppingOnRankingsContainer) {
+        // If the list is empty, it goes to index 0. Otherwise, to the end.
+        insertionIndex = localRankings.length > 0 ? localRankings.length : 0;
+      }
+
+      const isAlreadyRanked = localRankings.some(p => p.id === pokemonId);
+      if (!isAlreadyRanked) {
+          moveFromAvailableToRankings(pokemonId, insertionIndex, pokemon);
       }
       return;
     }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, triggerReRanking, moveFromAvailableToRankings, updateLocalRankings]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, moveFromAvailableToRankings, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
