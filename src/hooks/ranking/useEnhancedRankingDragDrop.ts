@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
@@ -103,7 +102,7 @@ export const useEnhancedRankingDragDrop = (
     const activeDataType = active.data.current?.type;
     const overDataType = over.data.current?.type;
 
-    console.log(`[DragEnd] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`, over.data.current);
+    console.log(`[DragEnd] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`, { overData: over.data.current });
 
     if (active.id === over.id) return;
     if (activeDataType === 'available-pokemon' && overDataType === 'available-pokemon') return;
@@ -154,7 +153,7 @@ export const useEnhancedRankingDragDrop = (
       if (insertionIndex !== -1) {
         moveFromAvailableToRankings(pokemonId, insertionIndex, pokemonToAdd);
       } else {
-        console.log('[DragEnd] Could not determine insertion point for available pokemon. over data:', over.data.current);
+        console.log('[DragEnd] Could not determine insertion point for available pokemon. over data:', over.data.current, 'over id:', over.id);
       }
       return;
     }

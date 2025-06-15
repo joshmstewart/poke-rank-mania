@@ -1,5 +1,5 @@
+
 import React from "react";
-import { useDroppable } from '@dnd-kit/core';
 import {
   SortableContext,
   rectSortingStrategy,
@@ -69,13 +69,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  const { setNodeRef } = useDroppable({
-    id: 'rankings-grid-drop-zone',
-    data: {
-      type: 'rankings-grid',
-    }
-  });
-
   const sortableItems = displayRankings.map(p => String(p.id));
 
   return (
@@ -83,7 +76,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       items={sortableItems}
       strategy={rectSortingStrategy}
     >
-      <div ref={setNodeRef} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
         {displayRankings.length === 0 ? (
           <div className="h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-white text-gray-400 animate-fade-in select-none opacity-75 col-span-full">
             <span className="mb-1 text-2xl">🡆</span>

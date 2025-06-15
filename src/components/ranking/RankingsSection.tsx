@@ -1,7 +1,8 @@
+
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGrid from "@/components/battle/DragDropGrid";
-// import { useDroppable } from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -14,8 +15,12 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   pendingRefinements = new Set(),
   availablePokemon = []
 }) => {
-  // The droppable logic is now solely handled by DragDropGrid to avoid conflicts.
-  // const { setNodeRef } = useDroppable({ ... });
+  const { setNodeRef } = useDroppable({
+    id: 'rankings-grid-drop-zone',
+    data: {
+      type: 'rankings-grid',
+    }
+  });
 
   const handleMarkAsPending = (pokemonId: number) => {
     // For manual mode, we don't need special pending logic like battle mode
@@ -33,8 +38,9 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - Set up as drop zone but without visual feedback */}
+      {/* Rankings Grid - The entire scrollable area is now a drop zone */}
       <div 
+        ref={setNodeRef}
         className="flex-1 overflow-y-auto p-4"
       >
         <DragDropGrid
