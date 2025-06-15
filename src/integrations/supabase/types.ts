@@ -233,7 +233,7 @@ export type Database = {
           pending_battles: Json | null
           ratings_data: Json
           refinement_queue: Json
-          session_id: string | null
+          session_id: string
           total_battles: number
           total_battles_last_updated: number
           user_id: string | null
@@ -245,7 +245,7 @@ export type Database = {
           pending_battles?: Json | null
           ratings_data?: Json
           refinement_queue?: Json
-          session_id?: string | null
+          session_id: string
           total_battles?: number
           total_battles_last_updated?: number
           user_id?: string | null
@@ -257,7 +257,7 @@ export type Database = {
           pending_battles?: Json | null
           ratings_data?: Json
           refinement_queue?: Json
-          session_id?: string | null
+          session_id?: string
           total_battles?: number
           total_battles_last_updated?: number
           user_id?: string | null
