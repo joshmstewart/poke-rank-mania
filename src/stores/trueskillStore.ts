@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
@@ -360,8 +361,10 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         const state = get();
         
         if (!state.sessionReconciled) {
-          console.warn(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Session not yet reconciled. Aborting write.`);
-          return;
+          console.warn(`🚨🚨🚨 [SYNC_AUDIT] ⚠️ SYNC WARNING: Session not yet reconciled. Proceeding with write anyway to prevent data loss. Data will be merged later.`);
+          // PREVIOUSLY: This was a hard block (`return;`). 
+          // NOW: We allow the sync to proceed to prevent losing user actions like drag-and-drop.
+          // The robust reconciliation logic will handle merging this data later.
         }
 
         if (state.syncInProgress) {
@@ -384,6 +387,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             refinementQueue: state.refinementQueue,
             lastUpdated: new Date().toISOString()
           };
+
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Payload to be sent:`, {
+            sessionId: payload.sessionId,
+            ratingsCount: Object.keys(payload.ratings).length,
+            totalBattles: payload.totalBattles,
+            pendingBattlesCount: payload.pendingBattles.length,
+            refinementQueueCount: payload.refinementQueue.length,
+          });
 
           const { data, error } = await supabase.functions.invoke('sync-trueskill', {
             body: payload

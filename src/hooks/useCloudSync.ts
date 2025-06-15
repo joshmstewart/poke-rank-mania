@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
@@ -75,23 +76,29 @@ export const useCloudSync = () => {
     return () => clearTimeout(timeoutId);
   }, [syncInProgress, setSyncStatus]);
 
-  // Main sync and session reconciliation logic
+  // Main sync and session reconciliation logic with retries
   useEffect(() => {
+    let retryTimeout: number;
+    const MAX_RETRIES = 5;
+    let attempt = 0;
+
     const syncAndReconcile = async () => {
-      if (!isHydrated) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet`);
+      attempt++;
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] Attempting reconciliation (Attempt ${attempt}/${MAX_RETRIES})`);
+
+      // Initial checks that should not be retried if they fail, as they depend on external state.
+      if (!useTrueSkillStore.getState().isHydrated) {
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet. Will wait for hydration.`);
+        // The isHydrated dependency in the useEffect will re-trigger this.
         return;
       }
 
       const effectiveUserId = user?.id || session?.user?.id;
       if (!effectiveUserId) {
-        console.log(
-          `🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`
-        );
-        return;
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`);
+        return; // No reconciliation needed for anonymous users
       }
 
-      // If session is already reconciled from a previous check, we can skip this.
       if (useTrueSkillStore.getState().sessionReconciled) {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Session already reconciled, skipping heavy logic.`);
         return;
@@ -151,13 +158,24 @@ export const useCloudSync = () => {
         console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Reconciliation complete. Unlocking writes.`);
         setSessionReconciled(true);
       } catch (error) {
-        console.error('🚨🚨🚨 [SYNC_AUDIT] CRITICAL: Reconciliation failed:', error);
-        toast({ title: 'Sync Error', description: 'Could not synchronize your account data. Writes are paused.', variant: 'destructive'});
-        setSessionReconciled(false);
+        console.error(`🚨🚨🚨 [SYNC_AUDIT] CRITICAL: Reconciliation failed on attempt ${attempt}:`, error);
+        setSessionReconciled(false); // Keep it false
+        if (attempt < MAX_RETRIES) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] Scheduling retry in ${delay / 1000}s...`);
+          retryTimeout = window.setTimeout(syncAndReconcile, delay);
+        } else {
+          console.error(`🚨🚨🚨 [SYNC_AUDIT] ❌ Max retries reached. Stopping reconciliation attempts.`);
+          toast({ title: 'Sync Error', description: 'Could not synchronize your account data. Writes may not save correctly.', variant: 'destructive', duration: 7000});
+        }
       }
     };
 
     syncAndReconcile();
+
+    return () => {
+      clearTimeout(retryTimeout);
+    };
   }, [user?.id, session?.user?.id, isHydrated, setSessionId, smartSync, setSessionReconciled]);
 
   const triggerManualSync = useCallback(async () => {
