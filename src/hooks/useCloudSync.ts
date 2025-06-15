@@ -79,28 +79,47 @@ export const useCloudSync = () => {
   // Main sync and session reconciliation logic
   useEffect(() => {
     const syncAndReconcile = async () => {
-      if (!isHydrated) {
-        console.log(`🚨🚨🚨 [SYNC_AUDIT] ❌ SYNC HALTED: Store not hydrated yet`);
+      const isAuth = !!(user || session?.user);
+
+      // For anonymous users, we must wait for local storage to hydrate.
+      // After that, this hook has no more responsibilities for them.
+      if (!isAuth) {
+        if (!isHydrated) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 Anonymous user, awaiting local storage hydration.`);
+          return;
+        }
+        console.log(`🚨🚨🚨 [SYNC_AUDIT] 👤 Anonymous user is hydrated. No cloud sync needed.`);
+        setSessionReconciled(false);
         return;
       }
-
-      const effectiveUserId = user?.id || session?.user?.id;
-      if (!effectiveUserId) {
-        console.log(
-          `🚨🚨🚨 [SYNC_AUDIT] 👤 No user logged in, running in anonymous mode.`
-        );
-        setSessionReconciled(false); // Can't be reconciled without a user
-        return;
+      
+      // For authenticated users, if we are already hydrated, it means
+      // the initial cloud sync has completed. We don't need to run this full flow again.
+      if (isHydrated) {
+          console.log(`🚨🚨🚨 [SYNC_AUDIT] ✅ Authenticated user already synced from cloud. Reconciliation logic will not re-run.`);
+          return;
       }
 
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== SYNC & RECONCILE FLOW =====`);
-      console.log(`🚨🚨🚨 [SYNC_AUDIT] User ID: ${effectiveUserId}`);
+      // If we reach here, we are an AUTHENTICATED, NON-HYDRATED user.
+      // This is the trigger for the initial cloud data load.
+      
+      console.log('🔐 [AUTH_CLEANUP] Clearing local trueskill-storage to prevent conflicts.');
+      localStorage.removeItem('trueskill-storage');
+
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== INITIAL CLOUD SYNC & RECONCILE =====`);
+      console.log(`🚨🚨🚨 [SYNC_AUDIT] User ID: ${user?.id || session?.user?.id}`);
       console.log(
         `🚨🚨🚨 [SYNC_AUDIT] Current Store Session ID: ${sessionId}`
       );
 
       let reconciled = false;
       try {
+        const effectiveUserId = user?.id || session?.user?.id;
+        if (!effectiveUserId) { // Should not happen due to checks above, but for type safety
+            console.error("🚨🚨🚨 [SYNC_AUDIT] Logic error: User disappeared during sync flow.");
+            return;
+        }
+        
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('trueskill_session_id')
@@ -193,7 +212,7 @@ export const useCloudSync = () => {
     };
 
     syncAndReconcile();
-  }, [user?.id, session?.user?.id, isHydrated, sessionId, setSessionId, setSessionReconciled, getAllRatings, smartSync]); // Re-run when user or hydration state changes
+  }, [user, session, isHydrated, sessionId, setSessionId, setSessionReconciled, getAllRatings, smartSync]);
 
   const triggerManualSync = useCallback(async () => {
     console.log(`🚨🚨🚨 [SYNC_AUDIT] ===== MANUAL SYNC TRIGGERED =====`);
