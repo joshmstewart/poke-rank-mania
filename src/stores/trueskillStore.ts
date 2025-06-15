@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Rating } from 'ts-trueskill';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TrueSkillRating {
   mu: number;
@@ -366,12 +367,7 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
             const ratingsBeforeSync = Object.keys(state.ratings).length;
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Starting sync - ${ratingsBeforeSync} ratings, ${state.totalBattles} battles`);
             
-            const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/sync-trueskill', {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
-              },
+            const { data: result, error } = await supabase.functions.invoke('sync-trueskill', {
               body: JSON.stringify({
                 sessionId: state.sessionId,
                 ratings: state.ratings,
@@ -383,24 +379,8 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
               })
             });
 
-            const raw = await response.text();
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Sync response status: ${response.status}`);
-
-            if (!response.ok) {
-              throw new Error(`Sync failed: ${response.status} - ${raw}`);
-            }
-
-            let result: any;
-            try {
-              result = JSON.parse(raw);
-            } catch (jsonError) {
-              console.error(`🚨🚨🚨 [SYNC_AUDIT] Failed to parse JSON: ${raw}`);
-              toast({
-                title: 'Cloud Sync Failed',
-                description: 'Could not save progress to the cloud. Your changes are saved locally.',
-                variant: 'destructive',
-              });
-              return;
+            if (error) {
+              throw error;
             }
 
             if (result.success) {
@@ -429,22 +409,14 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
           const ratingsBeforeLoad = Object.keys(get().ratings).length;
           console.log(`🚨🚨🚨 [SYNC_AUDIT] Loading from cloud - current ratings: ${ratingsBeforeLoad}`);
           
-          const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
-            },
+          const { data: result, error } = await supabase.functions.invoke('get-trueskill', {
             body: JSON.stringify({ sessionId: get().sessionId })
           });
           
-          console.log(`🚨🚨🚨 [SYNC_AUDIT] Load response status: ${response.status}`);
-          
-          if (!response.ok) {
-            throw new Error(`Load failed: ${response.status}`);
+          if (error) {
+            throw error;
           }
           
-          const result = await response.json();
           if (result.success && result.ratings) {
             const cloudRatingsCount = Object.keys(result.ratings).length;
             console.log(`🚨🚨🚨 [SYNC_AUDIT] Loaded ${cloudRatingsCount} ratings from cloud`);
@@ -483,29 +455,25 @@ export const useTrueSkillStore = create<TrueSkillStore>()(
         console.log(`🚨🚨🚨 [SYNC_AUDIT] Smart sync starting - current ratings: ${ratingsBeforeSmartSync}`);
 
         try {
-          const response = await fetch('https://irgivbujlgezbxosxqgb.supabase.co/functions/v1/get-trueskill', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyZ2l2YnVqbGdlemJ4b3N4cWdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njg0ODgsImV4cCI6MjA2NDE0NDQ4OH0.KFBQazOEgvy4Q14OHpHLve12brZG7Rgaf_CypY74zrs`
-            },
+          const { data: result, error } = await supabase.functions.invoke('get-trueskill', {
             body: JSON.stringify({ sessionId: state.sessionId }),
           });
 
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              const cloudRatingCount = Object.keys(result.ratings || {}).length;
-              console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud state - ${cloudRatingCount} ratings`);
-              
-              // Use the new merge function
-              get().mergeCloudData(result);
-              
-              // Sync the merged data back to cloud
-              await get().syncToCloud();
-            }
+          if (error) {
+            throw error;
+          }
+
+          if (result.success) {
+            const cloudRatingCount = Object.keys(result.ratings || {}).length;
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Cloud state - ${cloudRatingCount} ratings`);
+            
+            // Use the new merge function
+            get().mergeCloudData(result);
+            
+            // Sync the merged data back to cloud
+            await get().syncToCloud();
           } else {
-            console.log(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state. Using local state only.`);
+            console.log(`🚨🚨🚨 [SYNC_AUDIT] Could not fetch cloud state (success: false). Using local state only.`);
             set({ isHydrated: true });
           }
           
