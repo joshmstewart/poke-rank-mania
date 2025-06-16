@@ -69,22 +69,32 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
     handleComprehensiveReset();
   };
 
-  // CRITICAL FIX: Custom collision detection for better drag handling
+  // CRITICAL FIX: Improved collision detection with better ranking support
   const customCollisionDetection = (args: any) => {
+    const { active, droppableContainers } = args;
+    
+    console.log(`[COLLISION_DETECTION] Active: ${active.id}, Available containers:`, 
+      Array.from(droppableContainers.keys())
+    );
+
     // First try pointer-based detection
     const pointerCollisions = pointerWithin(args);
     if (pointerCollisions.length > 0) {
+      console.log(`[COLLISION_DETECTION] Pointer collision found:`, pointerCollisions);
       return pointerCollisions;
     }
 
     // Fallback to rectangle intersection
     const rectCollisions = rectIntersection(args);
     if (rectCollisions.length > 0) {
+      console.log(`[COLLISION_DETECTION] Rectangle collision found:`, rectCollisions);
       return rectCollisions;
     }
 
     // Final fallback to closest center
-    return closestCenter(args);
+    const centerCollisions = closestCenter(args);
+    console.log(`[COLLISION_DETECTION] Using closest center:`, centerCollisions);
+    return centerCollisions;
   };
 
   return (
@@ -134,14 +144,18 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
         </div>
 
         {/* CRITICAL FIX: Enhanced Drag Overlay with proper z-index and Pokemon card */}
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay 
+          dropAnimation={null}
+          style={{ zIndex: 99999 }}
+        >
           {activeDraggedPokemon ? (
             <div 
               className="transform rotate-2 scale-105 opacity-95" 
               style={{ 
                 zIndex: 99999,
                 position: 'fixed',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                willChange: 'transform'
               }}
             >
               <DraggablePokemonMilestoneCard

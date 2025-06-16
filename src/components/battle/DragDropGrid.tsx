@@ -27,21 +27,21 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onLocalReorder,
   availablePokemon = []
 }) => {
-  // Set up drop zone for rankings grid - FIXED collision detection
+  // CRITICAL FIX: Proper drop zone configuration with explicit accepts
   const { setNodeRef: setDropZoneRef, isOver } = useDroppable({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon'] // This MUST match what's being dragged
+      accepts: ['available-pokemon', 'ranked-pokemon'],
+      context: 'rankings'
     }
   });
 
-  console.log(`[DRAG_DROP_ZONE] Rankings grid drop zone initialized:`, {
+  console.log(`[DRAG_DROP_GRID_DEBUG] Rankings grid drop zone initialized:`, {
     id: 'rankings-grid-drop-zone',
-    setNodeRef: !!setDropZoneRef,
-    isOver,
     accepts: ['available-pokemon', 'ranked-pokemon'],
-    collision_detection: 'FIXED'
+    isOver,
+    rankingsCount: displayRankings.length
   });
 
   const handleMarkAsPending = (pokemonId: number) => {
@@ -50,14 +50,13 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
 
   const gridContent = (
     <div 
-      className={`grid gap-4 mb-6 transition-colors duration-200 ${
-        isOver ? 'bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg p-2' : ''
+      className={`grid gap-4 mb-6 transition-all duration-200 p-4 min-h-[300px] ${
+        isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400 rounded-lg' : 'border-2 border-dashed border-transparent'
       }`}
       style={{ 
         gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         transform: 'translateZ(0)',
         willChange: 'auto',
-        minHeight: displayRankings.length === 0 ? '200px' : 'auto',
         // CRITICAL: Remove any containment that blocks drag detection
         overflow: 'visible',
         contain: 'none'
@@ -74,36 +73,48 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       
       {displayRankings.map((pokemon, index) => {
         return (
-          <DraggablePokemonMilestoneCard
-            key={pokemon.id}
-            pokemon={pokemon}
-            index={index}
-            showRank={true}
-            isDraggable={!!onManualReorder}
-            context="ranked"
-            isPending={localPendingRefinements.has(pokemon.id)}
-            allRankedPokemon={displayRankings}
-          />
+          <div key={pokemon.id} style={{ overflow: 'visible', contain: 'none' }}>
+            <DraggablePokemonMilestoneCard
+              pokemon={pokemon}
+              index={index}
+              showRank={true}
+              isDraggable={!!onManualReorder}
+              context="ranked"
+              isPending={localPendingRefinements.has(pokemon.id)}
+              allRankedPokemon={displayRankings}
+            />
+          </div>
         );
       })}
     </div>
   );
 
-  // Only wrap in SortableContext if we have a manual reorder handler
-  if (onManualReorder) {
-    return (
-      <div ref={setDropZoneRef} className="w-full" style={{ overflow: 'visible', contain: 'none' }}>
+  // CRITICAL FIX: Wrap everything in the droppable container
+  return (
+    <div 
+      ref={setDropZoneRef} 
+      className="w-full" 
+      style={{ 
+        overflow: 'visible', 
+        contain: 'none',
+        position: 'relative',
+        minHeight: '400px'
+      }}
+      data-droppable-id="rankings-grid-drop-zone"
+      data-accepts="available-pokemon,ranked-pokemon"
+    >
+      {onManualReorder ? (
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 
           strategy={rectSortingStrategy}
         >
           {gridContent}
         </SortableContext>
-      </div>
-    );
-  }
-
-  return <div ref={setDropZoneRef} className="w-full" style={{ overflow: 'visible', contain: 'none' }}>{gridContent}</div>;
+      ) : (
+        gridContent
+      )}
+    </div>
+  );
 };
 
 export default DragDropGrid;

@@ -28,19 +28,19 @@ export const useEnhancedRankingDragDrop = (
     handleEnhancedManualReorder
   );
 
-  // CRITICAL FIX: Optimized sensors with looser activation constraints for better detection
+  // CRITICAL FIX: More aggressive sensor settings for better drag detection
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 1, // Reduced from 3
+        distance: 0, // Start immediately
         delay: 0,
-        tolerance: 5, // Increased tolerance
+        tolerance: 10,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 30, // Reduced from 50
-        tolerance: 8,
+        delay: 20,
+        tolerance: 10,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -56,7 +56,6 @@ export const useEnhancedRankingDragDrop = (
 
     console.log(`[DND_START] ===== DRAG START TRIGGERED =====`);
     console.log(`[DND_START] Active ID: ${activeId}`);
-    console.log(`[DND_START] Event:`, event);
 
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
@@ -121,8 +120,10 @@ export const useEnhancedRankingDragDrop = (
     const overId = over.id.toString();
     const activeDataType = active.data.current?.type;
     const overDataType = over.data.current?.type;
+    const overAccepts = over.data.current?.accepts || [];
 
     console.log(`[DND_END] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`);
+    console.log(`[DND_END] Over accepts:`, overAccepts);
     
     if (active.id === over.id) {
       console.log('[DND_END] Dropped on self, no action needed');
@@ -177,26 +178,23 @@ export const useEnhancedRankingDragDrop = (
 
       console.log(`[DND_END] Handling drop of AVAILABLE pokemon ${pokemonId}. Over ID: ${overId}, Over Type: ${overDataType}`);
 
-      // Check if the over target accepts available-pokemon
-      const overAccepts = over.data.current?.accepts || [];
-      console.log(`[DND_END] Over accepts:`, overAccepts);
-      
+      // CRITICAL FIX: Check if the drop target accepts available pokemon
       if (!overAccepts.includes('available-pokemon')) {
         console.log('[DND_END] Drop target does not accept available-pokemon');
         return;
       }
 
-      // Dropped onto an existing ranked pokemon
+      // Determine insertion point based on drop target
       if (overDataType === 'ranked-pokemon') {
+        // Dropped onto an existing ranked pokemon
         const overPokemonId = Number(overId);
         const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
         if (targetIndex !== -1) {
           insertionIndex = targetIndex;
           console.log(`[DND_END] Insertion target is ranked-pokemon. Index: ${insertionIndex}`);
         }
-      } 
-      // Dropped onto the ranking grid container itself
-      else if (overId === 'rankings-grid-drop-zone' || overDataType === 'rankings-grid') {
+      } else if (overId === 'rankings-grid-drop-zone' || overDataType === 'rankings-grid') {
+        // Dropped onto the ranking grid container itself
         insertionIndex = localRankings.length;
         console.log(`[DND_END] Insertion target is rankings-grid. Index: ${insertionIndex}`);
       }
