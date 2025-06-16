@@ -3,6 +3,7 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGrid from "@/components/battle/DragDropGrid";
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -26,6 +27,9 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
     // For manual mode, we don't need special pending logic like battle mode
   };
 
+  // Create sortable items array with string IDs
+  const sortableItems = displayRankings.map(pokemon => pokemon.id.toString());
+
   return (
     <div className="flex flex-col h-full">
       {/* Streamlined Header */}
@@ -38,18 +42,23 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - The entire scrollable area is now a drop zone */}
+      {/* Rankings Grid - The entire scrollable area is now a drop zone with SortableContext */}
       <div 
         ref={setNodeRef}
         className="flex-1 overflow-y-auto p-4"
       >
-        <DragDropGrid
-          displayRankings={displayRankings}
-          localPendingRefinements={pendingRefinements}
-          pendingBattleCounts={new Map()}
-          onMarkAsPending={handleMarkAsPending}
-          availablePokemon={availablePokemon}
-        />
+        <SortableContext
+          items={sortableItems}
+          strategy={verticalListSortingStrategy}
+        >
+          <DragDropGrid
+            displayRankings={displayRankings}
+            localPendingRefinements={pendingRefinements}
+            pendingBattleCounts={new Map()}
+            onMarkAsPending={handleMarkAsPending}
+            availablePokemon={availablePokemon}
+          />
+        </SortableContext>
       </div>
     </div>
   );

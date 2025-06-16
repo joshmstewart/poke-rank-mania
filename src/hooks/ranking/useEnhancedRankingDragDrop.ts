@@ -102,6 +102,7 @@ export const useEnhancedRankingDragDrop = (
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     const { active, over } = event;
+    
     if (!over) {
       console.log('[DRAG_END] No valid drop target');
       return;
@@ -119,6 +120,14 @@ export const useEnhancedRankingDragDrop = (
       return;
     }
 
+    // Extract the actual Pokemon ID, handling "available-" prefix
+    const isFromAvailable = activeId.startsWith('available-');
+    const pokemonId = isFromAvailable 
+      ? parseInt(activeId.replace('available-', ''))
+      : parseInt(activeId);
+
+    console.log(`[DRAG_END] Extracted Pokemon ID: ${pokemonId}, isFromAvailable: ${isFromAvailable}`);
+
     // Don't allow reordering within available pokemon
     if (activeDataType === 'available-pokemon' && overDataType === 'available-pokemon') {
       console.log('[DRAG_END] Available to available - ignoring');
@@ -127,24 +136,22 @@ export const useEnhancedRankingDragDrop = (
 
     // --- Scenario 1: Reordering within the ranked list ---
     if (activeDataType === 'ranked-pokemon' && overDataType === 'ranked-pokemon') {
-      const activePokemonId = Number(active.id);
-      const overPokemonId = Number(over.id);
+      const overPokemonId = Number(overId);
 
-      const oldIndex = localRankings.findIndex(p => p.id === activePokemonId);
+      const oldIndex = localRankings.findIndex(p => p.id === pokemonId);
       const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
 
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`[DRAG_END] Reordering ranked: ${activePokemonId} from ${oldIndex} to ${newIndex}`);
+        console.log(`[DRAG_END] Reordering ranked: ${pokemonId} from ${oldIndex} to ${newIndex}`);
         const newOrder = arrayMove(localRankings, oldIndex, newIndex);
         updateLocalRankings(newOrder);
-        handleEnhancedManualReorder(activePokemonId, oldIndex, newIndex);
+        handleEnhancedManualReorder(pokemonId, oldIndex, newIndex);
       }
       return;
     }
 
     // --- Scenario 2: Dropping a new Pokemon into the ranked list ---
-    if (activeDataType === 'available-pokemon') {
-      const pokemonId = parseInt(activeId.replace('available-', ''), 10);
+    if (isFromAvailable) {
       const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
 
       if (!pokemonToAdd) {
