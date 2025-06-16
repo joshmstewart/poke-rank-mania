@@ -171,7 +171,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     });
 
     // Call the original dnd-kit listener if it exists
-    if (dragProps.onPointerDown) {
+    if (isDraggable && dragProps && 'onPointerDown' in dragProps && dragProps.onPointerDown) {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onPointerDown`);
       dragProps.onPointerDown(e);
     } else {
@@ -189,7 +189,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       defaultPrevented: e.defaultPrevented
     });
 
-    if (dragProps.onMouseDown) {
+    if (isDraggable && dragProps && 'onMouseDown' in dragProps && dragProps.onMouseDown) {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onMouseDown`);
       dragProps.onMouseDown(e);
     }
@@ -203,7 +203,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       defaultPrevented: e.defaultPrevented
     });
 
-    if (dragProps.onTouchStart) {
+    if (isDraggable && dragProps && 'onTouchStart' in dragProps && dragProps.onTouchStart) {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onTouchStart`);
       dragProps.onTouchStart(e);
     }
@@ -217,7 +217,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       defaultPrevented: e.defaultPrevented
     });
 
-    if (dragProps.onKeyDown) {
+    if (isDraggable && dragProps && 'onKeyDown' in dragProps && dragProps.onKeyDown) {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onKeyDown`);
       dragProps.onKeyDown(e);
     }
