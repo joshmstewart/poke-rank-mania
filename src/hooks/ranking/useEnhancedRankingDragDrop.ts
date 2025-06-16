@@ -48,10 +48,10 @@ export const useEnhancedRankingDragDrop = (
     })
   );
 
-  console.log(`[SENSORS_DEBUG] Initialized sensors:`, sensors);
-  console.log(`[SENSORS_DEBUG] Sensor count:`, sensors.length);
+  console.log(`[DRAG_SENSORS_DEBUG] Initialized sensors:`, sensors);
+  console.log(`[DRAG_SENSORS_DEBUG] Sensor count:`, sensors.length);
   sensors.forEach((sensor, index) => {
-    console.log(`[SENSORS_DEBUG] Sensor ${index}:`, sensor);
+    console.log(`[DRAG_SENSORS_DEBUG] Sensor ${index}:`, sensor);
   });
 
   const handleDragStart = useCallback((event: DragStartEvent) => {

@@ -67,35 +67,35 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   console.log('%cEnhancedRankingLayout rendering', 'color: blue', { displayRankings });
 
   // DEBUG: Log DndContext configuration
-  console.log(`[DND_CONTEXT_DEBUG] ===== DndContext Configuration =====`);
-  console.log(`[DND_CONTEXT_DEBUG] Collision Detection Algorithm:`, closestCenter);
-  console.log(`[DND_CONTEXT_DEBUG] Sensors:`, sensors);
-  console.log(`[DND_CONTEXT_DEBUG] Number of sensors:`, sensors?.length || 'unknown');
+  console.log(`[DRAG_CONTEXT_DEBUG] ===== DndContext Configuration =====`);
+  console.log(`[DRAG_CONTEXT_DEBUG] Collision Detection Algorithm:`, closestCenter);
+  console.log(`[DRAG_CONTEXT_DEBUG] Sensors:`, sensors);
+  console.log(`[DRAG_CONTEXT_DEBUG] Number of sensors:`, sensors?.length || 'unknown');
 
   const handleManualModeReset = () => {
     handleComprehensiveReset();
   };
 
   const debugHandleDragStart = (event: any) => {
-    console.log(`[DND_CONTEXT_DEBUG] ===== DragStart Event =====`);
-    console.log(`[DND_CONTEXT_DEBUG] Event:`, event);
-    console.log(`[DND_CONTEXT_DEBUG] Active:`, event.active);
-    console.log(`[DND_CONTEXT_DEBUG] Active ID:`, event.active?.id);
-    console.log(`[DND_CONTEXT_DEBUG] Active Data:`, event.active?.data?.current);
+    console.log(`[DRAG_CONTEXT_DEBUG] ===== DragStart Event =====`);
+    console.log(`[DRAG_CONTEXT_DEBUG] Event:`, event);
+    console.log(`[DRAG_CONTEXT_DEBUG] Active:`, event.active);
+    console.log(`[DRAG_CONTEXT_DEBUG] Active ID:`, event.active?.id);
+    console.log(`[DRAG_CONTEXT_DEBUG] Active Data:`, event.active?.data?.current);
     
     handleDragStart(event);
   };
 
   const debugHandleDragEnd = (event: any) => {
-    console.log(`[DND_CONTEXT_DEBUG] ===== DragEnd Event =====`);
-    console.log(`[DND_CONTEXT_DEBUG] Event:`, event);
-    console.log(`[DND_CONTEXT_DEBUG] Active:`, event.active);
-    console.log(`[DND_CONTEXT_DEBUG] Over:`, event.over);
-    console.log(`[DND_CONTEXT_DEBUG] Collisions:`, event.collisions);
-    console.log(`[DND_CONTEXT_DEBUG] All collision IDs:`, event.collisions?.map(c => c.id) || 'none');
-    console.log(`[DND_CONTEXT_DEBUG] Delta:`, event.delta);
-    console.log(`[DND_CONTEXT_DEBUG] Active Rect:`, event.active?.rect);
-    console.log(`[DND_CONTEXT_DEBUG] Over Rect:`, event.over?.rect);
+    console.log(`[DRAG_CONTEXT_DEBUG] ===== DragEnd Event =====`);
+    console.log(`[DRAG_CONTEXT_DEBUG] Event:`, event);
+    console.log(`[DRAG_CONTEXT_DEBUG] Active:`, event.active);
+    console.log(`[DRAG_CONTEXT_DEBUG] Over:`, event.over);
+    console.log(`[DRAG_CONTEXT_DEBUG] Collisions:`, event.collisions);
+    console.log(`[DRAG_CONTEXT_DEBUG] All collision IDs:`, event.collisions?.map(c => c.id) || 'none');
+    console.log(`[DRAG_CONTEXT_DEBUG] Delta:`, event.delta);
+    console.log(`[DRAG_CONTEXT_DEBUG] Active Rect:`, event.active?.rect);
+    console.log(`[DRAG_CONTEXT_DEBUG] Over Rect:`, event.over?.rect);
     
     handleDragEnd(event);
   };
