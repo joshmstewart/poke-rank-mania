@@ -170,8 +170,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       cancelable: e.cancelable
     });
 
-    // Call the original dnd-kit listener if it exists
-    if (isDraggable && dragProps && 'onPointerDown' in dragProps && dragProps.onPointerDown) {
+    // Call the original dnd-kit listener if it exists and is a function
+    if (isDraggable && dragProps && 'onPointerDown' in dragProps && typeof dragProps.onPointerDown === 'function') {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onPointerDown`);
       dragProps.onPointerDown(e);
     } else {
@@ -189,7 +189,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       defaultPrevented: e.defaultPrevented
     });
 
-    if (isDraggable && dragProps && 'onMouseDown' in dragProps && dragProps.onMouseDown) {
+    if (isDraggable && dragProps && 'onMouseDown' in dragProps && typeof dragProps.onMouseDown === 'function') {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onMouseDown`);
       dragProps.onMouseDown(e);
     }
@@ -203,7 +203,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       defaultPrevented: e.defaultPrevented
     });
 
-    if (isDraggable && dragProps && 'onTouchStart' in dragProps && dragProps.onTouchStart) {
+    if (isDraggable && dragProps && 'onTouchStart' in dragProps && typeof dragProps.onTouchStart === 'function') {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onTouchStart`);
       dragProps.onTouchStart(e);
     }
@@ -217,7 +217,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       defaultPrevented: e.defaultPrevented
     });
 
-    if (isDraggable && dragProps && 'onKeyDown' in dragProps && dragProps.onKeyDown) {
+    if (isDraggable && dragProps && 'onKeyDown' in dragProps && typeof dragProps.onKeyDown === 'function') {
       console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onKeyDown`);
       dragProps.onKeyDown(e);
     }
