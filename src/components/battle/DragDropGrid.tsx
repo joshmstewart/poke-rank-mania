@@ -48,13 +48,11 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     // For manual mode, we don't need special pending logic like battle mode
   };
 
-  // CRITICAL FIX: Include both ranked and available Pokemon IDs in sortable context
-  const allSortableIds = [
-    ...displayRankings.map(p => p.id.toString()),
-    ...availablePokemon.map(p => `available-${p.id}`)
-  ];
+  // CRITICAL FIX: Only include ranked Pokemon IDs for sortable context
+  // Available Pokemon shouldn't be in the sortable context as they use draggable
+  const rankedSortableIds = displayRankings.map(p => p.id.toString());
 
-  console.log(`[DRAG_DROP_GRID_DEBUG] Sortable IDs:`, allSortableIds);
+  console.log(`[DRAG_DROP_GRID_DEBUG] Ranked Sortable IDs:`, rankedSortableIds);
 
   const gridContent = (
     <div 
@@ -97,7 +95,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     </div>
   );
 
-  // CRITICAL FIX: Use expanded sortable context that includes available Pokemon
+  // CRITICAL FIX: Use only ranked Pokemon IDs in sortable context
   return (
     <div 
       ref={setDropZoneRef} 
@@ -113,7 +111,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     >
       {onManualReorder ? (
         <SortableContext 
-          items={allSortableIds} 
+          items={rankedSortableIds} 
           strategy={rectSortingStrategy}
         >
           {gridContent}

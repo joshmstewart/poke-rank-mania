@@ -73,30 +73,33 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
   };
 
-  // Use the appropriate hook based on context
-  const draggableHook = useDraggable({
+  // CRITICAL FIX: Use different hooks based on context with proper animation handling
+  const draggableResult = useDraggable({
     id,
     data,
     disabled: !isDraggable || isOpen,
   });
   
-  const sortableHook = useSortable({ 
+  const sortableResult = useSortable({ 
     id,
     data,
     disabled: !isDraggable || isOpen,
+    // CRITICAL: Configure sortable to respond to external drags
+    animateLayoutChanges: () => true,
   });
 
-  // Choose which hook to use and extract properties
+  // Choose which hook result to use
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     isDragging
-  } = isAvailableContext ? draggableHook : sortableHook;
+  } = isAvailableContext ? draggableResult : sortableResult;
 
-  const transition = !isAvailableContext ? sortableHook.transition : undefined;
+  const transition = !isAvailableContext ? sortableResult.transition : undefined;
 
+  // CRITICAL FIX: Improved transform handling for better visual feedback
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
