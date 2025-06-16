@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { useDraggable } from '@dnd-kit/core';
@@ -76,6 +77,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
   };
 
+  // Add debugging logs
+  console.log(`[DRAG_DEBUG] Card ${pokemon.name} (${pokemon.id}):`, {
+    context,
+    isAvailableContext,
+    isDraggable,
+    isOpen,
+    id,
+    data
+  });
+
   const draggable = useDraggable({
     id,
     data,
@@ -87,9 +98,20 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     data,
     disabled: !isDraggable || isOpen || isAvailableContext,
   });
-  
-  const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
+
+  // Choose which hook to use based on context
+  const dragHook = isAvailableContext ? draggable : sortable;
+  const { attributes, listeners, setNodeRef, transform, isDragging } = dragHook;
   const transition = !isAvailableContext ? sortable.transition : undefined;
+
+  // Add debugging for drag hook selection
+  console.log(`[DRAG_DEBUG] ${pokemon.name} using ${isAvailableContext ? 'useDraggable' : 'useSortable'}:`, {
+    hasListeners: !!listeners,
+    hasAttributes: !!attributes,
+    hasSetNodeRef: !!setNodeRef,
+    isDragging,
+    disabled: dragHook.disabled || (!isDraggable || isOpen)
+  });
 
   const style = {
     transform: !isDragging ? CSS.Transform.toString(transform) : undefined,
@@ -102,7 +124,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     willChange: 'transform' as const,
     backfaceVisibility: 'hidden' as const,
   };
-
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
@@ -136,6 +157,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
+  // Determine which props to apply based on context and draggability
+  const shouldApplyDragProps = isDraggable && !isOpen;
+  const dragProps = shouldApplyDragProps ? { ...attributes, ...listeners } : {};
+
   return (
     <div
       ref={setNodeRef}
@@ -147,8 +172,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable && !isOpen ? attributes : {})}
-      {...(isDraggable && !isOpen ? listeners : {})}
+      {...dragProps}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
