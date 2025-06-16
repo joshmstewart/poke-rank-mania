@@ -103,6 +103,23 @@ export const useEnhancedRankingDragDrop = (
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     const { active, over } = event;
     
+    console.log(`[DRAG_END_DETAILED] Full event:`, {
+      active: {
+        id: active.id,
+        data: active.data.current,
+        rect: active.rect
+      },
+      over: over ? {
+        id: over.id,
+        data: over.data.current,
+        rect: over.rect
+      } : null,
+      allDroppables: event.collisions?.map(c => ({
+        id: c.id,
+        data: c.data
+      })) || 'no collisions'
+    });
+    
     if (!over) {
       console.log('[DRAG_END] No valid drop target');
       return;

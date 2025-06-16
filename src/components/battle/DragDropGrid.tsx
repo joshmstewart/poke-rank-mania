@@ -86,6 +86,17 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       accepts: ['available-pokemon', 'ranked-pokemon']
     },
   });
+
+  console.log(`[DRAG_DROP_ZONE] Rankings grid drop zone initialized:`, {
+    id: 'rankings-grid-drop-zone',
+    setNodeRef: !!setNodeRef,
+    isOver,
+    accepts: ['available-pokemon', 'ranked-pokemon'],
+    data: {
+      type: 'rankings-grid',
+      accepts: ['available-pokemon', 'ranked-pokemon']
+    }
+  });
   
   const sortableItems = displayRankings.map(p => String(p.id));
   
