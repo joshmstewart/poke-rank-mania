@@ -48,21 +48,6 @@ export const useEnhancedRankingDragDrop = (
     })
   );
 
-  console.log(`[DND_DEBUG] Initialized sensors:`, sensors);
-  console.log(`[DND_DEBUG] Sensor count:`, sensors.length);
-  sensors.forEach((sensor, index) => {
-    console.log(`[DND_DEBUG] Sensor ${index}:`, sensor);
-  });
-
-  // Add sensor activation debugging
-  React.useEffect(() => {
-    console.log(`[DND_DEBUG] Sensors mounted and ready:`, {
-      sensorCount: sensors.length,
-      sensorTypes: sensors.map(s => s.constructor.name),
-      timestamp: new Date().toISOString()
-    });
-  }, [sensors]);
-
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
@@ -71,9 +56,6 @@ export const useEnhancedRankingDragDrop = (
 
     console.log(`[DND_DEBUG] ===== DRAG START TRIGGERED =====`);
     console.log(`[DND_DEBUG] Active ID: ${activeId}`);
-    console.log(`[DND_DEBUG] Full event:`, event);
-    console.log(`[DND_DEBUG] Active data:`, event.active.data.current);
-    console.log(`[DND_DEBUG] Activator event:`, event.activatorEvent);
 
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
@@ -111,25 +93,20 @@ export const useEnhancedRankingDragDrop = (
       console.log(`[DND_DEBUG] Ranked Pokemon: ${draggedPokemon?.name} (ID: ${pokemonId})`);
     }
 
-    console.log(`[DND_DEBUG] Setting drag state...`);
     setDragState({
       activePokemon: draggedPokemon,
       sourceInfo: sourceInfo,
       cardProps: cardProps,
     });
-    console.log(`[DND_DEBUG] Drag state set successfully`);
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     console.log(`[DND_DEBUG] ===== DRAG END TRIGGERED =====`);
-    console.log(`[DND_DEBUG] Event:`, event);
     
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     const { active, over } = event;
     
-    console.log(`[DND_DEBUG] Active ID: ${active.id}`);
-    console.log(`[DND_DEBUG] Over ID: ${over?.id || 'none'}`);
-    console.log(`[DND_DEBUG] Collisions: ${event.collisions?.length || 0}`);
+    console.log(`[DND_DEBUG] Active ID: ${active.id}, Over ID: ${over?.id || 'none'}`);
     
     if (!over) {
       console.log('[DND_DEBUG] No valid drop target');

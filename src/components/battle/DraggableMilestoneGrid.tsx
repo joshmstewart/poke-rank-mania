@@ -36,8 +36,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
 }) => {
   const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
 
-  console.log(`[DND_DEBUG] Rendering with ${displayRankings.length} Pokemon`);
-  console.log(`[DND_DEBUG] onManualReorder provided: ${!!onManualReorder}`);
+  console.log(`[DND_DEBUG] Rendering milestone grid with ${displayRankings.length} Pokemon`);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -59,12 +58,14 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
   );
 
   const handleDragStart = (event: any) => {
+    console.log(`[DND_DEBUG] Milestone grid drag start:`, event.active.id);
     const { active } = event;
     const pokemon = displayRankings.find(p => p.id.toString() === active.id);
     setActivePokemon(pokemon || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log(`[DND_DEBUG] Milestone grid drag end:`, event.active.id, '→', event.over?.id);
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -72,6 +73,8 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
       const newIndex = displayRankings.findIndex(p => p.id.toString() === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
+        console.log(`[DND_DEBUG] Reordering from ${oldIndex} to ${newIndex}`);
+        
         // Perform local reorder for optimistic UI update
         if (onLocalReorder) {
           const newOrder = arrayMove(displayRankings, oldIndex, newIndex);

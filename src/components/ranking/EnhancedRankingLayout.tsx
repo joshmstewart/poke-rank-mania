@@ -66,25 +66,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
 }) => {
   console.log('%cEnhancedRankingLayout rendering', 'color: blue', { displayRankings });
 
-  // DEBUG: Log DndContext configuration
-  console.log(`[DND_DEBUG] ===== DndContext Configuration =====`);
-  console.log(`[DND_DEBUG] Collision Detection Algorithm:`, closestCenter);
-  console.log(`[DND_DEBUG] Sensors:`, sensors);
-  console.log(`[DND_DEBUG] Number of sensors:`, sensors?.length || 'unknown');
-  console.log(`[DND_DEBUG] Enhanced available Pokemon:`, enhancedAvailablePokemon?.length || 0);
-  console.log(`[DND_DEBUG] Display rankings:`, displayRankings?.length || 0);
-
-  // Add DndContext registration debugging
-  React.useEffect(() => {
-    console.log(`[DND_DEBUG] DndContext mounted with:`, {
-      sensorsCount: sensors?.length || 0,
-      availablePokemonCount: enhancedAvailablePokemon?.length || 0,
-      rankedPokemonCount: displayRankings?.length || 0,
-      collisionDetection: closestCenter.name || 'closestCenter',
-      timestamp: new Date().toISOString()
-    });
-  }, [sensors, enhancedAvailablePokemon, displayRankings]);
-
   const handleManualModeReset = () => {
     handleComprehensiveReset();
   };
