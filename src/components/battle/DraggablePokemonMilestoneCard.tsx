@@ -258,7 +258,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     }
   }, [isDraggable, checkCSSIssues]);
 
-  // Enhanced event props that override dnd-kit's to add debugging
+  // Enhanced event props that override dnd-kit's to add debugging - only when draggable
   const enhancedEventProps = isDraggable ? {
     onPointerDown: handlePointerDown,
     onMouseDown: handleMouseDown,
