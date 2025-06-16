@@ -2,20 +2,22 @@
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGrid from "@/components/battle/DragDropGrid";
-import { useDroppable } from '@dnd-kit/core';
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
   pendingRefinements?: Set<number>;
   availablePokemon?: any[];
+  onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
+  onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
 }
 
 export const RankingsSection: React.FC<RankingsSectionProps> = ({
   displayRankings,
   pendingRefinements = new Set(),
-  availablePokemon = []
+  availablePokemon = [],
+  onManualReorder,
+  onLocalReorder
 }) => {
-  // Remove the useDroppable from here since DragDropGrid handles its own drop zone
   const handleMarkAsPending = (pokemonId: number) => {
     // For manual mode, we don't need special pending logic like battle mode
   };
@@ -32,13 +34,15 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - Let DragDropGrid handle its own drop zone */}
+      {/* Rankings Grid */}
       <div className="flex-1 overflow-y-auto p-4">
         <DragDropGrid
           displayRankings={displayRankings}
           localPendingRefinements={pendingRefinements}
           pendingBattleCounts={new Map()}
           onMarkAsPending={handleMarkAsPending}
+          onManualReorder={onManualReorder}
+          onLocalReorder={onLocalReorder}
           availablePokemon={availablePokemon}
         />
       </div>

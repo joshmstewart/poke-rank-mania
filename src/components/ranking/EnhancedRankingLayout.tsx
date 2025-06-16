@@ -70,39 +70,12 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
     handleComprehensiveReset();
   };
 
-  const debugHandleDragStart = (event: any) => {
-    console.log(`[DND_DEBUG] ===== DragStart Event =====`);
-    console.log(`[DND_DEBUG] Event:`, event);
-    console.log(`[DND_DEBUG] Active:`, event.active);
-    console.log(`[DND_DEBUG] Active ID:`, event.active?.id);
-    console.log(`[DND_DEBUG] Active Data:`, event.active?.data?.current);
-    console.log(`[DND_DEBUG] Activator Event:`, event.activatorEvent);
-    console.log(`[DND_DEBUG] ===== Calling handleDragStart =====`);
-    
-    handleDragStart(event);
-  };
-
-  const debugHandleDragEnd = (event: any) => {
-    console.log(`[DND_DEBUG] ===== DragEnd Event =====`);
-    console.log(`[DND_DEBUG] Event:`, event);
-    console.log(`[DND_DEBUG] Active:`, event.active);
-    console.log(`[DND_DEBUG] Over:`, event.over);
-    console.log(`[DND_DEBUG] Collisions:`, event.collisions);
-    console.log(`[DND_DEBUG] All collision IDs:`, event.collisions?.map(c => c.id) || 'none');
-    console.log(`[DND_DEBUG] Delta:`, event.delta);
-    console.log(`[DND_DEBUG] Active Rect:`, event.active?.rect);
-    console.log(`[DND_DEBUG] Over Rect:`, event.over?.rect);
-    console.log(`[DND_DEBUG] ===== Calling handleDragEnd =====`);
-    
-    handleDragEnd(event);
-  };
-
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={debugHandleDragStart}
-      onDragEnd={debugHandleDragEnd}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <div className="bg-gray-100 min-h-screen p-4">
         {/* Settings Section */}
@@ -136,6 +109,8 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
                 displayRankings={displayRankings}
                 pendingRefinements={new Set()}
                 availablePokemon={enhancedAvailablePokemon}
+                onManualReorder={handleManualReorder}
+                onLocalReorder={handleLocalReorder}
               />
             </Card>
           </div>
