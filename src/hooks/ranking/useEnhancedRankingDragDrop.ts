@@ -120,10 +120,8 @@ export const useEnhancedRankingDragDrop = (
     const overId = over.id.toString();
     const activeDataType = active.data.current?.type;
     const overDataType = over.data.current?.type;
-    const overAccepts = over.data.current?.accepts || [];
 
     console.log(`[DND_END] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`);
-    console.log(`[DND_END] Over accepts:`, overAccepts);
     
     if (active.id === over.id) {
       console.log('[DND_END] Dropped on self, no action needed');
@@ -178,9 +176,17 @@ export const useEnhancedRankingDragDrop = (
 
       console.log(`[DND_END] Handling drop of AVAILABLE pokemon ${pokemonId}. Over ID: ${overId}, Over Type: ${overDataType}`);
 
-      // CRITICAL FIX: Check if the drop target accepts available pokemon
-      if (!overAccepts.includes('available-pokemon')) {
-        console.log('[DND_END] Drop target does not accept available-pokemon');
+      // SIMPLIFIED FIX: Remove problematic accepts check and use simple validation
+      const isValidRankingsTarget = (
+        overId === 'rankings-grid-drop-zone' || 
+        overDataType === 'rankings-grid' || 
+        overDataType === 'ranked-pokemon'
+      );
+
+      console.log(`[DND_END] Is valid rankings target: ${isValidRankingsTarget}`);
+
+      if (!isValidRankingsTarget) {
+        console.log('[DND_END] Drop target is not a valid rankings target');
         return;
       }
 
