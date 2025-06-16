@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { useDroppable } from '@dnd-kit/core';
 import { EnhancedAvailablePokemonContent } from "./EnhancedAvailablePokemonContent";
 import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
@@ -18,15 +17,6 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-
-  // Set up drop zone for available Pokemon section
-  const { setNodeRef: setAvailableDropZoneRef, isOver } = useDroppable({
-    id: 'available-pokemon-drop-zone',
-    data: {
-      type: 'available-pokemon-section',
-      accepts: ['ranked-pokemon']
-    }
-  });
 
   const availableGenerations = useAvailablePokemonGenerations(availablePokemon);
 
@@ -55,7 +45,7 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
   );
 
   return (
-    <div ref={setAvailableDropZoneRef} className={`flex flex-col h-full ${isOver ? 'bg-red-50' : ''}`}>
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
