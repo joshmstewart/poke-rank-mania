@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   SortableContext,
@@ -42,11 +41,14 @@ const SortableRankedCard: React.FC<{
   const style: React.CSSProperties = {
     transform: !isDragging && transform ? CSS.Translate.toString(transform) : undefined,
     transition,
-    opacity: isDragging ? 0 : 1,
+    // Keep cards visible during drag for collision detection
+    opacity: isDragging ? 0.3 : 1,
     zIndex: isDragging ? 1000 : 'auto',
     visibility: 'visible',
     display: 'block',
   };
+
+  console.log(`[DRAG_GRID] ${pokemon.name} isDragging: ${isDragging}, opacity: ${isDragging ? 0.3 : 1}`);
 
   return (
     <div
@@ -80,9 +82,13 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
+      accepts: ['available-pokemon', 'ranked-pokemon']
     },
   });
+  
   const sortableItems = displayRankings.map(p => String(p.id));
+  
+  console.log(`[DRAG_GRID] Rendering grid with ${displayRankings.length} Pokemon, sortableItems:`, sortableItems);
 
   return (
     <div ref={setNodeRef} className="h-full w-full">
@@ -98,6 +104,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
             </div>
           ) : (
             displayRankings.map((pokemon, index) => {
+              console.log(`[DRAG_GRID] Rendering card ${pokemon.name} at index ${index}`);
               return (
                 <SortableRankedCard
                   key={pokemon.id}

@@ -3,7 +3,6 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DragDropGrid from "@/components/battle/DragDropGrid";
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -20,15 +19,13 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
+      accepts: ['available-pokemon', 'ranked-pokemon']
     }
   });
 
   const handleMarkAsPending = (pokemonId: number) => {
     // For manual mode, we don't need special pending logic like battle mode
   };
-
-  // Create sortable items array with string IDs
-  const sortableItems = displayRankings.map(pokemon => pokemon.id.toString());
 
   return (
     <div className="flex flex-col h-full">
@@ -42,23 +39,18 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - The entire scrollable area is now a drop zone with SortableContext */}
+      {/* Rankings Grid - The entire scrollable area is now a drop zone */}
       <div 
         ref={setNodeRef}
         className="flex-1 overflow-y-auto p-4"
       >
-        <SortableContext
-          items={sortableItems}
-          strategy={verticalListSortingStrategy}
-        >
-          <DragDropGrid
-            displayRankings={displayRankings}
-            localPendingRefinements={pendingRefinements}
-            pendingBattleCounts={new Map()}
-            onMarkAsPending={handleMarkAsPending}
-            availablePokemon={availablePokemon}
-          />
-        </SortableContext>
+        <DragDropGrid
+          displayRankings={displayRankings}
+          localPendingRefinements={pendingRefinements}
+          pendingBattleCounts={new Map()}
+          onMarkAsPending={handleMarkAsPending}
+          availablePokemon={availablePokemon}
+        />
       </div>
     </div>
   );

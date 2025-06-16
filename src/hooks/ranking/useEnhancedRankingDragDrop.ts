@@ -114,6 +114,7 @@ export const useEnhancedRankingDragDrop = (
     const overDataType = over.data.current?.type;
 
     console.log(`[DRAG_END] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`);
+    console.log(`[DRAG_END] Over data:`, over.data.current);
 
     if (active.id === over.id) {
       console.log('[DRAG_END] Dropped on self, no action needed');
