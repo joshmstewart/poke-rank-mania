@@ -48,6 +48,12 @@ export const useEnhancedRankingDragDrop = (
     })
   );
 
+  console.log(`[SENSORS_DEBUG] Initialized sensors:`, sensors);
+  console.log(`[SENSORS_DEBUG] Sensor count:`, sensors.length);
+  sensors.forEach((sensor, index) => {
+    console.log(`[SENSORS_DEBUG] Sensor ${index}:`, sensor);
+  });
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const activeId = event.active.id.toString();
     let draggedPokemon = null;
@@ -55,6 +61,8 @@ export const useEnhancedRankingDragDrop = (
     let cardProps = null;
 
     console.log(`[DRAG_START] Active ID: ${activeId}`);
+    console.log(`[DRAG_START_DETAILED] Full event:`, event);
+    console.log(`[DRAG_START_DETAILED] Active data:`, event.active.data.current);
 
     if (activeId.startsWith('available-')) {
       const pokemonId = parseInt(activeId.replace('available-', ''));
@@ -100,6 +108,9 @@ export const useEnhancedRankingDragDrop = (
   }, [enhancedAvailablePokemon, localRankings]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    console.log(`[DRAG_END_HOOK] ===== DragEnd Hook Called =====`);
+    console.log(`[DRAG_END_HOOK] Event:`, event);
+    
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     const { active, over } = event;
     
@@ -117,8 +128,14 @@ export const useEnhancedRankingDragDrop = (
       allDroppables: event.collisions?.map(c => ({
         id: c.id,
         data: c.data
-      })) || 'no collisions'
+      })) || 'no collisions',
+      delta: event.delta,
+      activatorEvent: event.activatorEvent
     });
+    
+    console.log(`[DRAG_END_HOOK] Active ID: ${active.id}`);
+    console.log(`[DRAG_END_HOOK] Over ID: ${over?.id || 'none'}`);
+    console.log(`[DRAG_END_HOOK] Collisions: ${event.collisions?.length || 0}`);
     
     if (!over) {
       console.log('[DRAG_END] No valid drop target');

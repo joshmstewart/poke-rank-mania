@@ -97,6 +97,17 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       accepts: ['available-pokemon', 'ranked-pokemon']
     }
   });
+
+  console.log(`[DRAG_DROP_ZONE_DETAILED] Drop zone state change:`, {
+    isOver,
+    displayRankingsCount: displayRankings.length,
+    timestamp: new Date().toISOString()
+  });
+
+  // Log when isOver changes
+  React.useEffect(() => {
+    console.log(`[DRAG_DROP_ZONE_EFFECT] isOver changed to: ${isOver}`);
+  }, [isOver]);
   
   const sortableItems = displayRankings.map(p => String(p.id));
   
