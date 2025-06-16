@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { useDraggable } from '@dnd-kit/core';
@@ -80,7 +79,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const draggable = useDraggable({
     id,
     data,
-    disabled: !isDraggable || isOpen || !isAvailableContext,
+    disabled: !isDraggable || isOpen,
   });
   
   const sortable = useSortable({ 
