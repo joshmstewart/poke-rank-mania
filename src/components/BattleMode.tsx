@@ -8,7 +8,7 @@ const BattleMode = () => {
   // Return the container instead of core, as it handles the props properly
   return <BattleModeContainer 
     allPokemon={[]} 
-    initialBattleType="standard"
+    initialBattleType="pairs"
   />;
 };
 

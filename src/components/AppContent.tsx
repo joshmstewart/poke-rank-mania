@@ -67,7 +67,7 @@ const AppContent: React.FC = () => {
 
       {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeContainer 
         allPokemon={[]} 
-        initialBattleType="standard"
+        initialBattleType="pairs"
       />}
     </div>
   );
