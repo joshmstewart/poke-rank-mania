@@ -121,7 +121,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-2" style={{ height: 'calc(100vh - 8rem)' }}>
             {/* Left side - Available Pokemon */}
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 flex flex-col">
               <AvailablePokemonSection
                 availablePokemon={filteredAvailablePokemon}
                 isLoading={isLoading}
@@ -136,7 +136,7 @@ export const RankingLayout: React.FC<RankingLayoutProps> = ({
             </div>
             
             {/* Right side - Rankings */}
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 flex flex-col">
               <RankingsSection 
                 displayRankings={displayRankings}
                 pendingRefinements={new Set()}

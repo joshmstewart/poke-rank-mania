@@ -96,7 +96,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)' }}>
             {/* Enhanced Available Pokemon Card */}
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <Card className="shadow-lg border border-gray-200 flex flex-col">
               <EnhancedAvailablePokemonSection
                 availablePokemon={enhancedAvailablePokemon}
                 rankedPokemon={displayRankings}
@@ -104,7 +104,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
             </Card>
 
             {/* Rankings Card */}
-            <Card className="shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+            <Card className="shadow-lg border border-gray-200 flex flex-col">
               <RankingsSection
                 displayRankings={displayRankings}
                 pendingRefinements={new Set()}
