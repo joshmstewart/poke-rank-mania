@@ -1,7 +1,6 @@
 
 import React from "react";
-import { useDroppable } from '@dnd-kit/core';
-import EnhancedAvailablePokemonContent from "./EnhancedAvailablePokemonContent";
+import { EnhancedAvailablePokemonContent } from "./EnhancedAvailablePokemonContent";
 
 interface EnhancedAvailablePokemonSectionProps {
   availablePokemon: any[];
@@ -12,23 +11,8 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
   availablePokemon,
   rankedPokemon
 }) => {
-  // Set up drop zone for available Pokemon section
-  const { setNodeRef: setAvailableDropZoneRef, isOver } = useDroppable({
-    id: 'available-pokemon-drop-zone',
-    data: {
-      type: 'available-pokemon-section',
-      accepts: ['ranked-pokemon']
-    }
-  });
-
-  console.log(`[DRAG_DROP_ZONE] Available Pokemon section drop zone initialized:`, {
-    id: 'available-pokemon-drop-zone',
-    isOver,
-    accepts: ['ranked-pokemon']
-  });
-
   return (
-    <div ref={setAvailableDropZoneRef} className={`flex flex-col h-full ${isOver ? 'bg-red-50' : ''}`}>
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
