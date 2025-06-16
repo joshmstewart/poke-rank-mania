@@ -127,9 +127,9 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   };
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
-      className="flex-1 overflow-y-auto p-4 transition-colors"
+      className="flex-1 overflow-y-visible overflow-x-visible p-4 transition-colors"
     >
       <div className="space-y-4">
         {renderContent()}
