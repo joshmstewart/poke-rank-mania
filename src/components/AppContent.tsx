@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import BattleModeCore from "./battle/BattleModeCore";
+import BattleModeContainer from "./battle/BattleModeContainer";
 import PokemonRankerWithProvider from "./pokemon/PokemonRankerWithProvider";
 
 const AppContent: React.FC = () => {
@@ -65,7 +65,10 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
-      {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeCore />}
+      {mode === "rank" ? <PokemonRankerWithProvider /> : <BattleModeContainer 
+        allPokemon={[]} 
+        initialBattleType="standard"
+      />}
     </div>
   );
 };
