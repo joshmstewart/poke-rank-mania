@@ -140,7 +140,7 @@ const SortableRankingCard: React.FC<{
     transform: !isDragging ? CSS.Translate.toString(transform) : undefined,
     transition,
     opacity: isDragging ? 0 : 1,
-    zIndex: isDragging ? 100 : 'auto',
+    zIndex: isDragging ? 'auto' : 1,
   };
 
   return (
@@ -152,7 +152,6 @@ const SortableRankingCard: React.FC<{
         showRank={true}
         isDraggable={true}
         isAvailable={false}
-        context="ranked"
         allRankedPokemon={allRankedPokemon}
       />
     </div>
