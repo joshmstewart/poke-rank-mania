@@ -43,7 +43,7 @@ const SortableRankedCard: React.FC<{
     transform: !isDragging && transform ? CSS.Translate.toString(transform) : undefined,
     transition,
     opacity: isDragging ? 0 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
+    zIndex: isDragging ? 'auto' : 1,
     visibility: 'visible',
     display: 'block',
   };

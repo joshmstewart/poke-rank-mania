@@ -91,14 +91,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
   const transition = !isAvailableContext ? sortable.transition : undefined;
 
-  const style = {
-    transform: !isDragging ? CSS.Transform.toString(transform) : undefined,
+  const style: React.CSSProperties = {
     transition,
-    opacity: isDragging ? 0 : 1,
     minHeight: '140px',
     minWidth: '140px',
-    zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
+    opacity: isDragging ? 0 : 1,
+    transform: isAvailableContext || isDragging
+      ? undefined
+      : CSS.Transform.toString(transform),
+    zIndex: isDragging ? 'auto' : 1,
     willChange: 'transform' as const,
     backfaceVisibility: 'hidden' as const,
   };
