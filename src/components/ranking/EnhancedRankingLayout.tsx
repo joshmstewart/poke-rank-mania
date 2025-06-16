@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DndContext, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { BattleType } from "@/hooks/battle/types";
@@ -114,14 +113,27 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* Drag Overlay - Uses exact source card props */}
+        {/* Drag Overlay - Enhanced with fallback */}
         <DragOverlay>
-          {activeDraggedPokemon && sourceCardProps ? (
+          {activeDraggedPokemon ? (
             <div className="transform rotate-2 scale-105 opacity-95 z-50">
-              <DraggablePokemonMilestoneCard
-                {...sourceCardProps}
-                isDraggable={false}
-              />
+              {sourceCardProps ? (
+                <DraggablePokemonMilestoneCard
+                  {...sourceCardProps}
+                  isDraggable={false}
+                />
+              ) : (
+                <DraggablePokemonMilestoneCard
+                  pokemon={activeDraggedPokemon}
+                  index={0}
+                  isPending={false}
+                  showRank={false}
+                  isDraggable={false}
+                  isAvailable={dragSourceInfo?.fromAvailable || false}
+                  context={dragSourceInfo?.fromAvailable ? 'available' : 'ranked'}
+                  allRankedPokemon={displayRankings}
+                />
+              )}
             </div>
           ) : null}
         </DragOverlay>
