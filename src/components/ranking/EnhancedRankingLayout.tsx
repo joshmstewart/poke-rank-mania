@@ -1,5 +1,6 @@
+
 import React from "react";
-import { DndContext, DragOverlay, rectIntersection } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
@@ -24,7 +25,7 @@ interface EnhancedRankingLayoutProps {
   dragSourceInfo: {fromAvailable: boolean, isRanked: boolean} | null;
   sourceCardProps: any;
   filteredAvailablePokemon: any[];
-  sensors: any; // Add sensors prop
+  sensors: any;
   handlePageChange: (page: number) => void;
   getPageRange: () => number[];
   onGenerationChange: (gen: number) => void;
@@ -72,7 +73,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={rectIntersection}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

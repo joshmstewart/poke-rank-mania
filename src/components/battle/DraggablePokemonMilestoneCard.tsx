@@ -40,11 +40,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Use the cloud-based pending state hook
   const { isPokemonPending, addPendingPokemon, removePendingPokemon, isHydrated } = useCloudPendingBattles();
   
-  
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
     
     if (!isHydrated) {
       return;
@@ -53,10 +51,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     const currentlyPending = isPokemonPending(pokemon.id);
     
     if (!currentlyPending) {
-      // Add to cloud-based pending state
       addPendingPokemon(pokemon.id);
     } else {
-      // Remove from cloud-based pending state
       removePendingPokemon(pokemon.id);
     }
   };
@@ -64,11 +60,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  // If context is 'available', we want to use useDraggable because there's no SortableContext.
-  // If context is 'ranked', the parent SortableRankedCard handles sorting.
+  // Determine if this is available context
   const isAvailableContext = context === 'available';
 
-  const id = isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`;
+  // Set up draggable ID and data
+  const id = isDraggable ? (isAvailableContext ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`;
   const data = {
     type: isAvailableContext ? 'available-pokemon' : 'ranked-pokemon',
     pokemon: pokemon,
@@ -77,7 +73,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
   };
 
-  // Add debugging logs
   console.log(`[DRAG_DEBUG] Card ${pokemon.name} (${pokemon.id}):`, {
     context,
     isAvailableContext,
@@ -87,36 +82,40 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     data
   });
 
-  const draggable = useDraggable({
+  // Use the appropriate hook based on context
+  const draggableHook = useDraggable({
     id,
     data,
     disabled: !isDraggable || isOpen,
   });
   
-  const sortable = useSortable({ 
+  const sortableHook = useSortable({ 
     id,
     data,
-    disabled: !isDraggable || isOpen || isAvailableContext,
+    disabled: !isDraggable || isOpen,
   });
 
-  // Choose which hook to use based on context
-  const dragHook = isAvailableContext ? draggable : sortable;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = dragHook;
-  const transition = !isAvailableContext ? sortable.transition : undefined;
+  // Choose which hook to use and extract properties
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging
+  } = isAvailableContext ? draggableHook : sortableHook;
 
-  // Add debugging for drag hook selection - fix the disabled check by removing sortable.disabled reference
-  const isDisabled = !isDraggable || isOpen;
-    
+  const transition = !isAvailableContext ? sortableHook.transition : undefined;
+
   console.log(`[DRAG_DEBUG] ${pokemon.name} using ${isAvailableContext ? 'useDraggable' : 'useSortable'}:`, {
     hasListeners: !!listeners,
     hasAttributes: !!attributes,
     hasSetNodeRef: !!setNodeRef,
     isDragging,
-    isDisabled
+    isDisabled: !isDraggable || isOpen
   });
 
   const style = {
-    transform: !isDragging ? CSS.Transform.toString(transform) : undefined,
+    transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
     minHeight: '140px',
