@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { useDraggable } from '@dnd-kit/core';
@@ -138,7 +139,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   return (
     <div
-      ref={isAvailableContext ? setNodeRef : null}
+      ref={setNodeRef}
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
@@ -147,8 +148,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable && !isOpen && isAvailableContext ? attributes : {})}
-      {...(isDraggable && !isOpen && isAvailableContext ? listeners : {})}
+      {...(isDraggable && !isOpen ? attributes : {})}
+      {...(isDraggable && !isOpen ? listeners : {})}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
