@@ -104,10 +104,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = dragHook;
   const transition = !isAvailableContext ? sortable.transition : undefined;
 
-  // Add debugging for drag hook selection - fix the disabled check
-  const isDisabled = isAvailableContext 
-    ? (!isDraggable || isOpen) 
-    : (sortable.disabled || (!isDraggable || isOpen));
+  // Add debugging for drag hook selection - fix the disabled check by removing sortable.disabled reference
+  const isDisabled = !isDraggable || isOpen;
     
   console.log(`[DRAG_DEBUG] ${pokemon.name} using ${isAvailableContext ? 'useDraggable' : 'useSortable'}:`, {
     hasListeners: !!listeners,
