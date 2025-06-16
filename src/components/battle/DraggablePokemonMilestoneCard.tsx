@@ -39,19 +39,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Use the cloud-based pending state hook
   const { isPokemonPending, addPendingPokemon, removePendingPokemon, isHydrated } = useCloudPendingBattles();
   
-  console.log(`🌥️ [CARD_DEBUG] ${pokemon.name} card render - Pending: ${isPokemonPending(pokemon.id)}, Hydrated: ${isHydrated}`);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log(`🌥️ [CARD_DEBUG] ===== STAR CLICKED FOR ${pokemon.name} =====`);
-    console.log(`🌥️ [CARD_DEBUG] Pokemon ID: ${pokemon.id}, Context: ${context}`);
-    console.log(`🌥️ [CARD_DEBUG] Current pending state: ${isPokemonPending(pokemon.id)}`);
-    console.log(`🌥️ [CARD_DEBUG] Timestamp: ${new Date().toISOString()}`);
     
     if (!isHydrated) {
-      console.warn(`🌥️ [CARD_DEBUG] ⚠️ Store not hydrated yet, skipping action`);
       return;
     }
     
@@ -59,11 +53,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     
     if (!currentlyPending) {
       // Add to cloud-based pending state
-      console.log(`⭐ [MILESTONE_STAR_TOGGLE] Adding ${pokemon.name} to pending state`);
       addPendingPokemon(pokemon.id);
     } else {
       // Remove from cloud-based pending state
-      console.log(`⭐ [MILESTONE_STAR_TOGGLE] Removing ${pokemon.name} from pending state`);
       removePendingPokemon(pokemon.id);
     }
   };
@@ -99,13 +91,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
   const transition = !isAvailableContext ? sortable.transition : undefined;
 
-  // CRITICAL FIX: Completely remove opacity handling from this component when in ranked context
-  // Let the parent wrapper (SortableRankedCard) handle all drag styling
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: !isDragging ? CSS.Transform.toString(transform) : undefined,
     transition,
-    // ONLY handle opacity for available context - ranked context is handled by wrapper
-    opacity: isDragging && isAvailableContext ? 0.7 : 1,
+    opacity: isDragging ? 0 : 1,
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
@@ -114,7 +103,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     backfaceVisibility: 'hidden' as const,
   };
 
-  console.log(`🐛 [CARD_DEBUG] ${pokemon.name} - context: ${context}, isDragging: ${isDragging}, opacity: ${style.opacity}`);
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
@@ -188,7 +176,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           onPointerDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            console.log(`🌥️ [CARD_DEBUG] onPointerDown called for ${pokemon.name}`);
           }}
           onPointerUp={(e) => {
             e.stopPropagation();
