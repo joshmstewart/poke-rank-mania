@@ -126,7 +126,6 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
           index={index}
           showRank={true}
           isDraggable={!!onManualReorder}
-          context="ranked"
           isPending={localPendingRefinements.has(pokemon.id)}
           allRankedPokemon={displayRankings}
         />
@@ -166,7 +165,6 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
                 index={displayRankings.findIndex(p => p.id === activePokemon.id)}
                 showRank={true}
                 isDraggable={false}
-                context="ranked"
                 isPending={localPendingRefinements.has(activePokemon.id)}
                 allRankedPokemon={displayRankings}
               />

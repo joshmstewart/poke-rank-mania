@@ -1,6 +1,4 @@
 import React from "react";
-import { useSortable } from '@dnd-kit/sortable';
-import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
@@ -19,8 +17,10 @@ interface DraggablePokemonMilestoneCardProps {
   showRank?: boolean;
   isDraggable?: boolean;
   isAvailable?: boolean;
-  context?: 'available' | 'ranked';
   allRankedPokemon?: (Pokemon | RankedPokemon)[];
+  transform?: CSS.Transform | null;
+  transition?: string | undefined;
+  isDragging?: boolean;
 }
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
@@ -30,8 +30,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   showRank = true,
   isDraggable = true,
   isAvailable = false,
-  context = 'ranked',
-  allRankedPokemon = []
+  allRankedPokemon = [],
+  transform = null,
+  transition,
+  isDragging = false
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
@@ -63,42 +65,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  // If context is 'available', we want to use useDraggable because there's no SortableContext.
-  // If context is 'ranked', the parent SortableRankedCard handles sorting.
-  const isAvailableContext = context === 'available';
-
-  const id = isDraggable ? (isAvailable ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`;
-  const data = {
-    type: isAvailableContext ? 'available-pokemon' : 'ranked-pokemon',
-    pokemon: pokemon,
-    source: context,
-    index,
-    isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
-  };
-
-  const draggable = useDraggable({
-    id,
-    data,
-    disabled: !isDraggable || isOpen || !isAvailableContext,
-  });
-  
-  const sortable = useSortable({ 
-    id,
-    data,
-    disabled: !isDraggable || isOpen || isAvailableContext,
-  });
-  
-  const { attributes, listeners, setNodeRef, transform, isDragging } = isAvailableContext ? draggable : sortable;
-  const transition = !isAvailableContext ? sortable.transition : undefined;
-
-  const style = {
-    transform: !isDragging ? CSS.Transform.toString(transform) : undefined,
+  const style: React.CSSProperties = {
     transition,
-    opacity: isDragging ? 0 : 1,
     minHeight: '140px',
     minWidth: '140px',
-    zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
+    opacity: isDragging ? 0 : 1,
+    transform: !isDragging && transform ? CSS.Transform.toString(transform) : undefined,
+    zIndex: isDragging ? 'auto' : 1,
     willChange: 'transform' as const,
     backfaceVisibility: 'hidden' as const,
   };
@@ -120,9 +94,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   };
 
   const handleMouseEnter = () => {
-    if (!isDragging) {
-      setIsHovered(true);
-    }
+    setIsHovered(true);
   };
 
   const handleMouseLeave = () => {
@@ -133,33 +105,21 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const formattedId = pokemon.id.toString().padStart(pokemon.id >= 10000 ? 5 : 3, '0');
 
   // Determine if this Pokemon is ranked (for available context)
-  const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
+  const isRankedPokemon = isAvailable && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
   return (
     <div
-      ref={isAvailableContext ? setNodeRef : null}
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
-      } ${
-        isDragging ? 'shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200'
-      } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+      } hover:shadow-lg transition-all duration-200 ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      {...(isDraggable && !isOpen && isAvailableContext ? attributes : {})}
-      {...(isDraggable && !isOpen && isAvailableContext ? listeners : {})}
     >
-      {/* Enhanced drag overlay for better visual feedback */}
-      {isDragging && (
-        <div 
-          className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"
-          style={{ transform: 'translateZ(0)' }}
-        ></div>
-      )}
 
       {/* Dark overlay for already-ranked Pokemon in available section */}
-      {context === 'available' && isRankedPokemon && (
+      {isAvailable && isRankedPokemon && (
         <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg z-10"></div>
       )}
 
@@ -171,7 +131,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       )}
 
       {/* Prioritize button - only visible on card hover */}
-      {!isDragging && (context === 'ranked' || context === 'available') && (
+      {(isDraggable) && (
         <button
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -204,7 +164,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       )}
 
       {/* Info Button with Dialog - only visible on card hover */}
-      {!isDragging && (
+      (
         <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
@@ -248,7 +208,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       )}
 
       {/* Crown badge for ranked Pokemon in available section */}
-      {context === 'available' && isRankedPokemon && currentRank && (
+      {isAvailable && isRankedPokemon && currentRank && (
         <div className="absolute top-2 left-2 z-20">
           <Badge 
             variant="secondary" 
@@ -261,10 +221,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       )}
 
       {/* Ranking number */}
-      {context === 'ranked' && showRank && (
-        <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 ${
-          isDragging ? 'bg-blue-100 border-blue-300' : ''
-        }`}>
+      {!isAvailable && showRank && (
+        <div className="absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200">
           <span className="text-black">{index + 1}</span>
         </div>
       )}
@@ -274,12 +232,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className={`w-20 h-20 object-contain transition-all duration-200 ${
-            isDragging && isAvailableContext ? 'scale-110' : ''
-          }`}
+          className="w-20 h-20 object-contain transition-all duration-200"
           style={{ 
-            transform: 'translateZ(0)',
-            willChange: isDragging && isAvailableContext ? 'transform' : 'auto'
+            transform: 'translateZ(0)'
           }}
           loading="lazy"
           onError={(e) => {
@@ -290,9 +245,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
       
       {/* Pokemon info */}
-      <div className={`bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100 ${
-        isDragging && isAvailableContext ? 'bg-blue-50' : ''
-      }`}>
+      <div className="bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
           {pokemon.name}
         </h3>
@@ -301,7 +254,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
         
         {/* Score display */}
-        {context === 'ranked' && 'score' in pokemon && (
+        {!isAvailable && 'score' in pokemon && (
           <div className="text-xs text-gray-700 font-medium">
             Score: {pokemon.score.toFixed(5)}
           </div>
