@@ -39,29 +39,21 @@ const SortableRankedCard: React.FC<{
     },
   });
 
-  // DEBUG: Add extensive logging to identify the opacity issue
-  console.log(`🐛 [DRAGDROP_DEBUG] Card ${pokemon.name}: isDragging=${isDragging}, transform=${transform ? 'has transform' : 'no transform'}`);
-
   const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
+    transform: !isDragging && transform ? CSS.Translate.toString(transform) : undefined,
     transition,
-    // CRITICAL FIX: Use higher opacity for dragging state and ensure it's never 0
-    opacity: isDragging ? 0.7 : 1,
+    opacity: isDragging ? 0 : 1,
     zIndex: isDragging ? 1000 : 'auto',
-    // Add important styles to prevent other CSS from overriding
     visibility: 'visible',
     display: 'block',
   };
 
-  console.log(`🐛 [DRAGDROP_DEBUG] Card ${pokemon.name} final style:`, style);
-
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
-      {...attributes} 
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
       {...listeners}
-      className={`${isDragging ? 'drag-active' : ''}`}
     >
       <DraggablePokemonMilestoneCard
         pokemon={pokemon}
@@ -92,8 +84,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   });
   const sortableItems = displayRankings.map(p => String(p.id));
 
-  console.log(`🐛 [DRAGDROP_DEBUG] DragDropGrid rendering with ${displayRankings.length} rankings`);
-
   return (
     <div ref={setNodeRef} className="h-full w-full">
       <SortableContext
@@ -108,7 +98,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
             </div>
           ) : (
             displayRankings.map((pokemon, index) => {
-              console.log(`🐛 [DRAGDROP_DEBUG] Rendering card for ${pokemon.name} at index ${index}`);
               return (
                 <SortableRankedCard
                   key={pokemon.id}
