@@ -152,7 +152,6 @@ const SortableRankingCard: React.FC<{
         showRank={true}
         isDraggable={true}
         isAvailable={false}
-        context="ranked"
         allRankedPokemon={allRankedPokemon}
       />
     </div>
