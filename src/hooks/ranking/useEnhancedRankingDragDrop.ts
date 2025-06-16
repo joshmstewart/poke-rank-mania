@@ -115,6 +115,7 @@ export const useEnhancedRankingDragDrop = (
 
     console.log(`[DRAG_END] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`);
     console.log(`[DRAG_END] Over data:`, over.data.current);
+    console.log(`[DRAG_END] Over accepts:`, over.data.current?.accepts);
 
     if (active.id === over.id) {
       console.log('[DRAG_END] Dropped on self, no action needed');
@@ -168,6 +169,13 @@ export const useEnhancedRankingDragDrop = (
       let insertionIndex = -1;
 
       console.log(`[DRAG_END] Handling drop of AVAILABLE pokemon ${pokemonId}. Over ID: ${overId}, Over Type: ${overDataType}`);
+
+      // Check if the over target accepts available-pokemon
+      const overAccepts = over.data.current?.accepts || [];
+      if (!overAccepts.includes('available-pokemon')) {
+        console.log('[DRAG_END] Drop target does not accept available-pokemon');
+        return;
+      }
 
       // Dropped onto an existing ranked pokemon
       if (overDataType === 'ranked-pokemon') {

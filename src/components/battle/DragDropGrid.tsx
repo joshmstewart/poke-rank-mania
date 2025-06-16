@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   SortableContext,
@@ -78,7 +79,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onMarkAsPending,
   availablePokemon = []
 }) => {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
@@ -89,9 +90,15 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   const sortableItems = displayRankings.map(p => String(p.id));
   
   console.log(`[DRAG_GRID] Rendering grid with ${displayRankings.length} Pokemon, sortableItems:`, sortableItems);
+  console.log(`[DRAG_GRID] Drop zone isOver: ${isOver}`);
 
   return (
-    <div ref={setNodeRef} className="h-full w-full">
+    <div 
+      ref={setNodeRef} 
+      className={`h-full w-full transition-colors duration-200 ${
+        isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400 rounded-lg' : ''
+      }`}
+    >
       <SortableContext
         items={sortableItems}
         strategy={rectSortingStrategy}

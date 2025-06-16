@@ -15,14 +15,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   pendingRefinements = new Set(),
   availablePokemon = []
 }) => {
-  const { setNodeRef } = useDroppable({
-    id: 'rankings-grid-drop-zone',
-    data: {
-      type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
-    }
-  });
-
+  // Remove the useDroppable from here since DragDropGrid handles its own drop zone
   const handleMarkAsPending = (pokemonId: number) => {
     // For manual mode, we don't need special pending logic like battle mode
   };
@@ -39,11 +32,8 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid - The entire scrollable area is now a drop zone */}
-      <div 
-        ref={setNodeRef}
-        className="flex-1 overflow-y-auto p-4"
-      >
+      {/* Rankings Grid - Let DragDropGrid handle its own drop zone */}
+      <div className="flex-1 overflow-y-auto p-4">
         <DragDropGrid
           displayRankings={displayRankings}
           localPendingRefinements={pendingRefinements}
