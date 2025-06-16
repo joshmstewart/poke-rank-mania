@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, pointerWithin, rectIntersection } from '@dnd-kit/core';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
@@ -69,10 +69,28 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
     handleComprehensiveReset();
   };
 
+  // CRITICAL FIX: Custom collision detection for better drag handling
+  const customCollisionDetection = (args: any) => {
+    // First try pointer-based detection
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+
+    // Fallback to rectangle intersection
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) {
+      return rectCollisions;
+    }
+
+    // Final fallback to closest center
+    return closestCenter(args);
+  };
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -91,9 +109,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           />
         </div>
 
-        {/* Main Content Grid - REMOVED CARD CONTAINMENT */}
+        {/* Main Content Grid - FIXED: Remove all containment CSS */}
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)' }}>
+          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)', overflow: 'visible', contain: 'none' }}>
             {/* Enhanced Available Pokemon - NO Card wrapper to prevent containment */}
             <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col" style={{ overflow: 'visible', contain: 'none' }}>
               <EnhancedAvailablePokemonSection
@@ -115,27 +133,27 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* Drag Overlay - Enhanced with HIGH z-index */}
-        <DragOverlay>
+        {/* CRITICAL FIX: Enhanced Drag Overlay with proper z-index and Pokemon card */}
+        <DragOverlay dropAnimation={null}>
           {activeDraggedPokemon ? (
-            <div className="transform rotate-2 scale-105 opacity-95" style={{ zIndex: 9999 }}>
-              {sourceCardProps ? (
-                <DraggablePokemonMilestoneCard
-                  {...sourceCardProps}
-                  isDraggable={false}
-                />
-              ) : (
-                <DraggablePokemonMilestoneCard
-                  pokemon={activeDraggedPokemon}
-                  index={0}
-                  isPending={false}
-                  showRank={false}
-                  isDraggable={false}
-                  isAvailable={dragSourceInfo?.fromAvailable || false}
-                  context={dragSourceInfo?.fromAvailable ? 'available' : 'ranked'}
-                  allRankedPokemon={displayRankings}
-                />
-              )}
+            <div 
+              className="transform rotate-2 scale-105 opacity-95" 
+              style={{ 
+                zIndex: 99999,
+                position: 'fixed',
+                pointerEvents: 'none'
+              }}
+            >
+              <DraggablePokemonMilestoneCard
+                pokemon={activeDraggedPokemon}
+                index={0}
+                isPending={false}
+                showRank={false}
+                isDraggable={false}
+                isAvailable={dragSourceInfo?.fromAvailable || false}
+                context={dragSourceInfo?.fromAvailable ? 'available' : 'ranked'}
+                allRankedPokemon={displayRankings}
+              />
             </div>
           ) : null}
         </DragOverlay>

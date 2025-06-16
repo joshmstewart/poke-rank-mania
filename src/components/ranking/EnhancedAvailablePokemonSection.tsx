@@ -45,7 +45,7 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ overflow: 'visible', contain: 'none' }}>
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
@@ -56,8 +56,8 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
         </div>
       </div>
       
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Content - CRITICAL FIX: Remove all overflow containment */}
+      <div className="flex-1" style={{ overflow: 'visible', contain: 'none' }}>
         <EnhancedAvailablePokemonContent
           items={items}
           showGenerationHeaders={showGenerationHeaders}

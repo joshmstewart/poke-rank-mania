@@ -141,52 +141,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
-  // Apply drag props when draggable
-  const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
+  // CRITICAL FIX: Simplified drag props - only apply when draggable and not in a modal
+  const dragProps = isDraggable && !isOpen ? { ...attributes, ...listeners } : {};
 
-  // ===== DRAG EVENT DEBUGGING (ONLY FIRES DURING ACTUAL EVENTS) =====
-  const handlePointerDown = (e: React.PointerEvent) => {
-    console.log(`[DND_DEBUG] ${pokemon.name} POINTER DOWN - DRAG START ATTEMPT`);
-
-    // Call the original dnd-kit listener if it exists and is a function
-    if (isDraggable && dragProps && 'onPointerDown' in dragProps && typeof dragProps.onPointerDown === 'function') {
-      dragProps.onPointerDown(e);
-    }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    console.log(`[DND_DEBUG] ${pokemon.name} MOUSE DOWN - DRAG START ATTEMPT`);
-
-    if (isDraggable && dragProps && 'onMouseDown' in dragProps && typeof dragProps.onMouseDown === 'function') {
-      dragProps.onMouseDown(e);
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    console.log(`[DND_DEBUG] ${pokemon.name} TOUCH START - DRAG START ATTEMPT`);
-
-    if (isDraggable && dragProps && 'onTouchStart' in dragProps && typeof dragProps.onTouchStart === 'function') {
-      dragProps.onTouchStart(e);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    console.log(`[DND_DEBUG] ${pokemon.name} KEY DOWN - DRAG START ATTEMPT`);
-
-    if (isDraggable && dragProps && 'onKeyDown' in dragProps && typeof dragProps.onKeyDown === 'function') {
-      dragProps.onKeyDown(e);
-    }
-  };
-
-  // Enhanced event props that override dnd-kit's to add debugging - only when draggable
-  const enhancedEventProps = isDraggable ? {
-    onPointerDown: handlePointerDown,
-    onMouseDown: handleMouseDown,
-    onTouchStart: handleTouchStart,
-    onKeyDown: handleKeyDown,
-    // Still include the original attributes but NOT the original listeners
-    ...attributes
-  } : {};
+  console.log(`[DND_CARD_DEBUG] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
 
   return (
     <div
@@ -200,7 +158,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       data-pokemon-id={pokemon.id}
-      {...enhancedEventProps}
+      {...dragProps}
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
