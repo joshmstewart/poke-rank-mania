@@ -121,8 +121,6 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
       handleDragEnd={handleDragEnd}
       handleManualReorder={handleManualReorder}
       handleLocalReorder={handleLocalReorder}
-      setAvailablePokemon={setAvailablePokemon}
-      setRankedPokemon={setRankedPokemon}
     />
   );
 };
