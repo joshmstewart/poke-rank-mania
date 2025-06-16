@@ -5,6 +5,7 @@ import {
   rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import DraggablePokemonMilestoneCard from '@/components/battle/DraggablePokemonMilestoneCard';
 import { CSS } from '@dnd-kit/utilities';
@@ -83,36 +84,44 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onMarkAsPending,
   availablePokemon = []
 }) => {
+  const { setNodeRef } = useDroppable({
+    id: 'rankings-grid-drop-zone',
+    data: {
+      type: 'rankings-grid',
+    },
+  });
   const sortableItems = displayRankings.map(p => String(p.id));
 
   console.log(`🐛 [DRAGDROP_DEBUG] DragDropGrid rendering with ${displayRankings.length} rankings`);
 
   return (
-    <SortableContext
-      items={sortableItems}
-      strategy={rectSortingStrategy}
-    >
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-        {displayRankings.length === 0 ? (
-          <div className="h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-white text-gray-400 animate-fade-in select-none opacity-75 col-span-full">
-            <span className="mb-1 text-2xl">🡆</span>
-            <span>Drop Pokémon here to start ranking!</span>
-          </div>
-        ) : (
-          displayRankings.map((pokemon, index) => {
-            console.log(`🐛 [DRAGDROP_DEBUG] Rendering card for ${pokemon.name} at index ${index}`);
-            return (
-              <SortableRankedCard
-                key={pokemon.id}
-                pokemon={pokemon}
-                index={index}
-                allRankedPokemon={displayRankings}
-              />
-            );
-          })
-        )}
-      </div>
-    </SortableContext>
+    <div ref={setNodeRef} className="h-full w-full">
+      <SortableContext
+        items={sortableItems}
+        strategy={rectSortingStrategy}
+      >
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+          {displayRankings.length === 0 ? (
+            <div className="h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl bg-white text-gray-400 animate-fade-in select-none opacity-75 col-span-full">
+              <span className="mb-1 text-2xl">🡆</span>
+              <span>Drop Pokémon here to start ranking!</span>
+            </div>
+          ) : (
+            displayRankings.map((pokemon, index) => {
+              console.log(`🐛 [DRAGDROP_DEBUG] Rendering card for ${pokemon.name} at index ${index}`);
+              return (
+                <SortableRankedCard
+                  key={pokemon.id}
+                  pokemon={pokemon}
+                  index={index}
+                  allRankedPokemon={displayRankings}
+                />
+              );
+            })
+          )}
+        </div>
+      </SortableContext>
+    </div>
   );
 };
 

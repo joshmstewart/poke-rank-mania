@@ -1,15 +1,13 @@
 
 import React from "react";
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, TouchSensor } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import { RankedPokemon } from "@/services/pokemon";
 import { Star } from "lucide-react";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
-import { CSS } from '@dnd-kit/utilities';
 
 interface RankingGridProps {
   rankedPokemon: RankedPokemon[];
@@ -170,45 +168,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   onReorder,
   isDraggable = true
 }) => {
-  const [activeId, setActiveId] = React.useState<string | null>(null);
-  
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    })
-  );
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const oldIndex = rankedPokemon.findIndex(pokemon => String(pokemon.id) === String(active.id));
-    const newIndex = rankedPokemon.findIndex(pokemon => String(pokemon.id) === String(over.id));
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const newOrder = arrayMove(rankedPokemon, oldIndex, newIndex);
-      onReorder(newOrder);
-    }
-  };
-
-  const activePokemon = activeId ? rankedPokemon.find(p => String(p.id) === activeId) : null;
-
   console.log(`🎯 [RANKING_GRID_DEBUG] Rendering RankingGrid with ${rankedPokemon.length} Pokemon`);
   console.log(`🎯 [RANKING_GRID_DEBUG] Passing allRankedPokemon array with length: ${rankedPokemon.length}`);
 
@@ -228,38 +187,17 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      modifiers={[restrictToVerticalAxis]}
-    >
-      <SortableContext items={rankedPokemon.map(p => String(p.id))} strategy={verticalListSortingStrategy}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {rankedPokemon.map((pokemon, index) => (
-            <SortableRankingCard
-              key={pokemon.id}
-              pokemon={pokemon}
-              index={index}
-              allRankedPokemon={rankedPokemon}
-            />
-          ))}
-        </div>
-      </SortableContext>
-
-      <DragOverlay>
-        {activePokemon && (
-          <DraggablePokemonMilestoneCard
-            pokemon={activePokemon}
-            index={rankedPokemon.findIndex(p => p.id === activePokemon.id)}
-            showRank={true}
-            isDraggable={false}
-            context="ranked"
+    <SortableContext items={rankedPokemon.map(p => String(p.id))} strategy={verticalListSortingStrategy}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        {rankedPokemon.map((pokemon, index) => (
+          <SortableRankingCard
+            key={pokemon.id}
+            pokemon={pokemon}
+            index={index}
             allRankedPokemon={rankedPokemon}
           />
-        )}
-      </DragOverlay>
-    </DndContext>
+        ))}
+      </div>
+    </SortableContext>
   );
 };
