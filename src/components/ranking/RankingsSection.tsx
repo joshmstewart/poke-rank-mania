@@ -23,7 +23,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ overflow: 'visible', contain: 'none' }}>
       {/* Streamlined Header */}
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between">
@@ -34,8 +34,8 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
         </div>
       </div>
       
-      {/* Rankings Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Rankings Grid - REMOVED overflow-y-auto to prevent containment */}
+      <div className="flex-1 p-4" style={{ overflow: 'visible', contain: 'none' }}>
         <DragDropGrid
           displayRankings={displayRankings}
           localPendingRefinements={pendingRefinements}

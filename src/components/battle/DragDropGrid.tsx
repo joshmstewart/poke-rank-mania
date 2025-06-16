@@ -27,12 +27,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onLocalReorder,
   availablePokemon = []
 }) => {
-  // Set up drop zone for rankings grid
+  // Set up drop zone for rankings grid - FIXED collision detection
   const { setNodeRef: setDropZoneRef, isOver } = useDroppable({
     id: 'rankings-grid-drop-zone',
     data: {
       type: 'rankings-grid',
-      accepts: ['available-pokemon', 'ranked-pokemon']
+      accepts: ['available-pokemon', 'ranked-pokemon'] // This MUST match what's being dragged
     }
   });
 
@@ -40,7 +40,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     id: 'rankings-grid-drop-zone',
     setNodeRef: !!setDropZoneRef,
     isOver,
-    accepts: ['available-pokemon', 'ranked-pokemon']
+    accepts: ['available-pokemon', 'ranked-pokemon'],
+    collision_detection: 'FIXED'
   });
 
   const handleMarkAsPending = (pokemonId: number) => {
@@ -56,7 +57,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
         gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         transform: 'translateZ(0)',
         willChange: 'auto',
-        minHeight: displayRankings.length === 0 ? '200px' : 'auto'
+        minHeight: displayRankings.length === 0 ? '200px' : 'auto',
+        // CRITICAL: Remove any containment that blocks drag detection
+        overflow: 'visible',
+        contain: 'none'
       }}
     >
       {displayRankings.length === 0 && (
@@ -88,7 +92,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   // Only wrap in SortableContext if we have a manual reorder handler
   if (onManualReorder) {
     return (
-      <div ref={setDropZoneRef} className="w-full">
+      <div ref={setDropZoneRef} className="w-full" style={{ overflow: 'visible', contain: 'none' }}>
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 
           strategy={rectSortingStrategy}
@@ -99,7 +103,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     );
   }
 
-  return <div ref={setDropZoneRef} className="w-full">{gridContent}</div>;
+  return <div ref={setDropZoneRef} className="w-full" style={{ overflow: 'visible', contain: 'none' }}>{gridContent}</div>;
 };
 
 export default DragDropGrid;

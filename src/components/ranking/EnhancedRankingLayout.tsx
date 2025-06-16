@@ -7,7 +7,6 @@ import { RankingsSection } from "./RankingsSection";
 import EnhancedAvailablePokemonSection from "./EnhancedAvailablePokemonSection";
 import UnifiedControls from "@/components/shared/UnifiedControls";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
-import { Card } from "@/components/ui/card";
 
 interface EnhancedRankingLayoutProps {
   isLoading: boolean;
@@ -92,19 +91,19 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           />
         </div>
 
-        {/* Main Content Grid */}
+        {/* Main Content Grid - REMOVED CARD CONTAINMENT */}
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)' }}>
-            {/* Enhanced Available Pokemon Card */}
-            <Card className="shadow-lg border border-gray-200 flex flex-col">
+            {/* Enhanced Available Pokemon - NO Card wrapper to prevent containment */}
+            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col" style={{ overflow: 'visible', contain: 'none' }}>
               <EnhancedAvailablePokemonSection
                 availablePokemon={enhancedAvailablePokemon}
                 rankedPokemon={displayRankings}
               />
-            </Card>
+            </div>
 
-            {/* Rankings Card */}
-            <Card className="shadow-lg border border-gray-200 flex flex-col">
+            {/* Rankings - NO Card wrapper to prevent containment */}
+            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col" style={{ overflow: 'visible', contain: 'none' }}>
               <RankingsSection
                 displayRankings={displayRankings}
                 pendingRefinements={new Set()}
@@ -112,14 +111,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
                 onManualReorder={handleManualReorder}
                 onLocalReorder={handleLocalReorder}
               />
-            </Card>
+            </div>
           </div>
         </div>
 
-        {/* Drag Overlay - Enhanced with fallback */}
+        {/* Drag Overlay - Enhanced with HIGH z-index */}
         <DragOverlay>
           {activeDraggedPokemon ? (
-            <div className="transform rotate-2 scale-105 opacity-95 z-50">
+            <div className="transform rotate-2 scale-105 opacity-95" style={{ zIndex: 9999 }}>
               {sourceCardProps ? (
                 <DraggablePokemonMilestoneCard
                   {...sourceCardProps}

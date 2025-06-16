@@ -55,7 +55,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
         // Render previous generation's Pokemon if any
         if (currentGenerationPokemon.length > 0) {
           result.push(
-            <div key={`gen-${currentGeneration}-pokemon`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+            <div key={`gen-${currentGeneration}-pokemon`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', overflow: 'visible', contain: 'none' }}>
               {currentGenerationPokemon.map((pokemon, index) => (
                 <DraggablePokemonMilestoneCard
                   key={pokemon.id}
@@ -97,7 +97,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     // Render remaining Pokemon
     if (currentGenerationPokemon.length > 0) {
       result.push(
-        <div key={`gen-${currentGeneration}-pokemon-final`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        <div key={`gen-${currentGeneration}-pokemon-final`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', overflow: 'visible', contain: 'none' }}>
           {currentGenerationPokemon.map((pokemon, index) => (
             <DraggablePokemonMilestoneCard
               key={pokemon.id}
@@ -119,8 +119,8 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   };
 
   return (
-    <div className="flex-1 overflow-y-visible overflow-x-visible p-4 transition-colors">
-      <div className="space-y-4">
+    <div className="flex-1 p-4 transition-colors" style={{ overflow: 'visible', contain: 'none' }}>
+      <div className="space-y-4" style={{ overflow: 'visible', contain: 'none' }}>
         {renderContent()}
         
         {isLoading && (
