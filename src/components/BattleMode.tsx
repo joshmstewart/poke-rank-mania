@@ -1,15 +1,11 @@
 
 import React from "react";
-import BattleModeContainer from "./battle/BattleModeContainer";
+import BattleModeCore from "./battle/BattleModeCore";
 
 const BattleMode = () => {
   console.log('🔥 BattleMode: Component rendering');
   
-  // Return the container instead of core, as it handles the props properly
-  return <BattleModeContainer 
-    allPokemon={[]} 
-    initialBattleType="pairs"
-  />;
+  return <BattleModeCore />;
 };
 
 export default BattleMode;

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
@@ -65,6 +64,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
   };
 
+
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
 
   // Hooks for modal content
@@ -115,10 +115,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 px-2 z-20">
           Pending Battle
         </div>
-      )}
+      )
 
       {/* Prioritize button - only visible on card hover */}
-      {(
+      (
         <button
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -148,10 +148,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             }`}
           />
         </button>
-      )}
+      )
 
       {/* Info Button with Dialog - only visible on card hover */}
-      {(
+      (
         <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
