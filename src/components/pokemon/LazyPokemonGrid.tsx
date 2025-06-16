@@ -81,6 +81,7 @@ export const LazyPokemonGrid: React.FC<LazyPokemonGridProps> = ({
                     showRank={isRankingArea}
                     isDraggable={true}
                     isAvailable={!isRankingArea}
+                    context={isRankingArea ? "ranked" : "available"}
                     allRankedPokemon={isRankingArea ? rankedList : []}
                   />
                 );

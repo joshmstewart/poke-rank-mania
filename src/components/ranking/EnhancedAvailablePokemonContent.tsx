@@ -1,42 +1,7 @@
 import React from "react";
-import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
-
-// ===================================================================
-// 1. DEFINE THE NEW WRAPPER COMPONENT HERE
-// ===================================================================
-const DraggableAvailableCard: React.FC<{ pokemon: any; index: number; allRankedPokemon: any[] }> = ({ pokemon, index, allRankedPokemon }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `available-${pokemon.id}`,
-    data: {
-      type: 'available-pokemon',
-      pokemon: pokemon,
-      source: 'available',
-      index,
-      isRanked: 'isRanked' in pokemon && pokemon.isRanked
-    },
-  });
-
-  const style: React.CSSProperties = {
-    opacity: isDragging ? 0 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <DraggablePokemonMilestoneCard
-        key={pokemon.id}
-        pokemon={pokemon}
-        index={index}
-        isPending={false}
-        showRank={false}
-        isDraggable={true}
-        isAvailable={true}
-        allRankedPokemon={allRankedPokemon}
-      />
-    </div>
-  );
-};
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -100,10 +65,15 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           result.push(
             <div key={`gen-${currentGeneration}-pokemon`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
               {currentGenerationPokemon.map((pokemon, index) => (
-                <DraggableAvailableCard
+                <DraggablePokemonMilestoneCard
                   key={pokemon.id}
                   pokemon={pokemon}
                   index={index}
+                  isPending={false}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={true}
+                  context="available"
                   allRankedPokemon={allRankedPokemon}
                 />
               ))}
@@ -137,10 +107,15 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       result.push(
         <div key={`gen-${currentGeneration}-pokemon-final`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
           {currentGenerationPokemon.map((pokemon, index) => (
-            <DraggableAvailableCard
+            <DraggablePokemonMilestoneCard
               key={pokemon.id}
               pokemon={pokemon}
               index={index}
+              isPending={false}
+              showRank={false}
+              isDraggable={true}
+              isAvailable={true}
+              context="available"
               allRankedPokemon={allRankedPokemon}
             />
           ))}

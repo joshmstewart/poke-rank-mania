@@ -96,6 +96,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
                 showRank={false}
                 isDraggable={true}
                 isAvailable={true}
+                context="available"
               />
             );
           }
