@@ -73,6 +73,8 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
   };
 
+  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
+
   // Use the appropriate hook based on context
   const draggableHook = useDraggable({
     id,
@@ -96,6 +98,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   } = isAvailableContext ? draggableHook : sortableHook;
 
   const transition = !isAvailableContext ? sortableHook.transition : undefined;
+
+  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - attributes:`, attributes);
+  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - listeners:`, listeners);
+  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - isDragging: ${isDragging}`);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -141,9 +147,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
-  // Determine which props to apply based on context and draggability
-  const shouldApplyDragProps = isDraggable && !isOpen;
-  const dragProps = shouldApplyDragProps ? { ...attributes, ...listeners } : {};
+  // CRITICAL FIX: Always apply drag props when draggable, regardless of dialog state
+  const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
+
+  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - Final dragProps:`, dragProps);
 
   return (
     <div
