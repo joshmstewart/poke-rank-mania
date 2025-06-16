@@ -30,10 +30,7 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
     e.stopPropagation();
     e.preventDefault();
 
-    console.log(`⭐ [RANKING_GRID_STAR_TOGGLE] Star clicked for ${pokemon.name} - current pending: ${isPendingRefinement}`);
-
     if (!isPendingRefinement) {
-      console.log(`⭐ [RANKING_GRID_STAR_TOGGLE] Adding ${pokemon.name} to CLOUD pending state`);
       addPendingPokemon(pokemon.id);
 
       if (allPokemon.length > 1) {
@@ -51,7 +48,6 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
         }
       }
     } else {
-      console.log(`⭐ [RANKING_GRID_STAR_TOGGLE] Removing ${pokemon.name} from CLOUD pending state`);
       removePendingPokemon(pokemon.id);
     }
   };
@@ -141,9 +137,9 @@ const SortableRankingCard: React.FC<{
   });
 
   const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
+    transform: !isDragging ? CSS.Translate.toString(transform) : undefined,
     transition,
-    opacity: isDragging ? 0.3 : 1, // Keep cards visible when dragging
+    opacity: isDragging ? 0 : 1,
     zIndex: isDragging ? 100 : 'auto',
   };
 
@@ -168,8 +164,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   onReorder,
   isDraggable = true
 }) => {
-  console.log(`🎯 [RANKING_GRID_DEBUG] Rendering RankingGrid with ${rankedPokemon.length} Pokemon`);
-  console.log(`🎯 [RANKING_GRID_DEBUG] Passing allRankedPokemon array with length: ${rankedPokemon.length}`);
 
   if (!isDraggable) {
     // Simple grid without drag and drop
