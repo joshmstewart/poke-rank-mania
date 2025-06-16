@@ -1,6 +1,7 @@
+
 import React from "react";
 import { useDroppable } from '@dnd-kit/core';
-import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
+import { UnifiedPokemonCard } from "@/components/unified/UnifiedPokemonCard";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
 interface EnhancedAvailablePokemonContentProps {
@@ -13,10 +14,9 @@ interface EnhancedAvailablePokemonContentProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   currentPage: number;
   totalPages: number;
-  allRankedPokemon?: any[]; // Add this prop to pass ranked Pokemon list
+  allRankedPokemon?: any[];
 }
 
-// Simple loading placeholder component
 const PokemonLoadingPlaceholder = () => (
   <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
 );
@@ -31,17 +31,16 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   loadingRef,
   currentPage,
   totalPages,
-  allRankedPokemon = [] // Default to empty array
+  allRankedPokemon = []
 }) => {
   const { setNodeRef } = useDroppable({
     id: 'enhanced-available-drop-zone',
     data: {
       type: 'available-container',
-      accepts: 'ranked-pokemon' // Kept for potential future use (e.g., un-ranking)
+      accepts: 'ranked-pokemon'
     }
   });
 
-  // Group items by generation for display
   const renderContent = () => {
     if (items.length === 0 && !isLoading) {
       return (
@@ -60,29 +59,29 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
 
     for (const item of items) {
       if (item.type === 'header') {
-        // Render previous generation's Pokemon if any
         if (currentGenerationPokemon.length > 0) {
           result.push(
             <div key={`gen-${currentGeneration}-pokemon`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-              {currentGenerationPokemon.map((pokemon, index) => (
-                <DraggablePokemonMilestoneCard
-                  key={pokemon.id}
-                  pokemon={pokemon}
-                  index={index}
-                  isPending={false}
-                  showRank={false}
-                  isDraggable={true}
-                  isAvailable={true}
-                  context="available"
-                  allRankedPokemon={allRankedPokemon}
-                />
-              ))}
+              {currentGenerationPokemon.map((pokemon, index) => {
+                const isRanked = allRankedPokemon.some(ranked => ranked.id === pokemon.id);
+                const currentRank = isRanked ? allRankedPokemon.findIndex(ranked => ranked.id === pokemon.id) + 1 : undefined;
+                
+                return (
+                  <UnifiedPokemonCard
+                    key={pokemon.id}
+                    pokemon={pokemon}
+                    index={index}
+                    context="available"
+                    isRanked={isRanked}
+                    currentRank={currentRank}
+                  />
+                );
+              })}
             </div>
           );
           currentGenerationPokemon = [];
         }
 
-        // Add generation header with proper data
         result.push(
           <GenerationHeader
             key={`gen-${item.generationId}`}
@@ -102,23 +101,24 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       }
     }
 
-    // Render remaining Pokemon
     if (currentGenerationPokemon.length > 0) {
       result.push(
         <div key={`gen-${currentGeneration}-pokemon-final`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-          {currentGenerationPokemon.map((pokemon, index) => (
-            <DraggablePokemonMilestoneCard
-              key={pokemon.id}
-              pokemon={pokemon}
-              index={index}
-              isPending={false}
-              showRank={false}
-              isDraggable={true}
-              isAvailable={true}
-              context="available"
-              allRankedPokemon={allRankedPokemon}
-            />
-          ))}
+          {currentGenerationPokemon.map((pokemon, index) => {
+            const isRanked = allRankedPokemon.some(ranked => ranked.id === pokemon.id);
+            const currentRank = isRanked ? allRankedPokemon.findIndex(ranked => ranked.id === pokemon.id) + 1 : undefined;
+            
+            return (
+              <UnifiedPokemonCard
+                key={pokemon.id}
+                pokemon={pokemon}
+                index={index}
+                context="available"
+                isRanked={isRanked}
+                currentRank={currentRank}
+              />
+            );
+          })}
         </div>
       );
     }
@@ -144,35 +144,4 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       </div>
     </div>
   );
-};
-
-// Helper functions for generation data
-const getRegionForGeneration = (gen: number): string => {
-  const regions: Record<number, string> = {
-    1: "Kanto",
-    2: "Johto", 
-    3: "Hoenn",
-    4: "Sinnoh",
-    5: "Unova",
-    6: "Kalos",
-    7: "Alola",
-    8: "Galar",
-    9: "Paldea"
-  };
-  return regions[gen] || "Unknown";
-};
-
-const getGamesForGeneration = (gen: number): string => {
-  const games: Record<number, string> = {
-    1: "Red, Blue, Yellow",
-    2: "Gold, Silver, Crystal",
-    3: "Ruby, Sapphire, Emerald",
-    4: "Diamond, Pearl, Platinum",
-    5: "Black, White, B2W2",
-    6: "X, Y, ORAS",
-    7: "Sun, Moon, USUM",
-    8: "Sword, Shield",
-    9: "Scarlet, Violet"
-  };
-  return games[gen] || "Unknown";
 };
