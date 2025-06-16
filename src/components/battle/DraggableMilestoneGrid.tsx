@@ -36,8 +36,8 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
 }) => {
   const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
 
-  console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] Rendering with ${displayRankings.length} Pokemon`);
-  console.log(`🎯 [DRAGGABLE_MILESTONE_GRID] onManualReorder provided: ${!!onManualReorder}`);
+  console.log(`[DND_DEBUG] Rendering with ${displayRankings.length} Pokemon`);
+  console.log(`[DND_DEBUG] onManualReorder provided: ${!!onManualReorder}`);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

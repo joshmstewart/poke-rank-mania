@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { useDraggable } from '@dnd-kit/core';
@@ -73,7 +72,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
   };
 
-  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
+  console.log(`[DND_DEBUG] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
 
   // Use the appropriate hook based on context
   const draggableHook = useDraggable({
@@ -99,9 +98,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
   const transition = !isAvailableContext ? sortableHook.transition : undefined;
 
-  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - attributes:`, attributes);
-  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - listeners:`, listeners);
-  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - isDragging: ${isDragging}`);
+  console.log(`[DND_DEBUG] ${pokemon.name} - attributes:`, attributes);
+  console.log(`[DND_DEBUG] ${pokemon.name} - listeners:`, listeners);
+  console.log(`[DND_DEBUG] ${pokemon.name} - isDragging: ${isDragging}`);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -150,11 +149,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // CRITICAL FIX: Always apply drag props when draggable, regardless of dialog state
   const dragProps = isDraggable ? { ...attributes, ...listeners } : {};
 
-  console.log(`[DRAG_CARD_DEBUG] ${pokemon.name} - Final dragProps:`, dragProps);
+  console.log(`[DND_DEBUG] ${pokemon.name} - Final dragProps:`, dragProps);
 
   // ===== EVENT DEBUGGING =====
   const handlePointerDown = (e: React.PointerEvent) => {
-    console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} POINTER DOWN:`, {
+    console.log(`[DND_DEBUG] ${pokemon.name} POINTER DOWN:`, {
       type: e.type,
       button: e.button,
       isPrimary: e.isPrimary,
@@ -172,15 +171,15 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
     // Call the original dnd-kit listener if it exists and is a function
     if (isDraggable && dragProps && 'onPointerDown' in dragProps && typeof dragProps.onPointerDown === 'function') {
-      console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onPointerDown`);
+      console.log(`[DND_DEBUG] ${pokemon.name} calling dnd-kit onPointerDown`);
       dragProps.onPointerDown(e);
     } else {
-      console.error(`🚨 [EVENT_DEBUG] ${pokemon.name} NO onPointerDown listener!`);
+      console.error(`[DND_DEBUG] ${pokemon.name} NO onPointerDown listener!`);
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} MOUSE DOWN:`, {
+    console.log(`[DND_DEBUG] ${pokemon.name} MOUSE DOWN:`, {
       button: e.button,
       buttons: e.buttons,
       detail: e.detail,
@@ -190,13 +189,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     });
 
     if (isDraggable && dragProps && 'onMouseDown' in dragProps && typeof dragProps.onMouseDown === 'function') {
-      console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onMouseDown`);
+      console.log(`[DND_DEBUG] ${pokemon.name} calling dnd-kit onMouseDown`);
       dragProps.onMouseDown(e);
     }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} TOUCH START:`, {
+    console.log(`[DND_DEBUG] ${pokemon.name} TOUCH START:`, {
       touches: e.touches.length,
       changedTouches: e.changedTouches.length,
       targetTouches: e.targetTouches.length,
@@ -204,13 +203,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     });
 
     if (isDraggable && dragProps && 'onTouchStart' in dragProps && typeof dragProps.onTouchStart === 'function') {
-      console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onTouchStart`);
+      console.log(`[DND_DEBUG] ${pokemon.name} calling dnd-kit onTouchStart`);
       dragProps.onTouchStart(e);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} KEY DOWN:`, {
+    console.log(`[DND_DEBUG] ${pokemon.name} KEY DOWN:`, {
       key: e.key,
       code: e.code,
       keyCode: e.keyCode,
@@ -218,13 +217,13 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     });
 
     if (isDraggable && dragProps && 'onKeyDown' in dragProps && typeof dragProps.onKeyDown === 'function') {
-      console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} calling dnd-kit onKeyDown`);
+      console.log(`[DND_DEBUG] ${pokemon.name} calling dnd-kit onKeyDown`);
       dragProps.onKeyDown(e);
     }
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log(`🚨 [EVENT_DEBUG] ${pokemon.name} CLICK:`, {
+    console.log(`[DND_DEBUG] ${pokemon.name} CLICK:`, {
       button: e.button,
       detail: e.detail,
       clientX: e.clientX,
@@ -239,7 +238,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     const element = document.querySelector(`[data-pokemon-id="${pokemon.id}"]`) as HTMLElement;
     if (element) {
       const computedStyle = getComputedStyle(element);
-      console.log(`🎨 [CSS_DEBUG] ${pokemon.name} CSS:`, {
+      console.log(`[DND_DEBUG] ${pokemon.name} CSS:`, {
         pointerEvents: computedStyle.pointerEvents,
         zIndex: computedStyle.zIndex,
         position: computedStyle.position,
@@ -269,7 +268,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     ...attributes
   } : {};
 
-  console.log(`🔧 [ENHANCED_PROPS] ${pokemon.name} enhanced props:`, enhancedEventProps);
+  console.log(`[DND_DEBUG] ${pokemon.name} enhanced props:`, enhancedEventProps);
 
   return (
     <div
