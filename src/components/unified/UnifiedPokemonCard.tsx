@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { useSortable, useDraggable } from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from '@/services/pokemon';
 import { getPokemonBackgroundColor } from '@/components/battle/utils/PokemonColorUtils';
