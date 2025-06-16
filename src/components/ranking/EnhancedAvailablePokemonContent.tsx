@@ -1,5 +1,5 @@
+
 import React from "react";
-import { useDroppable } from '@dnd-kit/core';
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
 
@@ -33,14 +33,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   totalPages,
   allRankedPokemon = [] // Default to empty array
 }) => {
-  const { setNodeRef } = useDroppable({
-    id: 'enhanced-available-drop-zone',
-    data: {
-      type: 'available-container',
-      accepts: 'ranked-pokemon' // Kept for potential future use (e.g., un-ranking)
-    }
-  });
-
   // Group items by generation for display
   const renderContent = () => {
     if (items.length === 0 && !isLoading) {
@@ -127,10 +119,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      className="flex-1 overflow-y-visible overflow-x-visible p-4 transition-colors"
-    >
+    <div className="flex-1 overflow-y-visible overflow-x-visible p-4 transition-colors">
       <div className="space-y-4">
         {renderContent()}
         
