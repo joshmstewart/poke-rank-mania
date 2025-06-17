@@ -63,37 +63,37 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
-  console.log('%cEnhancedRankingLayout rendering', 'color: blue', { displayRankings });
+  console.log('%cEnhancedRankingLayout rendering with PURE DnD', 'color: green', { displayRankings });
 
   const handleManualModeReset = () => {
     handleComprehensiveReset();
   };
 
-  // CRITICAL FIX: Improved collision detection with better ranking support
+  // PURE DND: Simplified collision detection focused on drop zones
   const customCollisionDetection = (args: any) => {
     const { active, droppableContainers } = args;
     
-    console.log(`[COLLISION_DETECTION] Active: ${active.id}, Available containers:`, 
+    console.log(`[PURE_COLLISION] Active: ${active.id}, Available containers:`, 
       Array.from(droppableContainers.keys())
     );
 
-    // First try pointer-based detection
+    // First try pointer-based detection for precise positioning
     const pointerCollisions = pointerWithin(args);
     if (pointerCollisions.length > 0) {
-      console.log(`[COLLISION_DETECTION] Pointer collision found:`, pointerCollisions);
+      console.log(`[PURE_COLLISION] Pointer collision found:`, pointerCollisions);
       return pointerCollisions;
     }
 
     // Fallback to rectangle intersection
     const rectCollisions = rectIntersection(args);
     if (rectCollisions.length > 0) {
-      console.log(`[COLLISION_DETECTION] Rectangle collision found:`, rectCollisions);
+      console.log(`[PURE_COLLISION] Rectangle collision found:`, rectCollisions);
       return rectCollisions;
     }
 
     // Final fallback to closest center
     const centerCollisions = closestCenter(args);
-    console.log(`[COLLISION_DETECTION] Using closest center:`, centerCollisions);
+    console.log(`[PURE_COLLISION] Using closest center:`, centerCollisions);
     return centerCollisions;
   };
 
@@ -119,19 +119,19 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           />
         </div>
 
-        {/* Main Content Grid - FIXED: Remove all containment CSS */}
+        {/* Main Content Grid */}
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)', overflow: 'visible', contain: 'none' }}>
-            {/* Enhanced Available Pokemon - NO Card wrapper to prevent containment */}
-            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col" style={{ overflow: 'visible', contain: 'none' }}>
+          <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)' }}>
+            {/* Enhanced Available Pokemon */}
+            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col">
               <EnhancedAvailablePokemonSection
                 availablePokemon={enhancedAvailablePokemon}
                 rankedPokemon={displayRankings}
               />
             </div>
 
-            {/* Rankings - NO Card wrapper to prevent containment */}
-            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col" style={{ overflow: 'visible', contain: 'none' }}>
+            {/* Rankings */}
+            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col">
               <RankingsSection
                 displayRankings={displayRankings}
                 pendingRefinements={new Set()}
@@ -143,7 +143,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
           </div>
         </div>
 
-        {/* CRITICAL FIX: Enhanced Drag Overlay with proper z-index and Pokemon card */}
+        {/* PURE DND: Enhanced Drag Overlay */}
         <DragOverlay 
           dropAnimation={null}
           style={{ zIndex: 99999 }}
@@ -155,7 +155,6 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
                 zIndex: 99999,
                 position: 'fixed',
                 pointerEvents: 'none',
-                willChange: 'transform'
               }}
             >
               <DraggablePokemonMilestoneCard

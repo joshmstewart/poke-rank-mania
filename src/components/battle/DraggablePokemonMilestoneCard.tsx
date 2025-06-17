@@ -1,6 +1,4 @@
-
 import React from "react";
-import { useSortable } from '@dnd-kit/sortable';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
@@ -60,56 +58,35 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  // Determine if this is available context
-  const isAvailableContext = context === 'available';
-
-  // Set up draggable ID and data
-  const id = isDraggable ? (isAvailableContext ? `available-${pokemon.id}` : pokemon.id.toString()) : `static-${pokemon.id}`;
+  // PURE DRAGGABLE APPROACH: All cards use useDraggable regardless of context
+  const id = `${context}-${pokemon.id}`;
   const data = {
-    type: isAvailableContext ? 'available-pokemon' : 'ranked-pokemon',
+    type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
     pokemon: pokemon,
     source: context,
     index,
     isRanked: context === 'available' && 'isRanked' in pokemon && pokemon.isRanked
   };
 
-  // CRITICAL FIX: Use different hooks based on context with proper animation handling
-  const draggableResult = useDraggable({
-    id,
-    data,
-    disabled: !isDraggable || isOpen,
-  });
-  
-  const sortableResult = useSortable({ 
-    id,
-    data,
-    disabled: !isDraggable || isOpen,
-    // CRITICAL: Configure sortable to respond to external drags
-    animateLayoutChanges: () => true,
-  });
-
-  // Choose which hook result to use
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     isDragging
-  } = isAvailableContext ? draggableResult : sortableResult;
+  } = useDraggable({
+    id,
+    data,
+    disabled: !isDraggable || isOpen,
+  });
 
-  const transition = !isAvailableContext ? sortableResult.transition : undefined;
-
-  // CRITICAL FIX: Improved transform handling for better visual feedback
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
     minHeight: '140px',
     minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
-    willChange: 'transform' as const,
-    backfaceVisibility: 'hidden' as const,
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
@@ -144,10 +121,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
-  // CRITICAL FIX: Simplified drag props - only apply when draggable and not in a modal
+  // PURE DRAGGABLE: Apply drag props only when draggable and not in modal
   const dragProps = isDraggable && !isOpen ? { ...attributes, ...listeners } : {};
 
-  console.log(`[DND_CARD_DEBUG] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
+  console.log(`[PURE_DND_CARD] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
 
   return (
     <div
@@ -165,10 +142,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     >
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
-        <div 
-          className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"
-          style={{ transform: 'translateZ(0)' }}
-        ></div>
+        <div className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"></div>
       )}
 
       {/* Dark overlay for already-ranked Pokemon in available section */}
@@ -287,13 +261,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className={`w-20 h-20 object-contain transition-all duration-200 ${
-            isDragging && isAvailableContext ? 'scale-110' : ''
-          }`}
-          style={{ 
-            transform: 'translateZ(0)',
-            willChange: isDragging && isAvailableContext ? 'transform' : 'auto'
-          }}
+          className="w-20 h-20 object-contain transition-all duration-200"
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -303,9 +271,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
       
       {/* Pokemon info */}
-      <div className={`bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100 ${
-        isDragging && isAvailableContext ? 'bg-blue-50' : ''
-      }`}>
+      <div className="bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100">
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
           {pokemon.name}
         </h3>
@@ -324,5 +290,4 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   );
 };
 
-// Wrap the export in React.memo to prevent unnecessary re-renders
 export default React.memo(DraggablePokemonMilestoneCard);
