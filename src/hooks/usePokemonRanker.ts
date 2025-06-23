@@ -14,6 +14,7 @@ export const usePokemonRanker = () => {
   
   const {
     rankedPokemonState: rankedPokemon,
+    setAvailablePokemon,
     setRankedPokemon,
     confidenceScores,
     setConfidenceScores,
@@ -98,7 +99,7 @@ export const usePokemonRanker = () => {
     isLoading,
     availablePokemon,
     rankedPokemon,
-    setAvailablePokemon: setRankedPokemon,
+    setAvailablePokemon,
     setRankedPokemon,
     confidenceScores,
     setConfidenceScores,
