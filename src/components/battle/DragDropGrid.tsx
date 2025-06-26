@@ -80,8 +80,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       {/* Drop zone before first item */}
       <DropZone id="drop-before-0" index={0} />
       
-      {/* Grid layout matching Available Pokemon section */}
-      <div className="grid grid-cols-2 gap-2 mb-6">
+      {/* Responsive grid layout matching Available Pokemon section */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
         {displayRankings.map((pokemon, index) => (
           <div key={pokemon.id} className="w-full">
             <DraggablePokemonMilestoneCard
