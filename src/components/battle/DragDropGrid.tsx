@@ -1,8 +1,25 @@
 
 import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
-import { useDroppable } from '@dnd-kit/core';
+import { 
+  DndContext, 
+  closestCenter, 
+  useSensors, 
+  useSensor, 
+  PointerSensor, 
+  TouchSensor, 
+  KeyboardSensor,
+  DragEndEvent,
+  DragOverlay
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  rectSortingStrategy,
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 import DraggablePokemonMilestoneCard from "./DraggablePokemonMilestoneCard";
+import SortablePokemonCard from "./SortablePokemonCard";
 
 interface DragDropGridProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -14,39 +31,6 @@ interface DragDropGridProps {
   availablePokemon?: any[];
 }
 
-// Individual drop zone component for precise positioning
-const DropZone: React.FC<{
-  id: string;
-  index: number;
-  isLast?: boolean;
-  className?: string;
-}> = ({ id, index, isLast = false, className = "" }) => {
-  const { setNodeRef, isOver } = useDroppable({
-    id,
-    data: {
-      type: 'ranking-position',
-      index,
-      position: isLast ? 'end' : 'before'
-    }
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`${isOver ? 'bg-blue-100 border-2 border-dashed border-blue-400' : 'border-2 border-dashed border-transparent'} 
-        transition-all duration-200 ${className}`}
-      style={{ minHeight: isLast ? '60px' : '20px' }}
-      data-drop-zone-id={id}
-    >
-      {isOver && (
-        <div className="flex items-center justify-center h-full text-blue-600 text-sm font-medium">
-          Drop here to {isLast ? 'add to end' : `insert at position ${index + 1}`}
-        </div>
-      )}
-    </div>
-  );
-};
-
 const DragDropGrid: React.FC<DragDropGridProps> = ({
   displayRankings,
   localPendingRefinements,
@@ -56,61 +40,118 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onLocalReorder,
   availablePokemon = []
 }) => {
-  console.log(`[DRAG_DROP_GRID_PURE] Rendering with ${displayRankings.length} ranked Pokemon`);
+  const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
 
-  const handleMarkAsPending = (pokemonId: number) => {
-    // For manual mode, we don't need special pending logic like battle mode
+  console.log(`[DRAG_DROP_GRID] Rendering with ${displayRankings.length} ranked Pokemon using sortable approach`);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+        delay: 0,
+        tolerance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 100,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: any) => {
+    console.log(`[SORTABLE_GRID] Drag start:`, event.active.id);
+    const pokemon = displayRankings.find(p => p.id.toString() === event.active.id);
+    setActivePokemon(pokemon || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    console.log(`[SORTABLE_GRID] Drag end:`, event.active.id, '→', event.over?.id);
+    const { active, over } = event;
+    setActivePokemon(null);
+
+    if (over && active.id !== over.id) {
+      const oldIndex = displayRankings.findIndex(p => p.id.toString() === active.id);
+      const newIndex = displayRankings.findIndex(p => p.id.toString() === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        console.log(`[SORTABLE_GRID] Reordering from ${oldIndex} to ${newIndex}`);
+        
+        // Perform local reorder for optimistic UI update
+        if (onLocalReorder) {
+          const newOrder = arrayMove(displayRankings, oldIndex, newIndex);
+          onLocalReorder(newOrder);
+        }
+
+        // Trigger manual reorder for backend logic
+        if (onManualReorder) {
+          const draggedPokemonId = displayRankings[oldIndex].id;
+          onManualReorder(draggedPokemonId, oldIndex, newIndex);
+        }
+      }
+    }
   };
 
   if (displayRankings.length === 0) {
     return (
-      <div className="w-full min-h-[400px]">
-        <DropZone
-          id="empty-rankings-drop"
-          index={0}
-          isLast={true}
-          className="flex items-center justify-center h-48 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg"
-        />
+      <div className="w-full min-h-[400px] flex items-center justify-center">
+        <div className="text-gray-500 text-center">
+          <p className="text-lg mb-2">No Pokémon ranked yet</p>
+          <p className="text-sm">Drag Pokémon from the Available section to start ranking</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-[400px]">
-      {/* Drop zone before first item */}
-      <DropZone id="drop-before-0" index={0} />
-      
-      {/* Responsive grid layout matching Available Pokemon section */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
-        {displayRankings.map((pokemon, index) => (
-          <div key={pokemon.id} className="w-full">
-            <DraggablePokemonMilestoneCard
-              pokemon={pokemon}
-              index={index}
-              showRank={true}
-              isDraggable={!!onManualReorder}
-              context="ranked"
-              isPending={localPendingRefinements.has(pokemon.id)}
-              allRankedPokemon={displayRankings}
-            />
-            
-            {/* Drop zone after this item - positioned between grid items */}
-            <DropZone 
-              id={`drop-after-${index}`} 
-              index={index + 1}
-              className="mt-1"
-            />
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="w-full min-h-[400px]">
+        <SortableContext 
+          items={displayRankings.map(p => p.id.toString())} 
+          strategy={rectSortingStrategy}
+        >
+          {/* Responsive grid layout matching Available Pokemon section */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
+            {displayRankings.map((pokemon, index) => (
+              <SortablePokemonCard
+                key={pokemon.id}
+                id={pokemon.id.toString()}
+                pokemon={pokemon}
+                index={index}
+                isPending={localPendingRefinements.has(pokemon.id)}
+                allRankedPokemon={displayRankings}
+              />
+            ))}
           </div>
-        ))}
+        </SortableContext>
+
+        {/* Drag Overlay for smooth dragging experience */}
+        <DragOverlay>
+          {activePokemon ? (
+            <div className="rotate-2 scale-105 opacity-90">
+              <DraggablePokemonMilestoneCard
+                pokemon={activePokemon}
+                index={displayRankings.findIndex(p => p.id === activePokemon.id)}
+                showRank={true}
+                isDraggable={false}
+                context="ranked"
+                isPending={localPendingRefinements.has(activePokemon.id)}
+                allRankedPokemon={displayRankings}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
       </div>
-      
-      {/* Final drop zone at the end */}
-      <DropZone 
-        id={`drop-after-${displayRankings.length - 1}`} 
-        index={displayRankings.length}
-        isLast={true}
-      />
-    </div>
+    </DndContext>
   );
 };
 
