@@ -129,7 +129,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group w-full ${
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden aspect-square flex flex-col group w-full ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
         isDragging ? 'shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200'
@@ -170,7 +170,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             e.stopPropagation();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-300 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-1 rounded-full transition-opacity duration-300 ${
             isPendingRefinement
               ? 'opacity-100'
               : isHovered
@@ -182,7 +182,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           disabled={!isHydrated}
         >
           <Star
-            className={`w-16 h-16 transition-colors duration-300 ${
+            className={`w-4 h-4 transition-colors duration-300 ${
               isPendingRefinement ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500 hover:text-yellow-500'
             }`}
           />
@@ -197,7 +197,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <button 
-                className="w-5 h-5 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
+                className="w-4 h-4 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
@@ -235,12 +235,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Crown badge for ranked Pokemon in available section */}
       {context === 'available' && isRankedPokemon && currentRank && (
-        <div className="absolute top-2 left-2 z-20">
+        <div className="absolute top-1 left-1 z-20">
           <Badge 
             variant="secondary" 
-            className="bg-yellow-500 text-white font-bold text-xs px-2 py-1 shadow-md flex items-center gap-1"
+            className="bg-yellow-500 text-white font-bold text-xs px-1 py-0.5 shadow-md flex items-center gap-1"
           >
-            <Crown size={12} />
+            <Crown size={8} />
             #{String(currentRank)}
           </Badge>
         </div>
@@ -248,7 +248,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Ranking number */}
       {context === 'ranked' && showRank && (
-        <div className={`absolute top-2 left-2 w-7 h-7 bg-white rounded-full flex items-center justify-center text-sm font-bold z-10 shadow-sm border border-gray-200 ${
+        <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm border border-gray-200 ${
           isDragging ? 'bg-blue-100 border-blue-300' : ''
         }`}>
           <span className="text-black">{index + 1}</span>
@@ -256,11 +256,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       )}
       
       {/* Pokemon image */}
-      <div className="flex-1 flex justify-center items-center px-2 pt-6 pb-1">
+      <div className="flex-1 flex justify-center items-center p-2">
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-20 h-20 object-contain transition-all duration-200"
+          className="w-full h-full object-contain max-w-16 max-h-16 transition-all duration-200"
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -270,18 +270,18 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
       
       {/* Pokemon info */}
-      <div className="bg-white text-center py-1.5 px-2 mt-auto border-t border-gray-100">
-        <h3 className="font-bold text-gray-800 text-sm leading-tight mb-0.5">
+      <div className="bg-white text-center py-1 px-1 mt-auto border-t border-gray-100">
+        <h3 className="font-bold text-gray-800 text-xs leading-tight mb-0.5 truncate">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600 mb-1">
+        <div className="text-xs text-gray-600 mb-0.5">
           #{formattedId}
         </div>
         
         {/* Score display */}
         {context === 'ranked' && 'score' in pokemon && (
-          <div className="text-xs text-gray-700 font-medium">
-            Score: {pokemon.score.toFixed(5)}
+          <div className="text-xs text-gray-700 font-medium truncate">
+            {pokemon.score.toFixed(2)}
           </div>
         )}
       </div>
