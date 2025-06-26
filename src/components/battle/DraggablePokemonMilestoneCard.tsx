@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -255,12 +254,16 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
       
-      {/* Pokemon image */}
+      {/* Pokemon image - now dynamically sized */}
       <div className="flex-1 flex justify-center items-center p-2">
         <img 
           src={pokemon.image} 
           alt={pokemon.name}
-          className="w-full h-full object-contain max-w-16 max-h-16 transition-all duration-200"
+          className="w-full h-full object-contain transition-all duration-200"
+          style={{ 
+            maxWidth: '80%', 
+            maxHeight: '80%' 
+          }}
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
