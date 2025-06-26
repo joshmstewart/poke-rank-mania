@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -58,7 +59,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
-  // PURE DRAGGABLE APPROACH: All cards use useDraggable regardless of context
+  // Use consistent drag ID strategy
   const id = `${context}-${pokemon.id}`;
   const data = {
     type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
@@ -83,8 +84,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    minHeight: '140px',
-    minWidth: '140px',
     zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
   };
@@ -121,7 +120,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
-  // PURE DRAGGABLE: Apply drag props only when draggable and not in modal
+  // Apply drag props when draggable and not in modal
   const dragProps = isDraggable && !isOpen ? { ...attributes, ...listeners } : {};
 
   console.log(`[PURE_DND_CARD] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
@@ -130,7 +129,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group ${
+      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden h-35 flex flex-col group w-full ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
         isDragging ? 'shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200'

@@ -114,25 +114,25 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
 
   const content = (
     <div 
-      className="grid gap-4 mb-6" 
+      className="grid grid-cols-2 gap-2 mb-6" 
       style={{ 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
         // Hardware acceleration for the grid container
         transform: 'translateZ(0)',
         willChange: 'auto'
       }}
     >
       {displayRankings.map((pokemon, index) => (
-        <DraggablePokemonMilestoneCard
-          key={pokemon.id}
-          pokemon={pokemon}
-          index={index}
-          showRank={true}
-          isDraggable={!!onManualReorder}
-          context="ranked"
-          isPending={localPendingRefinements.has(pokemon.id)}
-          allRankedPokemon={displayRankings}
-        />
+        <div key={pokemon.id} className="w-full">
+          <DraggablePokemonMilestoneCard
+            pokemon={pokemon}
+            index={index}
+            showRank={true}
+            isDraggable={!!onManualReorder}
+            context="ranked"
+            isPending={localPendingRefinements.has(pokemon.id)}
+            allRankedPokemon={displayRankings}
+          />
+        </div>
       ))}
     </div>
   );
@@ -157,7 +157,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
         <DragOverlay dropAnimation={dropAnimationConfig}>
           {activePokemon ? (
             <div 
-              className="rotate-2 scale-105"
+              className="rotate-2 scale-105 w-full"
               style={{
                 transform: 'translateZ(0)',
                 willChange: 'transform',
