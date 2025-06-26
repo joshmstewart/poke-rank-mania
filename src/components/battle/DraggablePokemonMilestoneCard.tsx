@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -254,26 +255,30 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
       
-      {/* Pokemon image - now dynamically sized */}
-      <div className="flex-1 flex justify-center items-center p-2">
-        <img 
-          src={pokemon.image} 
-          alt={pokemon.name}
-          className="w-full h-full object-contain transition-all duration-200"
-          style={{ 
-            maxWidth: '80%', 
-            maxHeight: '80%' 
-          }}
-          loading="lazy"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }}
-        />
+      {/* Pokemon image container - now truly dynamic */}
+      <div className="flex-1 flex justify-center items-center p-1 min-h-0">
+        <div className="w-full h-full flex justify-center items-center">
+          <img 
+            src={pokemon.image} 
+            alt={pokemon.name}
+            className="object-contain transition-all duration-200"
+            style={{ 
+              width: 'min(90%, 90%)',
+              height: 'min(90%, 90%)',
+              minWidth: '40px',
+              minHeight: '40px'
+            }}
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        </div>
       </div>
       
       {/* Pokemon info */}
-      <div className="bg-white text-center py-1 px-1 mt-auto border-t border-gray-100">
+      <div className="bg-white text-center py-1 px-1 mt-auto border-t border-gray-100 flex-shrink-0">
         <h3 className="font-bold text-gray-800 text-xs leading-tight mb-0.5 truncate">
           {pokemon.name}
         </h3>
