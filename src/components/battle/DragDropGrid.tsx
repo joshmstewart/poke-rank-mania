@@ -80,10 +80,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       {/* Drop zone before first item */}
       <DropZone id="drop-before-0" index={0} />
       
-      {displayRankings.map((pokemon, index) => (
-        <div key={pokemon.id}>
-          {/* Pokemon card */}
-          <div className="mb-2">
+      {/* Grid layout matching Available Pokemon section */}
+      <div className="grid grid-cols-2 gap-2 mb-6">
+        {displayRankings.map((pokemon, index) => (
+          <div key={pokemon.id} className="w-full">
             <DraggablePokemonMilestoneCard
               pokemon={pokemon}
               index={index}
@@ -93,16 +93,23 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
               isPending={localPendingRefinements.has(pokemon.id)}
               allRankedPokemon={displayRankings}
             />
+            
+            {/* Drop zone after this item - positioned between grid items */}
+            <DropZone 
+              id={`drop-after-${index}`} 
+              index={index + 1}
+              className="mt-1"
+            />
           </div>
-          
-          {/* Drop zone after this item */}
-          <DropZone 
-            id={`drop-after-${index}`} 
-            index={index + 1}
-            isLast={index === displayRankings.length - 1}
-          />
-        </div>
-      ))}
+        ))}
+      </div>
+      
+      {/* Final drop zone at the end */}
+      <DropZone 
+        id={`drop-after-${displayRankings.length - 1}`} 
+        index={displayRankings.length}
+        isLast={true}
+      />
     </div>
   );
 };
