@@ -10,11 +10,12 @@ import {
   TouchSensor, 
   KeyboardSensor,
   DragEndEvent,
-  DragOverlay
+  DragOverlay,
+  DragStartEvent
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  rectSortingStrategy,
+  verticalListSortingStrategy,
   arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
@@ -47,14 +48,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3,
-        delay: 0,
-        tolerance: 5,
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100,
+        delay: 200,
         tolerance: 5,
       },
     }),
@@ -63,7 +62,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     })
   );
 
-  const handleDragStart = (event: any) => {
+  const handleDragStart = (event: DragStartEvent) => {
     console.log(`[SORTABLE_GRID] Drag start:`, event.active.id);
     const pokemon = displayRankings.find(p => p.id.toString() === event.active.id);
     setActivePokemon(pokemon || null);
@@ -117,7 +116,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       <div className="w-full min-h-[400px]">
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 
-          strategy={rectSortingStrategy}
+          strategy={verticalListSortingStrategy}
         >
           {/* Responsive grid layout matching Available Pokemon section */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
