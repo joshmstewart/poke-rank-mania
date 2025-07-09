@@ -4,7 +4,6 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { 
   DndContext, 
   closestCenter,
-  closestCorners,
   useSensors, 
   useSensor, 
   PointerSensor, 
@@ -16,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  rectSortingStrategy,
+  verticalListSortingStrategy,
   arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
@@ -70,12 +69,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log(`[SORTABLE_GRID] Drag end:`, {
-      activeId: event.active.id,
-      overId: event.over?.id,
-      overData: event.over?.data,
-      collision: event.collisions
-    });
+    console.log(`[SORTABLE_GRID] Drag end:`, event.active.id, '→', event.over?.id);
     const { active, over } = event;
     setActivePokemon(null);
 
@@ -83,21 +77,12 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       const oldIndex = displayRankings.findIndex(p => p.id.toString() === active.id);
       const newIndex = displayRankings.findIndex(p => p.id.toString() === over.id);
 
-      console.log(`[SORTABLE_GRID] Index calculation:`, {
-        oldIndex,
-        newIndex,
-        activeId: active.id,
-        overId: over.id,
-        totalItems: displayRankings.length
-      });
-
       if (oldIndex !== -1 && newIndex !== -1) {
         console.log(`[SORTABLE_GRID] Reordering from ${oldIndex} to ${newIndex}`);
         
         // Perform local reorder for optimistic UI update
         if (onLocalReorder) {
           const newOrder = arrayMove(displayRankings, oldIndex, newIndex);
-          console.log(`[SORTABLE_GRID] New order created:`, newOrder.map(p => `${p.id}-${p.name}`));
           onLocalReorder(newOrder);
         }
 
@@ -106,11 +91,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           const draggedPokemonId = displayRankings[oldIndex].id;
           onManualReorder(draggedPokemonId, oldIndex, newIndex);
         }
-      } else {
-        console.warn(`[SORTABLE_GRID] Invalid indices: oldIndex=${oldIndex}, newIndex=${newIndex}`);
       }
-    } else {
-      console.log(`[SORTABLE_GRID] No valid drop target or same position`);
     }
   };
 
@@ -128,17 +109,17 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="w-full min-h-[400px]">
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 
-          strategy={rectSortingStrategy}
+          strategy={verticalListSortingStrategy}
         >
-          {/* Grid layout optimized for rect sorting */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-6">
+          {/* Grid layout matching Available Pokemon exactly */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
             {displayRankings.map((pokemon, index) => (
               <SortablePokemonCard
                 key={pokemon.id}
