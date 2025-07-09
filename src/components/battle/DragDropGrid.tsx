@@ -3,7 +3,7 @@ import React from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { 
   DndContext, 
-  closestCenter, 
+  closestCenter,
   closestCorners,
   useSensors, 
   useSensor, 
@@ -49,13 +49,13 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
-        tolerance: 5,
+        delay: 150,
+        tolerance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -137,8 +137,8 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           items={displayRankings.map(p => p.id.toString())} 
           strategy={rectSortingStrategy}
         >
-          {/* Responsive grid layout for rect sorting strategy */}
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6" style={{ display: 'grid' }}>
+          {/* Grid layout optimized for rect sorting */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-6">
             {displayRankings.map((pokemon, index) => (
               <SortablePokemonCard
                 key={pokemon.id}
