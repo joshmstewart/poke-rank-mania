@@ -27,7 +27,13 @@ const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ 
+    id,
+    transition: {
+      duration: 200,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -38,7 +44,7 @@ const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`w-full ${isDragging ? 'opacity-50' : ''}`}
+      className={`w-full ${isDragging ? 'z-50 opacity-60' : 'z-auto'}`}
       {...attributes}
       {...listeners}
     >

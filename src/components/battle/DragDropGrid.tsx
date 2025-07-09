@@ -4,6 +4,7 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { 
   DndContext, 
   closestCenter,
+  closestCorners,
   useSensors, 
   useSensor, 
   PointerSensor, 
@@ -15,7 +16,7 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
   arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
@@ -109,14 +110,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="w-full min-h-[400px]">
         <SortableContext 
           items={displayRankings.map(p => p.id.toString())} 
-          strategy={verticalListSortingStrategy}
+          strategy={rectSortingStrategy}
         >
           {/* Grid layout matching Available Pokemon exactly */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
