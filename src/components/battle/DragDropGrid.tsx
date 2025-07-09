@@ -39,14 +39,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   return (
     <div className="w-full min-h-[400px]">
       <SortableContext 
-        items={displayRankings.map(p => p.id.toString())} 
+        items={displayRankings.map(p => `ranked-${p.id}`)} 
         strategy={rectSortingStrategy}
       >
         <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
           {displayRankings.map((pokemon, index) => (
             <SortablePokemonCard
               key={pokemon.id}
-              id={pokemon.id.toString()}
+              id={`ranked-${pokemon.id}`}
               pokemon={pokemon}
               index={index}
               isPending={localPendingRefinements.has(pokemon.id)}
