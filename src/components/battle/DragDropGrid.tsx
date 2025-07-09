@@ -4,7 +4,6 @@ import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { 
   DndContext, 
   closestCenter,
-  closestCorners,
   useSensors, 
   useSensor, 
   PointerSensor, 
@@ -16,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  rectSortingStrategy,
+  verticalListSortingStrategy,
   arrayMove,
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
@@ -112,19 +111,20 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     <div className="w-full min-h-[400px]">
       <SortableContext 
         items={displayRankings.map(p => p.id.toString())} 
-        strategy={rectSortingStrategy}
+        strategy={verticalListSortingStrategy}
       >
-        {/* Grid layout matching Available Pokemon exactly */}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
+        {/* Simple flex layout for vertical sorting - this actually works */}
+        <div className="flex flex-wrap gap-2 mb-6">
           {displayRankings.map((pokemon, index) => (
-            <SortablePokemonCard
-              key={pokemon.id}
-              id={pokemon.id.toString()}
-              pokemon={pokemon}
-              index={index}
-              isPending={localPendingRefinements.has(pokemon.id)}
-              allRankedPokemon={displayRankings}
-            />
+            <div key={pokemon.id} className="w-[140px] min-w-[140px]">
+              <SortablePokemonCard
+                id={pokemon.id.toString()}
+                pokemon={pokemon}
+                index={index}
+                isPending={localPendingRefinements.has(pokemon.id)}
+                allRankedPokemon={displayRankings}
+              />
+            </div>
           ))}
         </div>
       </SortableContext>
