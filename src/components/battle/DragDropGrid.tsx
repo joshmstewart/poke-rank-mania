@@ -43,18 +43,18 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
 }) => {
   const [activePokemon, setActivePokemon] = React.useState<Pokemon | RankedPokemon | null>(null);
 
-  console.log(`[DRAG_DROP_GRID] Rendering with ${displayRankings.length} ranked Pokemon using sortable approach`);
+  console.log(`[DRAG_DROP_GRID] Rendering with ${displayRankings.length} ranked Pokemon`);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150,
-        tolerance: 3,
+        delay: 200,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -70,7 +70,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log(`[SORTABLE_GRID] Drag end:`, event.active.id, '→', event.over?.id);
+    console.log(`[DRAG_DEBUG] Drag end:`, event.active.id, '→', event.over?.id);
     const { active, over } = event;
     setActivePokemon(null);
 
@@ -79,7 +79,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       const newIndex = displayRankings.findIndex(p => p.id.toString() === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
-        console.log(`[SORTABLE_GRID] Reordering from ${oldIndex} to ${newIndex}`);
+        console.log(`[DRAG_DEBUG] Reordering from ${oldIndex} to ${newIndex}`);
         
         // Perform local reorder for optimistic UI update
         if (onLocalReorder) {
@@ -108,27 +108,49 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   }
 
   return (
-    <div className="w-full min-h-[400px]">
-      <SortableContext 
-        items={displayRankings.map(p => p.id.toString())} 
-        strategy={verticalListSortingStrategy}
-      >
-        {/* Simple flex layout for vertical sorting - this actually works */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {displayRankings.map((pokemon, index) => (
-            <div key={pokemon.id} className="w-[140px] min-w-[140px]">
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="w-full min-h-[400px]">
+        <SortableContext 
+          items={displayRankings.map(p => p.id.toString())} 
+          strategy={verticalListSortingStrategy}
+        >
+          {/* Grid layout that works with sortable */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
+            {displayRankings.map((pokemon, index) => (
               <SortablePokemonCard
+                key={pokemon.id}
                 id={pokemon.id.toString()}
                 pokemon={pokemon}
                 index={index}
                 isPending={localPendingRefinements.has(pokemon.id)}
                 allRankedPokemon={displayRankings}
               />
+            ))}
+          </div>
+        </SortableContext>
+
+        <DragOverlay>
+          {activePokemon ? (
+            <div className="rotate-2 scale-105 opacity-90">
+              <DraggablePokemonMilestoneCard
+                pokemon={activePokemon}
+                index={displayRankings.findIndex(p => p.id === activePokemon.id)}
+                showRank={true}
+                isDraggable={false}
+                context="ranked"
+                isPending={localPendingRefinements.has(activePokemon.id)}
+                allRankedPokemon={displayRankings}
+              />
             </div>
-          ))}
-        </div>
-      </SortableContext>
-    </div>
+          ) : null}
+        </DragOverlay>
+      </div>
+    </DndContext>
   );
 };
 
