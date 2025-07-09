@@ -64,9 +64,10 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log(`[SORTABLE_GRID] Drag start:`, event.active.id);
+    console.log(`[DRAG_DEBUG] DragDropGrid handleDragStart:`, event.active.id);
     const pokemon = displayRankings.find(p => p.id.toString() === event.active.id);
     setActivePokemon(pokemon || null);
+    console.log(`[DRAG_DEBUG] Active pokemon set:`, pokemon?.name);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -108,50 +109,26 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="w-full min-h-[400px]">
-        <SortableContext 
-          items={displayRankings.map(p => p.id.toString())} 
-          strategy={rectSortingStrategy}
-        >
-          {/* Grid layout matching Available Pokemon exactly */}
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
-            {displayRankings.map((pokemon, index) => (
-              <SortablePokemonCard
-                key={pokemon.id}
-                id={pokemon.id.toString()}
-                pokemon={pokemon}
-                index={index}
-                isPending={localPendingRefinements.has(pokemon.id)}
-                allRankedPokemon={displayRankings}
-              />
-            ))}
-          </div>
-        </SortableContext>
-
-        {/* Drag Overlay for smooth dragging experience */}
-        <DragOverlay>
-          {activePokemon ? (
-            <div className="rotate-2 scale-105 opacity-90">
-              <DraggablePokemonMilestoneCard
-                pokemon={activePokemon}
-                index={displayRankings.findIndex(p => p.id === activePokemon.id)}
-                showRank={true}
-                isDraggable={false}
-                context="ranked"
-                isPending={localPendingRefinements.has(activePokemon.id)}
-                allRankedPokemon={displayRankings}
-              />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </div>
-    </DndContext>
+    <div className="w-full min-h-[400px]">
+      <SortableContext 
+        items={displayRankings.map(p => p.id.toString())} 
+        strategy={rectSortingStrategy}
+      >
+        {/* Grid layout matching Available Pokemon exactly */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 mb-6">
+          {displayRankings.map((pokemon, index) => (
+            <SortablePokemonCard
+              key={pokemon.id}
+              id={pokemon.id.toString()}
+              pokemon={pokemon}
+              index={index}
+              isPending={localPendingRefinements.has(pokemon.id)}
+              allRankedPokemon={displayRankings}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </div>
   );
 };
 
