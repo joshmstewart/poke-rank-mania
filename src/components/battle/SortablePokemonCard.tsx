@@ -29,6 +29,10 @@ const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
     isDragging,
   } = useSortable({ 
     id,
+    data: { 
+      index: index, 
+      type: 'ranked-pokemon' 
+    },
     transition: {
       duration: 200,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
