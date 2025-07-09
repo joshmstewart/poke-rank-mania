@@ -33,17 +33,32 @@ export const useEnhancedManualReorder = (
     sourceIndex: number,
     destinationIndex: number
   ) => {
-    console.log(`[DEBUG] Reordering pokemon ${draggedPokemonId} from ${sourceIndex} to ${destinationIndex}. Current rankings count: ${finalRankings?.length}`);
+    console.log(`[REORDER_DEBUG] ===== MANUAL REORDER START =====`);
+    console.log(`[REORDER_DEBUG] Pokemon ID: ${draggedPokemonId}, Source: ${sourceIndex}, Destination: ${destinationIndex}`);
+    console.log(`[REORDER_DEBUG] Current rankings count: ${finalRankings?.length}`);
+    
     if (!finalRankings) {
+      console.log(`[REORDER_DEBUG] No finalRankings available, aborting`);
       return;
     }
 
     try {
       // Create a working copy of the rankings
       const workingRankings = [...finalRankings];
+      console.log(`[REORDER_DEBUG] Working rankings created with ${workingRankings.length} items`);
+      
+      // Find the Pokemon in the current rankings
+      const dragIdx = workingRankings.findIndex(p => p.id === draggedPokemonId);
+      console.log(`[REORDER_DEBUG] Found Pokemon at index: ${dragIdx}`);
+      
+      if (dragIdx === -1) {
+        console.warn(`[REORDER_DEBUG] Pokemon ${draggedPokemonId} not found in rankings! Available IDs:`, workingRankings.map(p => p.id));
+        return;
+      }
       
       // Handle new Pokemon being added (sourceIndex === -1)
       if (sourceIndex === -1) {
+        console.log(`[REORDER_DEBUG] Adding new Pokemon to rankings`);
         const allRatings = getAllRatings();
         let pokemonRating = allRatings[draggedPokemonId.toString()];
         
@@ -87,10 +102,16 @@ export const useEnhancedManualReorder = (
 
         // Insert at destination
         workingRankings.splice(destinationIndex, 0, newPokemon);
+        console.log(`[REORDER_DEBUG] Inserted new Pokemon at index ${destinationIndex}`);
       } else {
         // Handle reordering existing Pokemon
+        console.log(`[REORDER_DEBUG] Reordering existing Pokemon from index ${sourceIndex} to ${destinationIndex}`);
+        console.log(`[REORDER_DEBUG] Pokemon being moved:`, workingRankings[sourceIndex]?.name);
+        
         const [movedPokemon] = workingRankings.splice(sourceIndex, 1);
         workingRankings.splice(destinationIndex, 0, movedPokemon);
+        
+        console.log(`[REORDER_DEBUG] After splice: Pokemon at destination index ${destinationIndex}:`, workingRankings[destinationIndex]?.name);
       }
 
       // Set the exact score for the moved Pokemon based on its new neighbors
@@ -115,6 +136,7 @@ export const useEnhancedManualReorder = (
 
       // Update the score in the working rankings
       workingRankings[destinationIndex].score = targetScore;
+      console.log(`[REORDER_DEBUG] Updated score for Pokemon at destination:`, workingRankings[destinationIndex].score);
 
       // Update ranks for all Pokemon
       const finalRankingsWithRanks = workingRankings.map((pokemon, index) => ({
@@ -122,12 +144,16 @@ export const useEnhancedManualReorder = (
         rank: index + 1
       }));
 
+      console.log(`[REORDER_DEBUG] Final rankings with ranks:`, finalRankingsWithRanks.map(p => ({ id: p.id, name: p.name, rank: p.rank, score: p.score })));
+
       // Update the rankings
+      console.log(`[REORDER_DEBUG] Calling onRankingsUpdate with ${finalRankingsWithRanks.length} items`);
       onRankingsUpdate(finalRankingsWithRanks);
+      console.log(`[REORDER_DEBUG] ===== MANUAL REORDER COMPLETE =====`);
       
     } catch (error) {
-      // Only log errors, not debug info
-      console.error('Error during manual reorder:', error);
+      console.error('[REORDER_DEBUG] Error during manual reorder:', error);
+      console.error('[REORDER_DEBUG] Error stack:', error.stack);
     }
   }, [finalRankings, onRankingsUpdate, preventAutoResorting, forceScoreBetweenNeighbors, getAllRatings, calculateScoreBetweenNeighbors]);
 
