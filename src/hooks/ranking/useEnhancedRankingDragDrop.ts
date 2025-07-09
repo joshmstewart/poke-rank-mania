@@ -160,8 +160,6 @@ export const useEnhancedRankingDragDrop = (
         
         if (oldIndex !== -1 && targetIndex !== undefined && oldIndex !== targetIndex) {
           console.log(`[PURE_DND_END] Reordering ranked: ${pokemonId} from ${oldIndex} to ${targetIndex}`);
-          const newOrder = arrayMove(localRankings, oldIndex, targetIndex);
-          updateLocalRankings(newOrder);
           handleEnhancedManualReorder(pokemonId, oldIndex, targetIndex);
         }
       }
@@ -176,8 +174,6 @@ export const useEnhancedRankingDragDrop = (
 
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         console.log(`[PURE_DND_END] Reordering ranked: ${pokemonId} from ${oldIndex} to ${newIndex}`);
-        const newOrder = arrayMove(localRankings, oldIndex, newIndex);
-        updateLocalRankings(newOrder);
         handleEnhancedManualReorder(pokemonId, oldIndex, newIndex);
       }
       return;
