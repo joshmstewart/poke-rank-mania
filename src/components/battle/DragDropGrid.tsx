@@ -15,7 +15,7 @@ interface DragDropGridProps {
     destinationIndex: number
   ) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
-  availablePokemon?: any[];
+  availablePokemon?: (Pokemon | RankedPokemon)[];
 }
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
@@ -43,7 +43,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       >
         {/* Sorted / reorderable ranked cards */}
         <SortableContext
-          items={displayRankings.map((p) => `ranked-${(p as any).id}`)}
+          items={displayRankings.map((p) => `ranked-${p.id}`)}
           strategy={rectSortingStrategy}
         >
           <div
@@ -56,11 +56,11 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           >
             {displayRankings.map((pokemon, index) => (
               <SortablePokemonCard
-                key={(pokemon as any).id}
-                id={`ranked-${(pokemon as any).id}`}
+                key={pokemon.id}
+                id={`ranked-${pokemon.id}`}
                 pokemon={pokemon}
                 index={index}
-                isPending={localPendingRefinements.has((pokemon as any).id)}
+                isPending={localPendingRefinements.has(pokemon.id)}
                 allRankedPokemon={displayRankings}
               />
             ))}
