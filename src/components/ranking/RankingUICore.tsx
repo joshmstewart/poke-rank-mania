@@ -85,8 +85,7 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     localRankings,
     setAvailablePokemon,
     handleEnhancedManualReorder,
-    triggerReRanking,
-    updateLocalRankings
+    triggerReRanking
   );
 
   // Handle local reordering (for DragDropGrid compatibility)

@@ -1,21 +1,34 @@
 
 import React, { useState, useCallback } from "react";
-import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
-import { usePokemonMovement } from './usePokemonMovement';
+import {
+  DragEndEvent,
+  DragStartEvent,
+  useSensors,
+  useSensor,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+} from "@dnd-kit/core";
+import { Pokemon, RankedPokemon } from "@/services/pokemon";
+import { usePokemonMovement } from "./usePokemonMovement";
 
 export const useEnhancedRankingDragDrop = (
-  enhancedAvailablePokemon: any[],
-  localRankings: any[],
-  setAvailablePokemon: React.Dispatch<React.SetStateAction<any[]>>,
-  handleEnhancedManualReorder: (pokemonId: number, sourceIndex: number, destinationIndex: number) => void,
+  enhancedAvailablePokemon: (Pokemon | RankedPokemon)[],
+  localRankings: (Pokemon | RankedPokemon)[],
+  setAvailablePokemon: React.Dispatch<
+    React.SetStateAction<(Pokemon | RankedPokemon)[]>
+  >,
+  handleEnhancedManualReorder: (
+    pokemonId: number,
+    sourceIndex: number,
+    destinationIndex: number
+  ) => void,
   triggerReRanking: (pokemonId: number) => Promise<void>,
-  updateLocalRankings: (rankings: any[]) => void
 ) => {
   const [dragState, setDragState] = useState<{
-    activePokemon: any;
+    activePokemon: Pokemon | RankedPokemon | null;
     sourceInfo: { fromAvailable: boolean; isRanked: boolean } | null;
-    cardProps: any;
+    cardProps: Record<string, unknown> | null;
   }>({
     activePokemon: null,
     sourceInfo: null,
@@ -47,9 +60,9 @@ export const useEnhancedRankingDragDrop = (
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const activeId = event.active.id.toString();
-    let draggedPokemon = null;
+    let draggedPokemon: Pokemon | RankedPokemon | null = null;
     let sourceInfo = { fromAvailable: false, isRanked: false };
-    let cardProps = null;
+    let cardProps: Record<string, unknown> | null = null;
 
     console.log(`[PURE_DND_START] ===== DRAG START =====`);
     console.log(`[PURE_DND_START] Active ID: ${activeId}`);
@@ -150,49 +163,37 @@ export const useEnhancedRankingDragDrop = (
 
     console.log(`[PURE_DND_END] Extracted Pokemon ID: ${pokemonId}, isFromAvailable: ${isFromAvailable}`);
 
-    // Handle drop onto ranking position
-    if (overDataType === 'ranking-position') {
+    // Handle drop onto a specific ranked card or position
+    if (overDataType === 'ranking-position' || overDataType === 'ranked-pokemon') {
       const targetIndex = over.data.current?.index;
-      
+
       if (isFromAvailable) {
         const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
         if (!pokemonToAdd) {
           console.log('[PURE_DND_END] Pokemon not found in available list');
           return;
         }
-        
+
         if (localRankings.some(p => p.id === pokemonId)) {
           console.log('[PURE_DND_END] Pokemon already ranked, ignoring');
           return;
         }
 
-        console.log(`[PURE_DND_END] Moving ${pokemonToAdd.name} from available to rankings at index ${targetIndex}`);
-        moveFromAvailableToRankings(pokemonId, targetIndex, pokemonToAdd);
+        const insertionIndex = targetIndex ?? localRankings.length;
+        console.log(`[PURE_DND_END] Moving ${pokemonToAdd.name} from available to rankings at index ${insertionIndex}`);
+        moveFromAvailableToRankings(pokemonId, insertionIndex, pokemonToAdd);
       } else if (isFromRanked) {
-        // Reordering within rankings
         const oldIndex = localRankings.findIndex(p => p.id === pokemonId);
-        
-        if (oldIndex !== -1 && targetIndex !== undefined && oldIndex !== targetIndex) {
-          console.log(`[PURE_DND_END] Reordering ranked: ${pokemonId} from ${oldIndex} to ${targetIndex}`);
-          handleEnhancedManualReorder(pokemonId, oldIndex, targetIndex);
+        const newIndex = targetIndex;
+
+        if (oldIndex !== -1 && newIndex !== undefined && oldIndex !== newIndex) {
+          console.log(`[PURE_DND_END] Reordering ranked: ${pokemonId} from ${oldIndex} to ${newIndex}`);
+          handleEnhancedManualReorder(pokemonId, oldIndex, newIndex);
         }
       }
       return;
     }
-
-    // Handle drop onto another ranked Pokemon
-    if (overDataType === 'ranked-pokemon' && isFromRanked) {
-      const overPokemonId = parseInt(overId.replace('ranked-', ''));
-      const oldIndex = localRankings.findIndex(p => p.id === pokemonId);
-      const newIndex = localRankings.findIndex(p => p.id === overPokemonId);
-
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        console.log(`[PURE_DND_END] Reordering ranked: ${pokemonId} from ${oldIndex} to ${newIndex}`);
-        handleEnhancedManualReorder(pokemonId, oldIndex, newIndex);
-      }
-      return;
-    }
-  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, moveFromAvailableToRankings, updateLocalRankings]);
+  }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, moveFromAvailableToRankings]);
 
   const handleManualReorder = useCallback((
     draggedPokemonId: number,
@@ -209,6 +210,6 @@ export const useEnhancedRankingDragDrop = (
     sourceCardProps: dragState.cardProps,
     handleDragStart,
     handleDragEnd,
-    handleManualReorder
+    handleManualReorder,
   };
 };
