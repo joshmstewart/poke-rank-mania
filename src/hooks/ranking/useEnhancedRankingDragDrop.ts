@@ -123,12 +123,16 @@ export const useEnhancedRankingDragDrop = (
     const isFromAvailable = activeId.startsWith('available-');
     const isFromRanked = activeId.startsWith('ranked-');
 
-    // New: allow dropping anywhere in the rankings panel (not just on a specific card)
-    if (overId === 'rankings-drop-zone' && isFromAvailable) {
-      const pokemonId = parseInt(activeId.replace('available-', ''));
-      const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
-      if (pokemonToAdd && !localRankings.some(p => p.id === pokemonId)) {
-        // drop to the end by default; you can calculate an index if you want
+    // REPLACE your previous rankings-drop-zone equality check with this:
+    const overType = over.data?.current?.type;
+    const overIsRankingsContainer =
+      overId === "rankings-drop-zone" || overType === "rankings-container";
+
+    if (overIsRankingsContainer && isFromAvailable) {
+      const pokemonId = parseInt(activeId.replace("available-", ""));
+      const pokemonToAdd = enhancedAvailablePokemon.find((p) => p.id === pokemonId);
+      if (pokemonToAdd && !localRankings.some((p) => p.id === pokemonId)) {
+        // append to end
         moveFromAvailableToRankings(pokemonId, localRankings.length, pokemonToAdd);
       }
       return;
