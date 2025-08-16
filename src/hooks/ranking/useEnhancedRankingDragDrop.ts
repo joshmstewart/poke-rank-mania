@@ -119,15 +119,25 @@ export const useEnhancedRankingDragDrop = (
     const overDataType = over.data.current?.type;
 
     console.log(`[PURE_DND_END] Active: ${activeId} (${activeDataType}), Over: ${overId} (${overDataType})`);
+
+    const isFromAvailable = activeId.startsWith('available-');
+    const isFromRanked = activeId.startsWith('ranked-');
+
+    // New: allow dropping anywhere in the rankings panel (not just on a specific card)
+    if (overId === 'rankings-drop-zone' && isFromAvailable) {
+      const pokemonId = parseInt(activeId.replace('available-', ''));
+      const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
+      if (pokemonToAdd && !localRankings.some(p => p.id === pokemonId)) {
+        // drop to the end by default; you can calculate an index if you want
+        moveFromAvailableToRankings(pokemonId, localRankings.length, pokemonToAdd);
+      }
+      return;
+    }
     
     if (active.id === over.id) {
       console.log('[PURE_DND_END] Dropped on self, no action needed');
       return;
     }
-
-    // Extract the actual Pokemon ID
-    const isFromAvailable = activeId.startsWith('available-');
-    const isFromRanked = activeId.startsWith('ranked-');
     const pokemonId = isFromAvailable 
       ? parseInt(activeId.replace('available-', ''))
       : isFromRanked
