@@ -74,7 +74,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="bg-gray-100 min-h-screen p-4">
+      <div className="bg-muted min-h-screen p-4">
         {/* Settings Section */}
         <div className="max-w-7xl mx-auto mb-4">
           <UnifiedControls
@@ -93,7 +93,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-4" style={{ height: 'calc(200vh - 12rem)' }}>
             {/* Enhanced Available Pokemon */}
-            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col">
+            <div className="shadow-lg border border-border rounded-lg bg-card flex flex-col">
               <EnhancedAvailablePokemonSection
                 availablePokemon={enhancedAvailablePokemon}
                 rankedPokemon={displayRankings}
@@ -101,7 +101,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
             </div>
 
             {/* Rankings */}
-            <div className="shadow-lg border border-gray-200 rounded-lg bg-white flex flex-col">
+            <div className="shadow-lg border border-border rounded-lg bg-card flex flex-col">
               <RankingsSection
                 displayRankings={displayRankings}
                 pendingRefinements={new Set()}
