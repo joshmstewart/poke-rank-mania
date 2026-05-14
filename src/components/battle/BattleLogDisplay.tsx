@@ -1,26 +1,10 @@
 
 import React from 'react';
+import { isDebugEnabled } from '@/utils/debug';
 
 interface BattleLogDisplayProps {
   log: string[];
 }
-
-/**
- * Developer-only strategy log overlay. Hidden by default.
- * Enable in DevTools console:
- *   localStorage.setItem('pokerank-debug', '1')
- * or visit any URL with ?debug=1.
- */
-const isDebugEnabled = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  try {
-    if (window.localStorage.getItem('pokerank-debug') === '1') return true;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('debug') === '1';
-  } catch {
-    return false;
-  }
-};
 
 export const BattleLogDisplay: React.FC<BattleLogDisplayProps> = ({ log }) => {
   if (log.length === 0 || !isDebugEnabled()) {
