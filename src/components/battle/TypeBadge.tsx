@@ -33,9 +33,10 @@ const TypeBadge: React.FC<TypeBadgeProps> = ({ type }) => {
 
   return (
     <span
-      className="px-2 py-1 rounded-full text-xs font-medium text-white"
+      className="px-2 py-0.5 rounded-full text-xs font-semibold text-white capitalize ring-1 ring-black/20 shadow-sm"
       style={{
-        backgroundColor: getTypeColor(type)
+        backgroundColor: getTypeColor(type),
+        textShadow: '0 1px 1px rgba(0,0,0,0.55)',
       }}
     >
       {type}
