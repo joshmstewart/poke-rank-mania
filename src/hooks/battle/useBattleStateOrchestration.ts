@@ -17,15 +17,6 @@ export const useBattleStateOrchestration = (
   }, [providersData.generateRankings, providersData.finalRankings]);
 
   const isAnyProcessing = actionsData.isProcessingResult;
-  
-  const currentBattleCount = parseInt(localStorage.getItem('pokemon-battle-count') || '0', 10);
-  console.log(`🔄 [PROCESSOR_FIX] useBattleStateOrchestration processing states - Battle ${String(currentBattleCount)}:`, {
-    isProcessingResult: actionsData.isProcessingResult,
-    isProcessing: actionsData.isProcessing,
-    isAnyProcessing,
-    isTransitioning: stateManagerData.isTransitioning,
-    timestamp: new Date().toISOString()
-  });
 
   return {
     generateRankingsWrapper,

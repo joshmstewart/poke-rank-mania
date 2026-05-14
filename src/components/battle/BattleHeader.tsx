@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Undo2 } from "lucide-react";
 
@@ -20,6 +20,22 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
 }) => {
   const currentBattle = battlesCompleted + 1;
   const combinedProcessing = isProcessing || internalProcessing;
+
+  // Keyboard shortcut: Cmd/Ctrl+Z to undo last battle
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        const target = e.target as HTMLElement | null;
+        const tag = target?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+        if (!hasHistory || combinedProcessing) return;
+        e.preventDefault();
+        onGoBack();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [hasHistory, combinedProcessing, onGoBack]);
 
   return (
     <div className="flex items-center justify-between mb-2">

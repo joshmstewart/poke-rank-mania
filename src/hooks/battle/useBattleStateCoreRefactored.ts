@@ -11,8 +11,6 @@ export const useBattleStateCoreRefactored = (
   initialBattleType: BattleType,
   initialSelectedGeneration: number
 ) => {
-  console.log(`🚨🚨🚨 [BATTLE_STATE_CORE_REFACTORED] ===== useBattleStateCoreRefactored called =====`);
-  
   // CRITICAL FIX: Call the hook at the top level where it's valid
   const refinementQueue = useSharedRefinementQueue();
   

@@ -127,7 +127,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow border w-full">
+    <div className="flex items-center justify-between bg-card text-card-foreground p-4 rounded-lg shadow border border-border w-full">
       <div className="flex items-center gap-8">
         {/* Generation Selector */}
         <div className="flex items-center">
