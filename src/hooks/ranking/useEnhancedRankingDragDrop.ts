@@ -33,6 +33,9 @@ export const useEnhancedRankingDragDrop = (
   // doesn't cause oscillation (cards shifting -> over target changes -> index
   // flips -> cards shift back).
   const rankedRectsRef = useRef<Array<{ id: number; rect: DOMRect }>>([]);
+  // Mirror of insertionPreviewIndex so handleDragEnd can read the latest value
+  // synchronously (state updates from handleDragOver may not have flushed).
+  const insertionPreviewIndexRef = useRef<number | null>(null);
 
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
@@ -187,6 +190,7 @@ export const useEnhancedRankingDragDrop = (
     }
 
     // Only trigger a re-render when the index actually changes.
+    insertionPreviewIndexRef.current = insertion;
     setInsertionPreviewIndex((prev) => (prev === insertion ? prev : insertion));
   }, []);
 
@@ -194,7 +198,9 @@ export const useEnhancedRankingDragDrop = (
     console.log(`[PURE_DND_END] ===== DRAG END =====`);
 
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
+    const previewIndex = insertionPreviewIndexRef.current;
     setInsertionPreviewIndex(null);
+    insertionPreviewIndexRef.current = null;
     rankedRectsRef.current = [];
     const { active, over } = event;
     
@@ -225,8 +231,8 @@ export const useEnhancedRankingDragDrop = (
       const pokemonId = parseInt(activeId.replace("available-", ""));
       const pokemonToAdd = enhancedAvailablePokemon.find((p) => p.id === pokemonId);
       if (pokemonToAdd && !localRankings.some((p) => p.id === pokemonId)) {
-        // append to end
-        moveFromAvailableToRankings(pokemonId, localRankings.length, pokemonToAdd);
+        const insertAt = previewIndex ?? localRankings.length;
+        moveFromAvailableToRankings(pokemonId, insertAt, pokemonToAdd);
       }
       return;
     }
@@ -246,7 +252,10 @@ export const useEnhancedRankingDragDrop = (
     // Handle available card dropped onto an existing ranked card: insert before that ranked card.
     if (overDataType === 'ranked-pokemon' && isFromAvailable) {
       const overPokemonId = parseInt(overId.replace('ranked-', ''));
-      const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
+      // Prefer the previewed insertion index (computed from snapshot rects),
+      // falling back to the over-target's index so behavior never regresses.
+      const fallbackIndex = localRankings.findIndex(p => p.id === overPokemonId);
+      const targetIndex = previewIndex ?? fallbackIndex;
       const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
 
       if (!pokemonToAdd) {
