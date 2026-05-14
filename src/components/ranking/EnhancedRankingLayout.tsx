@@ -31,7 +31,9 @@ interface EnhancedRankingLayoutProps {
   handleComprehensiveReset: () => void;
   setBattleType: React.Dispatch<React.SetStateAction<BattleType>>;
   handleDragStart: (event: any) => void;
+  handleDragOver: (event: any) => void;
   handleDragEnd: (event: any) => void;
+  insertionPreviewIndex: number | null;
   handleManualReorder: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   handleLocalReorder: (newRankings: any[]) => void;
 }
@@ -59,7 +61,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   handleComprehensiveReset,
   setBattleType,
   handleDragStart,
+  handleDragOver,
   handleDragEnd,
+  insertionPreviewIndex,
   handleManualReorder,
   handleLocalReorder
 }) => {
@@ -72,6 +76,7 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="bg-muted min-h-screen p-4">
@@ -108,6 +113,9 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
                 availablePokemon={enhancedAvailablePokemon}
                 onManualReorder={handleManualReorder}
                 onLocalReorder={handleLocalReorder}
+                insertionPreviewIndex={
+                  dragSourceInfo?.fromAvailable ? insertionPreviewIndex : null
+                }
               />
             </div>
           </div>
