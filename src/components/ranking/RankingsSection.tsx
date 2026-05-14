@@ -44,11 +44,11 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   return (
     <div className="flex flex-col h-full" style={{ overflow: 'visible', contain: 'none' }}>
       {/* Streamlined Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
+      <div className="bg-card border-b border-border p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Your Rankings</h2>
+          <h2 className="text-lg font-semibold text-foreground">Your Rankings</h2>
           <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-500 font-medium">
+            <div className="text-sm text-muted-foreground font-medium">
               {displayRankings.length} Pokémon ranked
             </div>
             <Button
@@ -67,15 +67,22 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
       
       {/* Rankings Grid - REMOVED overflow-y-auto to prevent containment */}
       <div className="flex-1 p-4" style={{ overflow: 'visible', contain: 'none' }}>
-        <DragDropGrid
-          displayRankings={displayRankings}
-          localPendingRefinements={pendingRefinements}
-          pendingBattleCounts={new Map()}
-          onMarkAsPending={handleMarkAsPending}
-          onManualReorder={onManualReorder}
-          onLocalReorder={onLocalReorder}
-          availablePokemon={availablePokemon}
-        />
+        {displayRankings.length === 0 ? (
+          <div className="flex h-full min-h-[200px] flex-col items-center justify-center text-center text-muted-foreground p-6 border-2 border-dashed border-border rounded-lg">
+            <p className="text-base font-medium mb-1">No Pokémon ranked yet</p>
+            <p className="text-sm">Drag a Pokémon here from the left, or tap the <span className="font-semibold">+</span> button on a card to add it.</p>
+          </div>
+        ) : (
+          <DragDropGrid
+            displayRankings={displayRankings}
+            localPendingRefinements={pendingRefinements}
+            pendingBattleCounts={new Map()}
+            onMarkAsPending={handleMarkAsPending}
+            onManualReorder={onManualReorder}
+            onLocalReorder={onLocalReorder}
+            availablePokemon={availablePokemon}
+          />
+        )}
       </div>
     </div>
   );
