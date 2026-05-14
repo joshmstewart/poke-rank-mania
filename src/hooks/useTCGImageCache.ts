@@ -41,12 +41,9 @@ export const useTCGImageCache = (imageUrl: string, cacheKey: string) => {
             setIsLoading(false);
             return;
           } else {
-            console.log(`🖼️ [TCG_CACHE] Cached image expired for ${cacheKey}`);
-            // Clean up expired cache
-            await supabase
-              .from('preview_image_cache')
-              .delete()
-              .eq('cache_key', cacheKey);
+            // Expired entries are cleaned up by the cleanup_expired_preview_cache cron;
+            // we just fall through and re-cache below.
+            if (import.meta.env.DEV) console.log(`[TCG_CACHE] expired ${cacheKey}`);
           }
         }
 
