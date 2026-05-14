@@ -16,6 +16,7 @@ interface DragDropGridProps {
   ) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
   availablePokemon?: any[];
+  insertionPreviewIndex?: number | null;
 }
 
 const DragDropGrid: React.FC<DragDropGridProps> = ({
@@ -26,6 +27,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
   onManualReorder,
   onLocalReorder,
   availablePokemon = [],
+  insertionPreviewIndex = null,
 }) => {
   // Make the entire rankings panel a droppable container
   const { setNodeRef, isOver } = useDroppable({
@@ -55,15 +57,28 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
             }}
           >
             {displayRankings.map((pokemon, index) => (
-              <SortablePokemonCard
-                key={(pokemon as any).id}
-                id={`ranked-${(pokemon as any).id}`}
-                pokemon={pokemon}
-                index={index}
-                isPending={localPendingRefinements.has((pokemon as any).id)}
-                allRankedPokemon={displayRankings}
-              />
+              <React.Fragment key={(pokemon as any).id}>
+                {insertionPreviewIndex === index && (
+                  <div
+                    aria-hidden
+                    className="rounded-lg border-2 border-dashed border-primary/50 bg-primary/5 min-h-[140px]"
+                  />
+                )}
+                <SortablePokemonCard
+                  id={`ranked-${(pokemon as any).id}`}
+                  pokemon={pokemon}
+                  index={index}
+                  isPending={localPendingRefinements.has((pokemon as any).id)}
+                  allRankedPokemon={displayRankings}
+                />
+              </React.Fragment>
             ))}
+            {insertionPreviewIndex === displayRankings.length && (
+              <div
+                aria-hidden
+                className="rounded-lg border-2 border-dashed border-primary/50 bg-primary/5 min-h-[140px]"
+              />
+            )}
           </div>
         </SortableContext>
       </div>
