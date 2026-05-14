@@ -32,6 +32,7 @@ export const useBattleStateSimplified = (
   
   // Refs
   const initialBattleStartedRef = useRef(false);
+  const repairedHistoryRef = useRef(false);
   
   // Store integration - FIXED property names
   const { 
@@ -215,6 +216,42 @@ export const useBattleStateSimplified = (
     generateNewBattle(battleType, timestamp, N, ratings);
     
   }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, getRating, processBattleOutcomes, addBattlePair, incrementTotalBattles]);
+
+  useEffect(() => {
+    if (repairedHistoryRef.current || battleHistory.length === 0 || Object.keys(getAllRatings()).length > 0) {
+      return;
+    }
+
+    repairedHistoryRef.current = true;
+    console.warn(`[SIMPLIFIED_STATE] Repairing ${battleHistory.length} battles that were counted without TrueSkill ratings.`);
+
+    battleHistory.forEach(({ battle, selected }) => {
+      const winners = battle.filter(pokemon => selected.includes(pokemon.id));
+      const losers = battle.filter(pokemon => !selected.includes(pokemon.id));
+      if (winners.length === 0 || losers.length === 0) return;
+
+      const finalRatings: Record<string, ReturnType<typeof getRating>> = {};
+      battle.forEach(pokemon => {
+        finalRatings[pokemon.id.toString()] = useTrueSkillStore.getState().getRating(pokemon.id.toString());
+      });
+
+      winners.forEach(winner => {
+        losers.forEach(loser => {
+          const [newWinnerRating, newLoserRating] = rate_1vs1(
+            finalRatings[winner.id.toString()],
+            finalRatings[loser.id.toString()]
+          );
+          finalRatings[winner.id.toString()] = newWinnerRating;
+          finalRatings[loser.id.toString()] = newLoserRating;
+        });
+      });
+
+      useTrueSkillStore.getState().processBattleOutcomes(battle.map(pokemon => ({
+        pokemonId: pokemon.id.toString(),
+        newRating: finalRatings[pokemon.id.toString()]
+      })));
+    });
+  }, [battleHistory, getAllRatings, getRating]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
