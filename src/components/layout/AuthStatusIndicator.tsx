@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/auth/useAuth';
+import { isDebugEnabled } from '@/utils/debug';
 import type { User, Session } from '@supabase/supabase-js';
 
 const getDisplayIdentifier = (user: User | null, session: Session | null): string => {
@@ -22,6 +23,9 @@ const getDisplayIdentifier = (user: User | null, session: Session | null): strin
 
 export const AuthStatusIndicator: React.FC = () => {
   const { user, session, loading } = useAuth();
+
+  // Dev-only indicator. Enable with localStorage.setItem('pokerank-debug', '1') or ?debug=1.
+  if (!isDebugEnabled()) return null;
 
   if (loading) {
     return <div className="text-xs text-muted-foreground px-2">Auth: Loading...</div>;
