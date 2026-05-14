@@ -163,8 +163,46 @@ export const useBattleStateSimplified = (
       timestamp,
       battleType
     };
+
+    const winners = currentBattle.filter(p => selectedPokemon.includes(p.id));
+    const losers = currentBattle.filter(p => !selectedPokemon.includes(p.id));
+
+    if (winners.length > 0 && losers.length > 0) {
+      const finalRatings: Record<string, ReturnType<typeof getRating>> = {};
+      currentBattle.forEach(pokemon => {
+        finalRatings[pokemon.id.toString()] = getRating(pokemon.id.toString());
+      });
+
+      winners.forEach(winner => {
+        losers.forEach(loser => {
+          const [newWinnerRating, newLoserRating] = rate_1vs1(
+            finalRatings[winner.id.toString()],
+            finalRatings[loser.id.toString()]
+          );
+          finalRatings[winner.id.toString()] = newWinnerRating;
+          finalRatings[loser.id.toString()] = newLoserRating;
+        });
+      });
+
+      processBattleOutcomes(currentBattle.map(pokemon => ({
+        pokemonId: pokemon.id.toString(),
+        newRating: finalRatings[pokemon.id.toString()]
+      })));
+    }
     
     setBattleHistory(prev => [...prev, battleData]);
+    setBattleResults(prev => [
+      ...prev,
+      ...losers.flatMap(loser => winners.map(winner => ({
+        battleType,
+        generation: winner.generation || 0,
+        pokemonIds: [winner.id, loser.id],
+        selectedPokemonIds: [winner.id],
+        timestamp,
+        winner,
+        loser
+      })))
+    ]);
     setSelectedPokemon([]);
     
     // Increment total battles in the store
@@ -176,7 +214,7 @@ export const useBattleStateSimplified = (
     const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
     
-  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, addBattlePair, incrementTotalBattles]);
+  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, getRating, processBattleOutcomes, addBattlePair, incrementTotalBattles]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
