@@ -59,7 +59,7 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-card rounded-lg shadow p-6">
         <RankingGrid 
           rankedPokemon={confidentRankedPokemon} 
           onReorder={() => {}}

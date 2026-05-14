@@ -31,15 +31,15 @@ export const LastSyncDisplay = () => {
     
     return {
         text: `Last sync: ${timeAgo}`,
-        icon: <Cloud className="h-4 w-4 text-gray-400" />,
-        textColor: 'text-gray-500',
+        icon: <Cloud className="h-4 w-4 text-muted-foreground" />,
+        textColor: 'text-muted-foreground',
     };
   };
 
   const { text, icon, textColor } = getSyncStatus();
 
   return (
-    <div className="bg-gray-50 border-b border-gray-200 w-full">
+    <div className="bg-muted/50 border-b border-border w-full">
       <div className="container max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-center h-8 text-xs font-medium">
             <div className={`flex items-center gap-2 ${textColor}`}>

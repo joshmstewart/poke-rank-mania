@@ -22,22 +22,22 @@ const GenerationHeader: React.FC<GenerationHeaderProps> = ({
   onToggle
 }) => {
   return (
-    <div className={`${viewMode === "grid" ? "col-span-full" : ""} bg-white rounded-lg my-2 border border-gray-200 shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`${viewMode === "grid" ? "col-span-full" : ""} bg-card rounded-lg my-2 border border-border shadow-sm hover:shadow-md transition-shadow`}>
       <Button
         variant="ghost"
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 h-auto hover:bg-gray-50"
+        className="w-full flex items-center justify-between p-3 h-auto hover:bg-muted/50"
       >
         <div className="flex flex-col items-start">
-          <h3 className="font-semibold text-gray-900 text-left text-sm">{name}</h3>
-          <p className="text-xs text-gray-600 text-left">
+          <h3 className="font-semibold text-foreground text-left text-sm">{name}</h3>
+          <p className="text-xs text-muted-foreground text-left">
             {region} • {games}
           </p>
         </div>
         {isExpanded ? (
-          <ChevronUp className="h-4 w-4 text-gray-400" />
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </Button>
     </div>

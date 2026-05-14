@@ -15,8 +15,8 @@ const PokemonInfo: React.FC<PokemonInfoProps> = ({
 }) => {
   return (
     <div className="space-y-1">
-      <h3 className="font-semibold text-lg text-gray-800">{displayName}</h3>
-      <p className="text-sm text-gray-600">#{pokemonId}</p>
+      <h3 className="font-semibold text-lg text-foreground">{displayName}</h3>
+      <p className="text-sm text-muted-foreground">#{pokemonId}</p>
       
       {types && types.length > 0 && (
         <div className="flex justify-center gap-1 mt-2">

@@ -84,7 +84,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
           return (
             <TableRow 
               key={pokemon.id} 
-              className={isFrozen ? "text-gray-400 italic" : ""}
+              className={isFrozen ? "text-muted-foreground italic" : ""}
             >
               <TableCell>{index + 1}</TableCell>
               <TableCell>
@@ -104,7 +104,7 @@ export const RankingTable: React.FC<RankingTableProps> = ({
                 <div className="flex items-center">
                   {formattedName}
                   {isFrozen && (
-                    <span className="ml-2 text-xs text-gray-500">(Frozen)</span>
+                    <span className="ml-2 text-xs text-muted-foreground">(Frozen)</span>
                   )}
                 </div>
               </TableCell>

@@ -37,7 +37,7 @@ const BattleControlsContainer: React.FC<BattleControlsContainerProps> = ({
   }, [safeSelectedGeneration, battleType]);
 
   return (
-    <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow border w-full">
+    <div className="flex items-center justify-between bg-card p-4 rounded-lg shadow border w-full">
       <div className="flex items-center">
         <BattleControlsDropdowns
           selectedGeneration={safeSelectedGeneration}
@@ -47,7 +47,7 @@ const BattleControlsContainer: React.FC<BattleControlsContainerProps> = ({
         />
         
         {/* Subtle vertical divider between filter settings and action settings */}
-        <div className="h-8 w-px bg-gray-200 mx-6"></div>
+        <div className="h-8 w-px bg-muted mx-6"></div>
         
         <BattleControlsActions
           selectedGeneration={safeSelectedGeneration}

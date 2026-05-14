@@ -24,7 +24,7 @@ export const AuthStatusIndicator: React.FC = () => {
   const { user, session, loading } = useAuth();
 
   if (loading) {
-    return <div className="text-xs text-gray-500 px-2">Auth: Loading...</div>;
+    return <div className="text-xs text-muted-foreground px-2">Auth: Loading...</div>;
   }
 
   const hasSession = !!session;

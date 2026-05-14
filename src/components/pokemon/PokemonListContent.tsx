@@ -33,7 +33,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
 
   if (!items || items.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-muted-foreground">
         {isRankingArea ? "No ranked Pokémon yet" : "No available Pokémon"}
       </div>
     );
@@ -105,7 +105,7 @@ export const PokemonListContent: React.FC<PokemonListContentProps> = ({
           return (
             <Card 
               key={`pokemon-${pokemon.id}-${isRankingArea ? 'ranked' : 'available'}-${index}`}
-              className="relative group hover:shadow-lg transition-shadow bg-white border border-gray-200"
+              className="relative group hover:shadow-lg transition-shadow bg-card border border-border"
             >
               <PokemonInfoModal pokemon={pokemon}>
                 <div className="p-4 cursor-pointer">

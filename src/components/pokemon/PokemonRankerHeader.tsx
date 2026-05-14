@@ -44,7 +44,7 @@ export const PokemonRankerHeader: React.FC<PokemonRankerHeaderProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow border mb-4">
+    <div className="flex items-center justify-between bg-card p-3 rounded-lg shadow border mb-4">
       <div className="flex-1">
         <UnifiedControls
           selectedGeneration={selectedGeneration}

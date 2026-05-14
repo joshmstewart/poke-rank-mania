@@ -8,7 +8,7 @@ const PokemonModalLoading: React.FC = () => {
       <div className="animate-pulse">
         <Logo />
       </div>
-      <p className="text-lg font-medium text-gray-600">Loading card data...</p>
+      <p className="text-lg font-medium text-muted-foreground">Loading card data...</p>
     </div>
   );
 };

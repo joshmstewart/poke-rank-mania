@@ -111,7 +111,7 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
               <p className="text-amber-600 font-semibold">
                 Network issues detected - Retrying...
               </p>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 Attempt {retryCount} of {MAX_RETRIES}
               </p>
               {errorDetails && (
