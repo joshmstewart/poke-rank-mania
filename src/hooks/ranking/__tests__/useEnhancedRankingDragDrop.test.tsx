@@ -79,6 +79,20 @@ describe("useEnhancedRankingDragDrop — DnD ID prefix contract", () => {
       );
     });
     expect(setAvailable).toHaveBeenCalled(); // moveFromAvailableToRankings updates available
+    expect(updateLocalRankings).toHaveBeenCalledTimes(1);
+    expect(updateLocalRankings.mock.calls[0][0][0]).toMatchObject({ id: 25, name: "pikachu", rank: 1 });
+  });
+
+  it("inserts from available when dropped on the empty rankings container", async () => {
+    const { result } = setup();
+    await act(async () => {
+      await result.current.handleDragEnd(
+        buildEvent(availableId(6), "rankings-drop-zone", "rankings-container")
+      );
+    });
+    expect(setAvailable).toHaveBeenCalled();
+    expect(updateLocalRankings).toHaveBeenCalledTimes(1);
+    expect(updateLocalRankings.mock.calls[0][0].at(-1)).toMatchObject({ id: 6, name: "charizard", rank: 3 });
   });
 
   it("ignores drops with no over target", async () => {
