@@ -49,7 +49,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
           <div
             className="grid gap-3"
             style={{
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
               overflow: "visible",
               contain: "none",
             }}
