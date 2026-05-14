@@ -49,6 +49,7 @@ const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
       ref={setNodeRef}
       style={style}
       className={`w-full ${isDragging ? 'z-50 opacity-0' : 'z-auto'}`}
+      data-ranked-id={(pokemon as any).id}
       {...attributes}
       {...listeners}
     >
