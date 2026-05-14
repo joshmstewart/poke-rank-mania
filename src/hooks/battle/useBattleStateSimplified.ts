@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
+import { rate_1vs1 } from "ts-trueskill";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -31,12 +32,14 @@ export const useBattleStateSimplified = (
   
   // Refs
   const initialBattleStartedRef = useRef(false);
+  const repairedHistoryRef = useRef(false);
   
   // Store integration - FIXED property names
   const { 
     totalBattles: battlesCompleted,
     getAllRatings,
-    updateRating,
+    getRating,
+    processBattleOutcomes,
     incrementTotalBattles
   } = useTrueSkillStore();
 
@@ -76,9 +79,29 @@ export const useBattleStateSimplified = (
     if (battleType === "pairs") {
       const timestamp = new Date().toISOString();
       const selectedIds = currentBattle.length === 2 ? [id] : [];
-      const nonSelectedIds = currentBattle.filter(p => p.id !== id).map(p => p.id);
+      const winner = currentBattle.find(p => p.id === id);
+      const loser = currentBattle.find(p => p.id !== id);
+      const nonSelectedIds = loser ? [loser.id] : [];
       
       console.log(`⚡ [PAIR_BATTLE] Processing pair battle: winner=${id}, loser=${nonSelectedIds[0]}`);
+
+      if (!winner || !loser) {
+        console.warn("[SIMPLIFIED_STATE] Ignoring invalid pair battle selection", {
+          selectedId: id,
+          currentBattle: currentBattle.map(p => p.id)
+        });
+        return;
+      }
+
+      const [newWinnerRating, newLoserRating] = rate_1vs1(
+        getRating(winner.id.toString()),
+        getRating(loser.id.toString())
+      );
+
+      processBattleOutcomes([
+        { pokemonId: winner.id.toString(), newRating: newWinnerRating },
+        { pokemonId: loser.id.toString(), newRating: newLoserRating },
+      ]);
 
       // NEW: Add battle to recent pair memory
       addBattlePair(currentBattle.map(p => p.id));
@@ -92,6 +115,18 @@ export const useBattleStateSimplified = (
       };
       
       setBattleHistory(prev => [...prev, battleData]);
+      setBattleResults(prev => [
+        ...prev,
+        {
+          battleType,
+          generation: winner.generation || 0,
+          pokemonIds: currentBattle.map(p => p.id),
+          selectedPokemonIds: selectedIds,
+          timestamp,
+          winner,
+          loser
+        }
+      ]);
       
       // Increment total battles in the store
       incrementTotalBattles();
@@ -111,7 +146,7 @@ export const useBattleStateSimplified = (
         return newSelected;
       });
     }
-  }, [battleType, currentBattle, generateNewBattle, getAllRatings, addBattlePair, incrementTotalBattles]);
+  }, [battleType, currentBattle, generateNewBattle, getAllRatings, getRating, processBattleOutcomes, addBattlePair, incrementTotalBattles]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length === 0) return;
@@ -129,8 +164,46 @@ export const useBattleStateSimplified = (
       timestamp,
       battleType
     };
+
+    const winners = currentBattle.filter(p => selectedPokemon.includes(p.id));
+    const losers = currentBattle.filter(p => !selectedPokemon.includes(p.id));
+
+    if (winners.length > 0 && losers.length > 0) {
+      const finalRatings: Record<string, ReturnType<typeof getRating>> = {};
+      currentBattle.forEach(pokemon => {
+        finalRatings[pokemon.id.toString()] = getRating(pokemon.id.toString());
+      });
+
+      winners.forEach(winner => {
+        losers.forEach(loser => {
+          const [newWinnerRating, newLoserRating] = rate_1vs1(
+            finalRatings[winner.id.toString()],
+            finalRatings[loser.id.toString()]
+          );
+          finalRatings[winner.id.toString()] = newWinnerRating;
+          finalRatings[loser.id.toString()] = newLoserRating;
+        });
+      });
+
+      processBattleOutcomes(currentBattle.map(pokemon => ({
+        pokemonId: pokemon.id.toString(),
+        newRating: finalRatings[pokemon.id.toString()]
+      })));
+    }
     
     setBattleHistory(prev => [...prev, battleData]);
+    setBattleResults(prev => [
+      ...prev,
+      ...losers.flatMap(loser => winners.map(winner => ({
+        battleType,
+        generation: winner.generation || 0,
+        pokemonIds: [winner.id, loser.id],
+        selectedPokemonIds: [winner.id],
+        timestamp,
+        winner,
+        loser
+      })))
+    ]);
     setSelectedPokemon([]);
     
     // Increment total battles in the store
@@ -142,7 +215,43 @@ export const useBattleStateSimplified = (
     const ratings = getAllRatings();
     generateNewBattle(battleType, timestamp, N, ratings);
     
-  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, addBattlePair, incrementTotalBattles]);
+  }, [selectedPokemon, currentBattle, battleType, generateNewBattle, getAllRatings, getRating, processBattleOutcomes, addBattlePair, incrementTotalBattles]);
+
+  useEffect(() => {
+    if (repairedHistoryRef.current || battleHistory.length === 0 || Object.keys(getAllRatings()).length > 0) {
+      return;
+    }
+
+    repairedHistoryRef.current = true;
+    console.warn(`[SIMPLIFIED_STATE] Repairing ${battleHistory.length} battles that were counted without TrueSkill ratings.`);
+
+    battleHistory.forEach(({ battle, selected }) => {
+      const winners = battle.filter(pokemon => selected.includes(pokemon.id));
+      const losers = battle.filter(pokemon => !selected.includes(pokemon.id));
+      if (winners.length === 0 || losers.length === 0) return;
+
+      const finalRatings: Record<string, ReturnType<typeof getRating>> = {};
+      battle.forEach(pokemon => {
+        finalRatings[pokemon.id.toString()] = useTrueSkillStore.getState().getRating(pokemon.id.toString());
+      });
+
+      winners.forEach(winner => {
+        losers.forEach(loser => {
+          const [newWinnerRating, newLoserRating] = rate_1vs1(
+            finalRatings[winner.id.toString()],
+            finalRatings[loser.id.toString()]
+          );
+          finalRatings[winner.id.toString()] = newWinnerRating;
+          finalRatings[loser.id.toString()] = newLoserRating;
+        });
+      });
+
+      useTrueSkillStore.getState().processBattleOutcomes(battle.map(pokemon => ({
+        pokemonId: pokemon.id.toString(),
+        newRating: finalRatings[pokemon.id.toString()]
+      })));
+    });
+  }, [battleHistory, getAllRatings, getRating]);
 
   const goBack = useCallback(() => {
     console.log(`🔙 [SIMPLIFIED_STATE] Going back in battle history`);
