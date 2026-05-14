@@ -18,7 +18,7 @@ function AppContent() {
   const mountTime = useRef(new Date().toISOString());
   const stableInstance = useRef('app-content-main-stable-FIXED');
   const unmountDetectedRef = useRef(false);
-  const intervalRefs = useRef<NodeJS.Timeout[]>([]);
+  const intervalRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const lastLogTime = useRef(0);
 
   renderCount.current += 1;
@@ -132,7 +132,7 @@ function App() {
   const mountTime = useRef(new Date().toISOString());
   const stableRootInstance = useRef('app-root-main-stable-FIXED');
   const unmountDetectedRef = useRef(false);
-  const intervalRefs = useRef<NodeJS.Timeout[]>([]);
+  const intervalRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const lastLogTime = useRef(0);
   
   renderCount.current += 1;

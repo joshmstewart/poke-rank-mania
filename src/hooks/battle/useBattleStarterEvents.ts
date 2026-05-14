@@ -9,7 +9,7 @@ export const useBattleStarterEvents = (
   initialBattleStartedRef: React.MutableRefObject<boolean>,
   autoTriggerDisabledRef: React.MutableRefObject<boolean>,
   startNewBattleCallbackRef: React.MutableRefObject<((battleType: BattleType) => Pokemon[]) | null>,
-  initializationTimerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+  initializationTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
   initializationCompleteRef: React.MutableRefObject<boolean>,
   setCurrentBattle: (battle: Pokemon[]) => void,
   setSelectedPokemon: (pokemon: number[]) => void

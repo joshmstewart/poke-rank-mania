@@ -6,7 +6,7 @@ export const useBattleProgressionReset = (
   battleGenerationBlockedRef: React.MutableRefObject<boolean>
 ) => {
   const showingMilestoneRef = useRef(false);
-  const milestoneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const milestoneTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {

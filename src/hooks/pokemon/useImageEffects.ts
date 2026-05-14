@@ -39,7 +39,7 @@ export const useImageEffects = (
     initializeImage();
     
     // Log only during development or if explicitly debugging
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.MODE === "development") {
       console.log(`🖼️ PokemonCard: Loading image for ${displayName} (#${pokemonId}): ${currentImageUrl}`);
       
       // Verify if the URL actually exists with a HEAD request
