@@ -55,7 +55,21 @@ export const useBattleInteractions = (
       if (battleType === "pairs") {
         processBattleResult([id], currentBattle, battleType);
         setBattleHistory(prev => [...prev, { battle: currentBattle, selected: [id] }]);
-        
+
+        // Fire a battle-completed event so optional listeners (e.g. the
+        // AI Professor Oak commentary toast) can react. Best-effort only.
+        try {
+          const winner = currentBattle.find((p) => p.id === id);
+          const loser = currentBattle.find((p) => p.id !== id);
+          if (winner && loser) {
+            document.dispatchEvent(
+              new CustomEvent('battle-completed', {
+                detail: { winner: winner.name, loser: loser.name },
+              })
+            );
+          }
+        } catch {/* swallow */}
+
         setTimeout(() => {
           processingStateRef.current = false;
           setIsProcessing(false);

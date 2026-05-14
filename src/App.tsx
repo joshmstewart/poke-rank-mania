@@ -9,6 +9,7 @@ import PokemonRankerProvider from "@/components/pokemon/PokemonRankerProvider";
 import { RefinementQueueProvider } from "@/components/battle/RefinementQueueProvider";
 import { SplashPage } from "@/components/splash/SplashPage";
 import { useSplashLoader } from "@/hooks/useSplashLoader";
+import { BattleQuipListener } from "@/components/battle/BattleQuipListener";
 
 function AppContent() {
   const [mode, setMode] = useLocalStorage<"rank" | "battle">("pokemon-ranker-mode", "rank");
@@ -42,6 +43,7 @@ function AppContent() {
           {renderContent()}
         </div>
       </main>
+      <BattleQuipListener />
       <Toaster />
     </div>
   );
