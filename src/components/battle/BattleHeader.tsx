@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Undo2 } from "lucide-react";
 
 interface BattleHeaderProps {
   battlesCompleted: number;
@@ -25,10 +25,10 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
     <div className="flex items-center justify-between mb-2">
       {/* Left side - Current battle info - more compact */}
       <div className="flex items-center gap-4">
-        <div className="text-xl font-bold text-gray-800">
+        <div className="text-xl font-bold text-foreground">
           Battle {currentBattle}
         </div>
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-muted-foreground">
           Completed: {battlesCompleted}
         </div>
       </div>
@@ -36,15 +36,18 @@ const BattleHeader: React.FC<BattleHeaderProps> = ({
       {/* Right side - Back button */}
       <div className="flex items-center">
         {hasHistory && (
-          <Button 
+          <Button
             onClick={onGoBack}
             variant="outline"
             size="sm"
             disabled={combinedProcessing}
             className="flex items-center gap-2"
+            aria-label="Undo last battle"
+            title="Undo last battle"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <Undo2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Undo last battle</span>
+            <span className="sm:hidden">Undo</span>
           </Button>
         )}
       </div>
