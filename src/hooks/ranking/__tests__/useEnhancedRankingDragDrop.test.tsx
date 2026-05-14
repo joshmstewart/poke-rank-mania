@@ -83,6 +83,18 @@ describe("useEnhancedRankingDragDrop — DnD ID prefix contract", () => {
     expect(updateLocalRankings.mock.calls[0][0][0]).toMatchObject({ id: 25, name: "pikachu", rank: 1 });
   });
 
+  it("inserts from available before an existing ranked card when dropped on ranked-pokemon", async () => {
+    const { result } = setup();
+    await act(async () => {
+      await result.current.handleDragEnd(
+        buildEvent(availableId(6), rankedId(1), "ranked-pokemon", 1)
+      );
+    });
+    expect(setAvailable).toHaveBeenCalled();
+    expect(updateLocalRankings).toHaveBeenCalledTimes(1);
+    expect(updateLocalRankings.mock.calls[0][0].map((p: { id: number }) => p.id)).toEqual([150, 6, 1]);
+  });
+
   it("inserts from available when dropped on the empty rankings container", async () => {
     const { result } = setup();
     await act(async () => {
