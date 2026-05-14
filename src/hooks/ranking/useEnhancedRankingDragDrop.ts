@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { DragEndEvent, DragStartEvent, DragOverEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { usePokemonMovement } from './usePokemonMovement';
@@ -27,6 +27,12 @@ export const useEnhancedRankingDragDrop = (
   // cards visibly shift to make room (since the available card is not part of
   // the SortableContext, dnd-kit cannot animate the shift on its own).
   const [insertionPreviewIndex, setInsertionPreviewIndex] = useState<number | null>(null);
+
+  // Snapshot of ranked card rects taken at drag start. We compute the
+  // insertion index from these stable positions so the live placeholder shift
+  // doesn't cause oscillation (cards shifting -> over target changes -> index
+  // flips -> cards shift back).
+  const rankedRectsRef = useRef<Array<{ id: number; rect: DOMRect }>>([]);
 
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
@@ -79,6 +85,17 @@ export const useEnhancedRankingDragDrop = (
     console.log(`[PURE_DND_START] Active ID: ${activeId}`);
 
     if (activeId.startsWith('available-')) {
+      // Snapshot ranked card rects for stable insertion-index calculation.
+      const els = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-ranked-id]')
+      );
+      rankedRectsRef.current = els
+        .map((el) => ({
+          id: Number(el.dataset.rankedId),
+          rect: el.getBoundingClientRect(),
+        }))
+        .filter((entry) => Number.isFinite(entry.id));
+
       const pokemonId = parseInt(activeId.replace('available-', ''));
       draggedPokemon = enhancedAvailablePokemon.find(p => p.id === pokemonId);
       sourceInfo = { fromAvailable: true, isRanked: draggedPokemon?.isRanked || false };
@@ -125,35 +142,60 @@ export const useEnhancedRankingDragDrop = (
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
-    if (!over) {
-      setInsertionPreviewIndex(null);
-      return;
-    }
     const activeId = active.id.toString();
     if (!activeId.startsWith('available-')) {
       setInsertionPreviewIndex(null);
       return;
     }
-    const overId = over.id.toString();
-    const overType = over.data?.current?.type;
-    if (overId === 'rankings-drop-zone' || overType === 'rankings-container') {
-      setInsertionPreviewIndex(localRankings.length);
+
+    // Use the dragged item's translated rect center as the cursor proxy.
+    const translated = active.rect.current.translated;
+    if (!translated) {
+      setInsertionPreviewIndex(null);
       return;
     }
-    if (overType === 'ranked-pokemon') {
-      const overPokemonId = parseInt(overId.replace('ranked-', ''));
-      const idx = localRankings.findIndex(p => p.id === overPokemonId);
-      setInsertionPreviewIndex(idx === -1 ? null : idx);
+    const cx = translated.left + translated.width / 2;
+    const cy = translated.top + translated.height / 2;
+
+    const rects = rankedRectsRef.current;
+    if (rects.length === 0) {
+      // No ranked cards yet — only valid drop is into the empty drop zone.
+      const overType = over?.data?.current?.type;
+      const overId = over?.id?.toString();
+      if (overId === 'rankings-drop-zone' || overType === 'rankings-container') {
+        setInsertionPreviewIndex(0);
+      } else {
+        setInsertionPreviewIndex(null);
+      }
       return;
     }
-    setInsertionPreviewIndex(null);
-  }, [localRankings]);
+
+    // Determine insertion index using ORIGINAL (snapshot) rects, so layout
+    // shifts caused by the placeholder cannot retrigger this calculation.
+    let insertion = rects.length; // default: append
+    for (let i = 0; i < rects.length; i++) {
+      const r = rects[i].rect;
+      const rowMidY = r.top + r.height / 2;
+      const colMidX = r.left + r.width / 2;
+      const inThisRow = cy < r.bottom; // cursor is at or above this row's bottom
+      if (inThisRow) {
+        if (cy < rowMidY || cx < colMidX) {
+          insertion = i;
+          break;
+        }
+      }
+    }
+
+    // Only trigger a re-render when the index actually changes.
+    setInsertionPreviewIndex((prev) => (prev === insertion ? prev : insertion));
+  }, []);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     console.log(`[PURE_DND_END] ===== DRAG END =====`);
 
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
     setInsertionPreviewIndex(null);
+    rankedRectsRef.current = [];
     const { active, over } = event;
     
     console.log(`[PURE_DND_END] Active ID: ${active.id}, Over ID: ${over?.id || 'none'}`);
