@@ -6,6 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Share2 } from "lucide-react";
 import { shareTopTen } from "@/utils/shareTopTen";
 import { toast } from "sonner";
+import { useDroppable } from "@dnd-kit/core";
+
+const EmptyRankingsDropZone: React.FC = () => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "rankings-drop-zone",
+    data: { type: "rankings-container" },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex h-full min-h-[200px] flex-col items-center justify-center text-center p-6 border-2 border-dashed rounded-lg transition-colors ${
+        isOver
+          ? "border-primary bg-primary/5 text-foreground"
+          : "border-border text-muted-foreground"
+      }`}
+    >
+      <p className="text-base font-medium mb-1">No Pokémon ranked yet</p>
+      <p className="text-sm">
+        Drag a Pokémon here from the left, or tap the <span className="font-semibold">+</span> button on a card to add it.
+      </p>
+    </div>
+  );
+};
 
 interface RankingsSectionProps {
   displayRankings: (Pokemon | RankedPokemon)[];
@@ -68,10 +91,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
       {/* Rankings Grid - REMOVED overflow-y-auto to prevent containment */}
       <div className="flex-1 p-4" style={{ overflow: 'visible', contain: 'none' }}>
         {displayRankings.length === 0 ? (
-          <div className="flex h-full min-h-[200px] flex-col items-center justify-center text-center text-muted-foreground p-6 border-2 border-dashed border-border rounded-lg">
-            <p className="text-base font-medium mb-1">No Pokémon ranked yet</p>
-            <p className="text-sm">Drag a Pokémon here from the left, or tap the <span className="font-semibold">+</span> button on a card to add it.</p>
-          </div>
+          <EmptyRankingsDropZone />
         ) : (
           <DragDropGrid
             displayRankings={displayRankings}
