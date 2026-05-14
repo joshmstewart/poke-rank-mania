@@ -365,6 +365,27 @@ export type Database = {
     Functions: {
       cleanup_expired_preview_cache: { Args: never; Returns: undefined }
       cleanup_expired_tcg_cache: { Args: never; Returns: undefined }
+      get_anonymous_trueskill_session: {
+        Args: { _session_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          last_updated: string
+          pending_battles: Json | null
+          ratings_data: Json
+          refinement_queue: Json
+          session_id: string
+          total_battles: number
+          total_battles_last_updated: number
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "trueskill_sessions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       update_global_rankings: { Args: never; Returns: undefined }
     }
     Enums: {
