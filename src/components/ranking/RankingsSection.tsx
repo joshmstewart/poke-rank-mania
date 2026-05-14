@@ -36,6 +36,7 @@ interface RankingsSectionProps {
   availablePokemon?: any[];
   onManualReorder?: (draggedPokemonId: number, sourceIndex: number, destinationIndex: number) => void;
   onLocalReorder?: (newRankings: (Pokemon | RankedPokemon)[]) => void;
+  insertionPreviewIndex?: number | null;
 }
 
 export const RankingsSection: React.FC<RankingsSectionProps> = ({
@@ -43,7 +44,8 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
   pendingRefinements = new Set(),
   availablePokemon = [],
   onManualReorder,
-  onLocalReorder
+  onLocalReorder,
+  insertionPreviewIndex = null,
 }) => {
   const handleMarkAsPending = (pokemonId: number) => {
     // For manual mode, we don't need special pending logic like battle mode
@@ -101,6 +103,7 @@ export const RankingsSection: React.FC<RankingsSectionProps> = ({
             onManualReorder={onManualReorder}
             onLocalReorder={onLocalReorder}
             availablePokemon={availablePokemon}
+            insertionPreviewIndex={insertionPreviewIndex}
           />
         )}
       </div>

@@ -77,7 +77,9 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
     activeDraggedPokemon,
     dragSourceInfo,
     sourceCardProps,
+    insertionPreviewIndex,
     handleDragStart,
+    handleDragOver,
     handleDragEnd,
     handleManualReorder
   } = useEnhancedRankingDragDrop(
@@ -118,7 +120,9 @@ export const RankingUICore: React.FC<RankingUICoreProps> = ({
       handleComprehensiveReset={handleComprehensiveReset}
       setBattleType={setBattleType}
       handleDragStart={handleDragStart}
+      handleDragOver={handleDragOver}
       handleDragEnd={handleDragEnd}
+      insertionPreviewIndex={insertionPreviewIndex}
       handleManualReorder={handleManualReorder}
       handleLocalReorder={handleLocalReorder}
     />

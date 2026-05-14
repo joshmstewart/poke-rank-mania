@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect } from "react";
-import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
+import { DragEndEvent, DragStartEvent, DragOverEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { usePokemonMovement } from './usePokemonMovement';
 
@@ -21,6 +21,12 @@ export const useEnhancedRankingDragDrop = (
     sourceInfo: null,
     cardProps: null,
   });
+
+  // Visual placeholder index while dragging an Available card over Rankings.
+  // null = no preview; number = render an empty slot at this index so ranked
+  // cards visibly shift to make room (since the available card is not part of
+  // the SortableContext, dnd-kit cannot animate the shift on its own).
+  const [insertionPreviewIndex, setInsertionPreviewIndex] = useState<number | null>(null);
 
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
@@ -117,10 +123,37 @@ export const useEnhancedRankingDragDrop = (
     });
   }, [enhancedAvailablePokemon, localRankings]);
 
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) {
+      setInsertionPreviewIndex(null);
+      return;
+    }
+    const activeId = active.id.toString();
+    if (!activeId.startsWith('available-')) {
+      setInsertionPreviewIndex(null);
+      return;
+    }
+    const overId = over.id.toString();
+    const overType = over.data?.current?.type;
+    if (overId === 'rankings-drop-zone' || overType === 'rankings-container') {
+      setInsertionPreviewIndex(localRankings.length);
+      return;
+    }
+    if (overType === 'ranked-pokemon') {
+      const overPokemonId = parseInt(overId.replace('ranked-', ''));
+      const idx = localRankings.findIndex(p => p.id === overPokemonId);
+      setInsertionPreviewIndex(idx === -1 ? null : idx);
+      return;
+    }
+    setInsertionPreviewIndex(null);
+  }, [localRankings]);
+
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     console.log(`[PURE_DND_END] ===== DRAG END =====`);
-    
+
     setDragState({ activePokemon: null, sourceInfo: null, cardProps: null });
+    setInsertionPreviewIndex(null);
     const { active, over } = event;
     
     console.log(`[PURE_DND_END] Active ID: ${active.id}, Over ID: ${over?.id || 'none'}`);
@@ -253,7 +286,9 @@ export const useEnhancedRankingDragDrop = (
     activeDraggedPokemon: dragState.activePokemon,
     dragSourceInfo: dragState.sourceInfo,
     sourceCardProps: dragState.cardProps,
+    insertionPreviewIndex,
     handleDragStart,
+    handleDragOver,
     handleDragEnd,
     handleManualReorder
   };
