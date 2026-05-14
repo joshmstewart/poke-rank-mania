@@ -2,17 +2,22 @@
 import React from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 import { formatDistanceToNow } from 'date-fns';
-import { Cloud, WifiOff } from 'lucide-react';
+import { Cloud, CloudOff } from 'lucide-react';
+import { useAuth } from '@/contexts/auth/useAuth';
 
 export const LastSyncDisplay = () => {
   const lastSyncTime = useTrueSkillStore(state => state.lastSyncTime);
+  const { user } = useAuth();
+
+  // Don't show a sync banner to signed-out users — there's nothing to sync.
+  if (!user) return null;
 
   const getSyncStatus = () => {
     if (!lastSyncTime) {
       return {
-        text: 'Never synced',
-        icon: <WifiOff className="h-4 w-4 text-yellow-500" />,
-        textColor: 'text-yellow-600',
+        text: 'Not yet synced',
+        icon: <CloudOff className="h-4 w-4 text-muted-foreground" />,
+        textColor: 'text-muted-foreground',
       };
     }
     const date = new Date(lastSyncTime);
