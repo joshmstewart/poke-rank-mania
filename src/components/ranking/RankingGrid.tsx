@@ -63,7 +63,7 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Rank badge */}
-      <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center z-10">
+      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center z-10">
         {index + 1}
       </div>
 
