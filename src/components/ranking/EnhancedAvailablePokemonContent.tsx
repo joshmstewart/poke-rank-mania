@@ -57,17 +57,21 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
           result.push(
             <div key={`gen-${currentGeneration}-pokemon`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', overflow: 'visible', contain: 'none' }}>
               {currentGenerationPokemon.map((pokemon, index) => (
-                <DraggablePokemonMilestoneCard
+                <div
                   key={pokemon.id}
-                  pokemon={pokemon}
-                  index={index}
-                  isPending={false}
-                  showRank={false}
-                  isDraggable={true}
-                  isAvailable={true}
-                  context="available"
-                  allRankedPokemon={allRankedPokemon}
-                />
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '180px 180px' } as React.CSSProperties}
+                >
+                  <DraggablePokemonMilestoneCard
+                    pokemon={pokemon}
+                    index={index}
+                    isPending={false}
+                    showRank={false}
+                    isDraggable={true}
+                    isAvailable={true}
+                    context="available"
+                    allRankedPokemon={allRankedPokemon}
+                  />
+                </div>
               ))}
             </div>
           );
@@ -99,17 +103,21 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
       result.push(
         <div key={`gen-${currentGeneration}-pokemon-final`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', overflow: 'visible', contain: 'none' }}>
           {currentGenerationPokemon.map((pokemon, index) => (
-            <DraggablePokemonMilestoneCard
+            <div
               key={pokemon.id}
-              pokemon={pokemon}
-              index={index}
-              isPending={false}
-              showRank={false}
-              isDraggable={true}
-              isAvailable={true}
-              context="available"
-              allRankedPokemon={allRankedPokemon}
-            />
+              style={{ contentVisibility: 'auto', containIntrinsicSize: '180px 180px' } as React.CSSProperties}
+            >
+              <DraggablePokemonMilestoneCard
+                pokemon={pokemon}
+                index={index}
+                isPending={false}
+                showRank={false}
+                isDraggable={true}
+                isAvailable={true}
+                context="available"
+                allRankedPokemon={allRankedPokemon}
+              />
+            </div>
           ))}
         </div>
       );
