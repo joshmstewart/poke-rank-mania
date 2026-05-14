@@ -8,6 +8,7 @@ import { Star } from "lucide-react";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { rankedId } from "@/utils/id";
 
 interface RankingGridProps {
   rankedPokemon: RankedPokemon[];
@@ -132,11 +133,12 @@ const SortableRankingCard: React.FC<{
     transition,
     isDragging,
   } = useSortable({
-    id: String(pokemon.id),
+    id: rankedId(pokemon.id),
     data: {
       type: 'ranked-pokemon',
       pokemon: pokemon,
       context: 'ranked',
+      index,
     },
   });
 
@@ -187,7 +189,7 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   }
 
   return (
-    <SortableContext items={rankedPokemon.map(p => String(p.id))} strategy={verticalListSortingStrategy}>
+    <SortableContext items={rankedPokemon.map(p => rankedId(p.id))} strategy={verticalListSortingStrategy}>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {rankedPokemon.map((pokemon, index) => (
           <SortableRankingCard
