@@ -556,11 +556,17 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
         newRecent.add(p.id);
         console.log(`📝 [RECENT_TRACKING] Added ${p.name}(${p.id}) to recent list`);
       });
-      
-      // Keep only the last 20 Pokemon
-      if (newRecent.size > 20) {
+
+      // Dynamically size the recent window so we never exclude the entire rated pool.
+      // While the rated pool is small (early game), keep the window proportionally tiny.
+      const ratedCount = allPokemon.filter(p => (p as any).rating).length; // best-effort, rarely populated
+      const cap = ratedCount > 0 && ratedCount < 20
+        ? Math.max(4, Math.floor(ratedCount / 2))
+        : 20;
+
+      if (newRecent.size > cap) {
         const recentArray = Array.from(newRecent);
-        const toKeep = recentArray.slice(-20);
+        const toKeep = recentArray.slice(-cap);
         console.log(`📝 [RECENT_TRACKING] Trimmed recent list to last 20: [${toKeep.join(', ')}]`);
         return new Set(toKeep);
       }
@@ -568,7 +574,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
       console.log(`📝 [RECENT_TRACKING] Recent list now has ${newRecent.size} Pokemon: [${Array.from(newRecent).join(', ')}]`);
       return newRecent;
     });
-  }, []);
+  }, [allPokemon]);
 
   const resetRecentlyUsed = useCallback(() => {
     setRecentlyUsedPokemon(new Set());
