@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
+import { Rating, rate_1vs1 } from "ts-trueskill";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
@@ -36,7 +37,8 @@ export const useBattleStateSimplified = (
   const { 
     totalBattles: battlesCompleted,
     getAllRatings,
-    updateRating,
+    getRating,
+    processBattleOutcomes,
     incrementTotalBattles
   } = useTrueSkillStore();
 
@@ -76,9 +78,29 @@ export const useBattleStateSimplified = (
     if (battleType === "pairs") {
       const timestamp = new Date().toISOString();
       const selectedIds = currentBattle.length === 2 ? [id] : [];
-      const nonSelectedIds = currentBattle.filter(p => p.id !== id).map(p => p.id);
+      const winner = currentBattle.find(p => p.id === id);
+      const loser = currentBattle.find(p => p.id !== id);
+      const nonSelectedIds = loser ? [loser.id] : [];
       
       console.log(`⚡ [PAIR_BATTLE] Processing pair battle: winner=${id}, loser=${nonSelectedIds[0]}`);
+
+      if (!winner || !loser) {
+        console.warn("[SIMPLIFIED_STATE] Ignoring invalid pair battle selection", {
+          selectedId: id,
+          currentBattle: currentBattle.map(p => p.id)
+        });
+        return;
+      }
+
+      const [newWinnerRating, newLoserRating] = rate_1vs1(
+        getRating(winner.id.toString()),
+        getRating(loser.id.toString())
+      );
+
+      processBattleOutcomes([
+        { pokemonId: winner.id.toString(), newRating: newWinnerRating },
+        { pokemonId: loser.id.toString(), newRating: newLoserRating },
+      ]);
 
       // NEW: Add battle to recent pair memory
       addBattlePair(currentBattle.map(p => p.id));
@@ -92,6 +114,18 @@ export const useBattleStateSimplified = (
       };
       
       setBattleHistory(prev => [...prev, battleData]);
+      setBattleResults(prev => [
+        ...prev,
+        {
+          battleType,
+          generation: winner.generation || 0,
+          pokemonIds: currentBattle.map(p => p.id),
+          selectedPokemonIds: selectedIds,
+          timestamp,
+          winner,
+          loser
+        }
+      ]);
       
       // Increment total battles in the store
       incrementTotalBattles();
@@ -111,7 +145,7 @@ export const useBattleStateSimplified = (
         return newSelected;
       });
     }
-  }, [battleType, currentBattle, generateNewBattle, getAllRatings, addBattlePair, incrementTotalBattles]);
+  }, [battleType, currentBattle, generateNewBattle, getAllRatings, getRating, processBattleOutcomes, addBattlePair, incrementTotalBattles]);
 
   const handleTripletSelectionComplete = useCallback(() => {
     if (selectedPokemon.length === 0) return;
