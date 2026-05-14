@@ -290,6 +290,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
               minHeight: '40px'
             }}
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
