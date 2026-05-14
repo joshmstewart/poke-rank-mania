@@ -25,7 +25,8 @@ export const useEnhancedRankingDragDrop = (
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
     setAvailablePokemon,
-    handleEnhancedManualReorder
+    localRankings,
+    updateLocalRankings
   );
 
   // Tap-to-add support: cards in the Available list dispatch an
