@@ -168,6 +168,32 @@ export const useEnhancedRankingDragDrop = (
 
     console.log(`[PURE_DND_END] Extracted Pokemon ID: ${pokemonId}, isFromAvailable: ${isFromAvailable}`);
 
+    // Handle available card dropped onto an existing ranked card: insert before that ranked card.
+    if (overDataType === 'ranked-pokemon' && isFromAvailable) {
+      const overPokemonId = parseInt(overId.replace('ranked-', ''));
+      const targetIndex = localRankings.findIndex(p => p.id === overPokemonId);
+      const pokemonToAdd = enhancedAvailablePokemon.find(p => p.id === pokemonId);
+
+      if (!pokemonToAdd) {
+        console.warn('[DnD_SKIP]', 'available pokemon not found for ranked-card drop', { active, over });
+        return;
+      }
+
+      if (targetIndex === -1) {
+        console.warn('[DnD_SKIP]', 'ranked drop target not found', { active, over });
+        return;
+      }
+
+      if (localRankings.some(p => p.id === pokemonId)) {
+        console.warn('[DnD_SKIP]', 'pokemon already ranked', { active, over });
+        return;
+      }
+
+      console.log(`[PURE_DND_END] Moving ${pokemonToAdd.name} from available before ranked ID ${overPokemonId} at index ${targetIndex}`);
+      moveFromAvailableToRankings(pokemonId, targetIndex, pokemonToAdd);
+      return;
+    }
+
     // Handle drop onto ranking position
     if (overDataType === 'ranking-position') {
       const targetIndex = over.data.current?.index;
@@ -210,6 +236,8 @@ export const useEnhancedRankingDragDrop = (
       }
       return;
     }
+
+    console.warn('[DnD_SKIP]', 'unhandled drop combination', { active, over });
   }, [enhancedAvailablePokemon, localRankings, handleEnhancedManualReorder, moveFromAvailableToRankings, updateLocalRankings]);
 
   const handleManualReorder = useCallback((
