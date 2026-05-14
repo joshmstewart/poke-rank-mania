@@ -2,6 +2,8 @@
 import React from "react";
 import DraggablePokemonMilestoneCard from "@/components/battle/DraggablePokemonMilestoneCard";
 import GenerationHeader from "@/components/pokemon/GenerationHeader";
+import { Button } from "@/components/ui/button";
+import { SearchX } from "lucide-react";
 
 interface EnhancedAvailablePokemonContentProps {
   items: any[];
@@ -14,6 +16,8 @@ interface EnhancedAvailablePokemonContentProps {
   currentPage: number;
   totalPages: number;
   allRankedPokemon?: any[]; // Add this prop to pass ranked Pokemon list
+  searchTerm?: string;
+  onClearSearch?: () => void;
 }
 
 // Simple loading placeholder component
@@ -31,11 +35,34 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   loadingRef,
   currentPage,
   totalPages,
-  allRankedPokemon = [] // Default to empty array
+  allRankedPokemon = [], // Default to empty array
+  searchTerm = "",
+  onClearSearch,
 }) => {
   // Group items by generation for display
   const renderContent = () => {
     if (items.length === 0 && !isLoading) {
+      const isSearching = searchTerm.trim().length > 0;
+      if (isSearching) {
+        return (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <div className="text-center max-w-xs">
+              <SearchX className="mx-auto h-10 w-10 mb-3 opacity-60" />
+              <p className="text-base font-medium text-foreground mb-1">
+                No matches for &ldquo;{searchTerm}&rdquo;
+              </p>
+              <p className="text-sm mb-4">
+                Check the spelling or try a Pokédex number.
+              </p>
+              {onClearSearch && (
+                <Button variant="outline" size="sm" onClick={onClearSearch}>
+                  Clear search
+                </Button>
+              )}
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <div className="text-center">

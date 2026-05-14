@@ -114,14 +114,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
         </div>
 
         {/* PURE DND: Enhanced Drag Overlay */}
-        <DragOverlay 
+        <DragOverlay
           dropAnimation={null}
           style={{ zIndex: 99999 }}
         >
           {activeDraggedPokemon ? (
-            <div 
-              className="transform rotate-2 scale-105 opacity-95" 
-              style={{ 
+            <div
+              className="transform rotate-1 scale-[1.02] shadow-2xl ring-2 ring-primary/40 rounded-lg transition-shadow"
+              style={{
                 zIndex: 99999,
                 position: 'fixed',
                 pointerEvents: 'none',

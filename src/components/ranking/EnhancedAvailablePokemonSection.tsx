@@ -96,6 +96,8 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
           currentPage={1}
           totalPages={1}
           allRankedPokemon={rankedPokemon}
+          searchTerm={searchTerm}
+          onClearSearch={() => setSearchInput("")}
         />
       </div>
     </div>
