@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DndContext, DragOverlay, closestCenter, pointerWithin, rectIntersection } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { BattleType } from "@/hooks/battle/types";
 import { LoadingType } from "@/hooks/pokemon/types";
 import { RankingsSection } from "./RankingsSection";
@@ -63,44 +63,14 @@ export const EnhancedRankingLayout: React.FC<EnhancedRankingLayoutProps> = ({
   handleManualReorder,
   handleLocalReorder
 }) => {
-  console.log('%cEnhancedRankingLayout rendering with PURE DnD', 'color: green', { displayRankings });
-
   const handleManualModeReset = () => {
     handleComprehensiveReset();
-  };
-
-  // PURE DND: Simplified collision detection focused on drop zones
-  const customCollisionDetection = (args: any) => {
-    const { active, droppableContainers } = args;
-    
-    console.log(`[PURE_COLLISION] Active: ${active.id}, Available containers:`, 
-      Array.from(droppableContainers.keys())
-    );
-
-    // First try pointer-based detection for precise positioning
-    const pointerCollisions = pointerWithin(args);
-    if (pointerCollisions.length > 0) {
-      console.log(`[PURE_COLLISION] Pointer collision found:`, pointerCollisions);
-      return pointerCollisions;
-    }
-
-    // Fallback to rectangle intersection
-    const rectCollisions = rectIntersection(args);
-    if (rectCollisions.length > 0) {
-      console.log(`[PURE_COLLISION] Rectangle collision found:`, rectCollisions);
-      return rectCollisions;
-    }
-
-    // Final fallback to closest center
-    const centerCollisions = closestCenter(args);
-    console.log(`[PURE_COLLISION] Using closest center:`, centerCollisions);
-    return centerCollisions;
   };
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={customCollisionDetection}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
