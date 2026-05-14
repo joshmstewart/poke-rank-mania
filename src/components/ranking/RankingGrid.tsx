@@ -58,7 +58,7 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
 
   return (
     <div 
-      className="relative bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow p-3"
+      className="relative bg-card border rounded-lg shadow-sm hover:shadow-md transition-shadow p-3"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -94,7 +94,7 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
           className={`w-5 h-5 transition-colors duration-300 ${
             isPendingRefinement 
               ? 'text-yellow-500 fill-yellow-500' 
-              : 'text-gray-500 hover:text-yellow-500'
+              : 'text-muted-foreground hover:text-yellow-500'
           }`}
         />
       </button>
@@ -107,9 +107,9 @@ const RankingGridCard: React.FC<{ pokemon: RankedPokemon; index: number }> = ({ 
           className="w-16 h-16 mx-auto mb-2 object-contain"
         />
         <div className="text-sm font-medium truncate">{pokemon.name}</div>
-        <div className="text-xs text-gray-500">#{pokemon.id}</div>
+        <div className="text-xs text-muted-foreground">#{pokemon.id}</div>
         {pokemon.score && (
-          <div className="text-xs text-gray-600 mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             {pokemon.score.toFixed(1)}
           </div>
         )}

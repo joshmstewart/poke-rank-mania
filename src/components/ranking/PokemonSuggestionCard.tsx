@@ -97,7 +97,7 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
             className={`w-6 h-6 transition-colors duration-300 ${
               isPendingRefinement 
                 ? 'text-yellow-500 fill-yellow-500' 
-                : 'text-gray-500 hover:text-yellow-500'
+                : 'text-muted-foreground hover:text-yellow-500'
             }`}
           />
         </button>
@@ -142,7 +142,7 @@ export const PokemonSuggestionCard: React.FC<PokemonSuggestionCardProps> = ({
               className={`w-6 h-6 transition-colors duration-300 ${
                 isPendingRefinement 
                   ? 'text-yellow-500 fill-yellow-500' 
-                  : 'text-gray-500 hover:text-yellow-500'
+                  : 'text-muted-foreground hover:text-yellow-500'
               }`}
             />
           </button>

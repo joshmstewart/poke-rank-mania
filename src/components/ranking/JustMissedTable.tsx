@@ -40,7 +40,7 @@ export const JustMissedTable: React.FC<JustMissedTableProps> = ({
           {justMissedCutoff.map((pokemon, index) => {
             const actualRank = activeTier !== "All" ? Number(activeTier) + index + 1 : index + 1;
             return (
-              <TableRow key={pokemon.id} className="bg-gray-50">
+              <TableRow key={pokemon.id} className="bg-muted/50">
                 <TableCell>{actualRank}</TableCell>
                 <TableCell>
                   <img src={pokemon.image} alt={pokemon.name} className="w-8 h-8 object-contain" />
