@@ -54,9 +54,9 @@ describe("useEnhancedRankingDragDrop — DnD ID prefix contract", () => {
         available,
         ranked,
         setAvailable as any,
-        handleReorder,
-        triggerReRanking,
-        updateLocalRankings
+        handleReorder as any,
+        triggerReRanking as any,
+        updateLocalRankings as any
       )
     );
 
