@@ -13,13 +13,33 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, cacheKey } = await req.json()
-    
-    if (!imageUrl || !cacheKey) {
+    const { imageUrl, cacheKey, metadataOnly } = await req.json()
+
+    if (!imageUrl || !cacheKey || typeof imageUrl !== 'string' || typeof cacheKey !== 'string') {
       return new Response(
         JSON.stringify({ error: 'Missing imageUrl or cacheKey' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    if (cacheKey.length > 200 || imageUrl.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: 'Input too long' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Basic SSRF guard: only allow http(s) and a small allow-list of upstream hosts
+    let parsed: URL
+    try { parsed = new URL(imageUrl) } catch {
+      return new Response(JSON.stringify({ error: 'Invalid imageUrl' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const ALLOWED_HOSTS = new Set([
+      'images.pokemontcg.io',
+      'raw.githubusercontent.com',
+    ])
+    if (!['http:', 'https:'].includes(parsed.protocol) || !ALLOWED_HOSTS.has(parsed.hostname)) {
+      return new Response(JSON.stringify({ error: 'Host not allowed' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const supabase = createClient(
@@ -27,7 +47,24 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log(`🖼️ [CACHE_FUNCTION] Starting to cache image: ${imageUrl}`)
+    // Lightweight metadata-only path: just upsert the URL into the cache table
+    // (used by the splash preview to avoid round-tripping the binary).
+    if (metadataOnly) {
+      const { error } = await supabase
+        .from('preview_image_cache')
+        .upsert([
+          {
+            cache_key: cacheKey,
+            image_url: imageUrl,
+            content_type: 'image/png',
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        ], { onConflict: 'cache_key' })
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ cachedUrl: imageUrl }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
     // Check if already cached in storage
     const { data: existingCache } = await supabase
