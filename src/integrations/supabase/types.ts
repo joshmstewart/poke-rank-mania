@@ -364,6 +364,7 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_preview_cache: { Args: never; Returns: undefined }
+      cleanup_expired_tcg_cache: { Args: never; Returns: undefined }
       update_global_rankings: { Args: never; Returns: undefined }
     }
     Enums: {
