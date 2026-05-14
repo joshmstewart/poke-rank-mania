@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { BattleType, SingleBattle } from "./types";
-import { Rating, rate_1vs1 } from "ts-trueskill";
+import { rate_1vs1 } from "ts-trueskill";
 import { useBattleStarterIntegration } from "./useBattleStarterIntegration";
 import { useBattleProcessorGeneration } from "./useBattleProcessorGeneration";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
