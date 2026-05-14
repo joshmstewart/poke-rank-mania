@@ -446,12 +446,22 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
 
       let battleResult: BattleGenerationResult;
 
-      // FIXED STRATEGY DISTRIBUTION: Use proper if...else if...else chain
-      if (unrankedPool.length > 0 && battleStrategyRoll < 0.15) {
-        // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
-        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE (15%)`);
+      // WARM-UP: Until the rated pool reaches Top N, force unranked battles so the
+      // scheduler doesn't recycle the same handful of Pokémon. Once we're past N,
+      // ramp unranked probability down gradually instead of jumping to 15%.
+      const ratedCount = Object.keys(ratings).length;
+      const forceUnranked = unrankedPool.length > 0 && ratedCount < N;
+      const inRampWindow = unrankedPool.length > 0 && ratedCount >= N && ratedCount < N * 2;
+      const unrankedThreshold = inRampWindow ? 0.40 : 0.15;
+
+      if (forceUnranked) {
+        console.log(`🎯 [TOP_N_SCHEDULER] WARM-UP: ratedCount=${ratedCount} < N=${N}, forcing UNRANKED BATTLE`);
         battleResult = generateUnrankedBattle(unrankedPool, ratings);
-      } else if (battleStrategyRoll < 0.65) {
+      } else if (unrankedPool.length > 0 && battleStrategyRoll < unrankedThreshold) {
+        // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE (${Math.round(unrankedThreshold * 100)}%)`);
+        battleResult = generateUnrankedBattle(unrankedPool, ratings);
+      } else if (battleStrategyRoll < (inRampWindow ? 0.70 : 0.65)) {
         // Strategy 2: Refine Top N (50% chance) - 0.15 to 0.65
         console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: TOP N REFINEMENT (50%)`);
         battleResult = generateTopNRefinementBattle(ratings, N);
