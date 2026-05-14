@@ -175,18 +175,29 @@ export const useEnhancedRankingDragDrop = (
 
     // Determine insertion index using ORIGINAL (snapshot) rects, so layout
     // shifts caused by the placeholder cannot retrigger this calculation.
-    let insertion = rects.length; // default: append
+    // Strategy: pick the card whose center is closest to the cursor, then
+    // decide whether to insert BEFORE it (cursor on its left half) or AFTER
+    // it (cursor on its right half). This matches a row/column grid intuitively
+    // and avoids the "upper-half-of-row jumps to row start" bug.
+    let bestIdx = -1;
+    let bestDist = Infinity;
     for (let i = 0; i < rects.length; i++) {
       const r = rects[i].rect;
-      const rowMidY = r.top + r.height / 2;
-      const colMidX = r.left + r.width / 2;
-      const inThisRow = cy < r.bottom; // cursor is at or above this row's bottom
-      if (inThisRow) {
-        if (cy < rowMidY || cx < colMidX) {
-          insertion = i;
-          break;
-        }
+      const ccx = r.left + r.width / 2;
+      const ccy = r.top + r.height / 2;
+      const dx = cx - ccx;
+      const dy = cy - ccy;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
       }
+    }
+    let insertion = rects.length;
+    if (bestIdx !== -1) {
+      const r = rects[bestIdx].rect;
+      const ccx = r.left + r.width / 2;
+      insertion = cx < ccx ? bestIdx : bestIdx + 1;
     }
 
     // Only trigger a re-render when the index actually changes.
