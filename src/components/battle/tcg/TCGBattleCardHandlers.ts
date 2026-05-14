@@ -6,7 +6,7 @@ interface TCGHandlersProps {
   pokemonId: number;
   onSelect: (id: number) => void;
   isProcessing: boolean;
-  clickTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>;
+  clickTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   lastClickTimeRef: React.MutableRefObject<number>;
   modalOpen: boolean;
   setIsHovered: (hovered: boolean) => void;

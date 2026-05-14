@@ -96,7 +96,7 @@ export const useAutoScrollEffects = (
     };
 
     // Add scroll listener with throttling
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setTimeout>;
     const throttledScrollHandler = () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(handleScroll, 16); // ~60fps

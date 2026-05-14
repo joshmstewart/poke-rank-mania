@@ -32,7 +32,7 @@ export const useBattleStateManager = (
   }, []);
 
   const lastSuggestionLoadTimestampRef = useRef<number>(Date.now());
-  const rankingsGenerationDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const rankingsGenerationDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const debouncedGenerateRankings = useMemo(() => {
     return (generateRankings: (results: any[]) => void, results: any[]) => {

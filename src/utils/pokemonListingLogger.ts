@@ -3,7 +3,7 @@ import { Pokemon } from "@/services/pokemon";
 
 export const logPokemonVariations = (allPokemon: Pokemon[]) => {
   // Only run this in development
-  if (process.env.NODE_ENV !== 'production') {
+  if (import.meta.env.MODE !== 'production') {
     console.log("========= POKEMON VARIATIONS ANALYSIS =========");
     
     // Special form patterns to check for - Order matters here!

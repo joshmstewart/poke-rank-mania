@@ -32,7 +32,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   displayName
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
 

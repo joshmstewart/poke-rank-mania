@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { getCurrentImageMode } from "@/components/settings/imagePreferenceHelpers";
 
 export const useTCGBattleCardState = () => {
-  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
   const [currentImageMode, setCurrentImageMode] = useState<'pokemon' | 'tcg'>(() => getCurrentImageMode());
@@ -48,7 +48,7 @@ export const useTCGImageModeListener = (
 
 export const useTCGCleanupEffect = (
   displayName: string,
-  clickTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>
+  clickTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
 ) => {
   useEffect(() => {
     console.log(`🔘 [TCG_BATTLE_CARD] ${displayName}: Component mounted/updated`);

@@ -37,7 +37,7 @@ export const useImageLoader = ({ pokemonId, displayName }: UseImageLoaderProps) 
     }
     setImageLoaded(true);
     
-    if (retryCount > 0 && process.env.NODE_ENV === "development") {
+    if (retryCount > 0 && import.meta.env.MODE === "development") {
       console.log(`✅ Successfully loaded fallback image (type: ${currentImageType}) for ${displayName}`);
     }
   }, [retryCount, currentImageType, displayName, imageLoadingTimerRef, isMountedRef, setImageLoaded]);

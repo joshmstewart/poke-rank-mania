@@ -81,7 +81,7 @@ export const useBattleCoordination = (
   // SIMPLIFIED: Initialize refs properly
   const initialBattleStartedRef = useRef(false);
   const autoTriggerDisabledRef = useRef(false);
-  const initializationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initializationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializationCompleteRef = useRef(false);
 
   // SIMPLIFIED: Reset initialization when Pokemon data changes
