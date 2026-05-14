@@ -9,7 +9,7 @@ import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Star } from "lucide-react";
+import { Crown, Plus, Star } from "lucide-react";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 
 interface DraggablePokemonMilestoneCardProps {
@@ -123,22 +123,43 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Apply drag props when draggable and not in modal
   const dragProps = isDraggable && !isOpen ? { ...attributes, ...listeners } : {};
 
-  console.log(`[PURE_DND_CARD] ${pokemon.name} - isDraggable: ${isDraggable}, context: ${context}, id: ${id}`);
+  const canTapToAdd = context === 'available' && !isRankedPokemon;
+  const handleTapToAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    document.dispatchEvent(
+      new CustomEvent('add-pokemon-to-rankings', { detail: { pokemonId: pokemon.id } })
+    );
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`${backgroundColorClass} rounded-lg border border-gray-200 relative overflow-hidden aspect-square flex flex-col group w-full ${
+      className={`${backgroundColorClass} rounded-lg border border-border relative overflow-hidden aspect-square flex flex-col group w-full ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
       } ${
-        isDragging ? 'shadow-2xl border-blue-400' : 'hover:shadow-lg transition-all duration-200'
-      } ${isPending ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+        isDragging ? 'shadow-2xl border-primary' : 'hover:shadow-lg transition-all duration-200'
+      } ${isPending ? 'ring-2 ring-primary/50' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       data-pokemon-id={pokemon.id}
       {...dragProps}
     >
+      {/* Tap-to-add button (mobile-friendly, also works on desktop) */}
+      {!isDragging && canTapToAdd && (
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={handleTapToAdd}
+          className="absolute bottom-1 right-1 z-30 w-7 h-7 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center opacity-90 hover:opacity-100 active:scale-95 transition-all"
+          title="Add to rankings"
+          aria-label={`Add ${pokemon.name} to rankings`}
+          type="button"
+        >
+          <Plus className="w-4 h-4" strokeWidth={3} />
+        </button>
+      )}
+
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
         <div className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"></div>
@@ -269,6 +290,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
               minHeight: '40px'
             }}
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
