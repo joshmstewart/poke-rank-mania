@@ -24,7 +24,7 @@ export const InfiniteScrollLoader: React.FC<InfiniteScrollLoaderProps> = ({
   return (
     <div 
       ref={loadingRef}
-      className="flex justify-center items-center h-16 mt-4 bg-gray-100 border border-gray-200 rounded-md"
+      className="flex justify-center items-center h-16 mt-4 bg-muted border border-border rounded-md"
       data-testid="infinite-scroll-loader"
       style={{ minHeight: '64px' }} // Ensure the element has height for intersection
     >

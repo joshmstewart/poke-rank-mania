@@ -41,7 +41,7 @@ const BattleInterfaceCore: React.FC<BattleInterfaceCoreProps> = memo(({
   console.log(`✅ [BATTLE_INTERFACE_CORE] Rendering interface with ${validatedBattle.length} Pokemon`);
   
   return (
-    <div className="bg-white rounded-lg shadow p-4 w-full">
+    <div className="bg-card rounded-lg shadow p-4 w-full">
       <div className="mb-3">
         <BattleHeader
           battlesCompleted={displayedBattlesCompleted}

@@ -106,8 +106,8 @@ const BattleModeCore: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Failed</h3>
-          <p className="text-gray-600 mb-4">{loadError}</p>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Loading Failed</h3>
+          <p className="text-muted-foreground mb-4">{loadError}</p>
           <Button onClick={handleRetry} className="bg-blue-500 hover:bg-blue-600">
             Retry Loading
           </Button>
@@ -125,7 +125,7 @@ const BattleModeCore: React.FC = () => {
       <div className="flex justify-center items-center h-64 w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-2 mx-auto"></div>
-          <p className="text-sm text-gray-600">{loadingText}</p>
+          <p className="text-sm text-muted-foreground">{loadingText}</p>
         </div>
       </div>
     );
@@ -137,7 +137,7 @@ const BattleModeCore: React.FC = () => {
     <div className="flex justify-center items-center h-64 w-full">
       <div className="text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-2 mx-auto"></div>
-        <p className="text-sm text-gray-600">Initializing...</p>
+        <p className="text-sm text-muted-foreground">Initializing...</p>
       </div>
     </div>
   );

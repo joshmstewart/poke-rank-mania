@@ -14,10 +14,10 @@ export const AvailablePokemonHeader: React.FC<AvailablePokemonHeaderProps> = ({
   const label = unrankedCount !== undefined ? "Pokémon remaining" : "Pokémon available";
 
   return (
-    <div className="bg-white border-b border-gray-200 p-4">
+    <div className="bg-card border-b border-border p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">All Filtered Pokémon</h2>
-        <div className="text-sm text-gray-500 font-medium">
+        <h2 className="text-lg font-semibold text-foreground">All Filtered Pokémon</h2>
+        <div className="text-sm text-muted-foreground font-medium">
           {displayCount} {label}
         </div>
       </div>

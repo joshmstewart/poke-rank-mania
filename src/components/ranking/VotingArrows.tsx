@@ -76,7 +76,7 @@ export const VotingArrows: React.FC<VotingArrowsProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-full absolute inset-0 bg-white bg-opacity-90 z-10">
+    <div className="flex flex-col w-full absolute inset-0 bg-card bg-opacity-90 z-10">
       {/* Up vote arrows (strongest to weakest) */}
       {renderArrow("up", 3)}
       {renderArrow("up", 2)}

@@ -79,7 +79,7 @@ const BattleGrid: React.FC<BattleGridProps> = ({
     return (
       <div className="grid gap-4 mt-8 grid-cols-2 md:grid-cols-3">
         {[1, 2, 3].map((placeholder) => (
-          <div key={`placeholder-${placeholder}`} className="w-full h-[200px] bg-gray-100 animate-pulse rounded-md"></div>
+          <div key={`placeholder-${placeholder}`} className="w-full h-[200px] bg-muted animate-pulse rounded-md"></div>
         ))}
       </div>
     );
