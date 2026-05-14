@@ -67,12 +67,7 @@ export const getCachedCard = async (pokemonName: string): Promise<TCGCard | null
     const expiryTime = cacheTime + (CACHE_EXPIRY_HOURS * 60 * 60 * 1000);
     
     if (now > expiryTime) {
-      // Cache expired, remove it
-      console.log(`🃏 [TCG_CACHE] Cache expired for ${pokemonName}, removing...`);
-      await supabase
-        .from('tcg_cards_cache')
-        .delete()
-        .eq('pokemon_name', pokemonName.toLowerCase());
+      // Expired entries get refreshed via upsert; cleanup is handled server-side.
       return null;
     }
     
@@ -92,23 +87,17 @@ export const setCachedCard = async (pokemonName: string, firstCard: TCGCard | nu
       return;
     }
 
-    const { error } = await supabase
-      .from('tcg_cards_cache')
-      .upsert({
-        pokemon_name: pokemonName.toLowerCase(),
-        card_data: firstCard as any,
-        second_card_data: secondCard as any || null,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'pokemon_name'
-      });
-
+    const { error } = await supabase.functions.invoke('cache-tcg-card', {
+      body: {
+        pokemonName: pokemonName.toLowerCase(),
+        firstCard,
+        secondCard: secondCard ?? null,
+      },
+    });
     if (error) {
-      console.error(`🃏 [TCG_CACHE] Error saving cache for ${pokemonName}:`, error);
+      if (import.meta.env.DEV) console.warn('[TCG_CACHE] save failed', error);
       return;
     }
-
-    console.log(`🃏 [TCG_CACHE] Successfully cached card for ${pokemonName}`);
 
     // Cache the images asynchronously
     cacheCardImages(firstCard);
@@ -148,12 +137,6 @@ export const getCachedCards = async (pokemonName: string): Promise<{ firstCard: 
     const expiryTime = cacheTime + (CACHE_EXPIRY_HOURS * 60 * 60 * 1000);
     
     if (now > expiryTime) {
-      // Cache expired, remove it
-      console.log(`🃏 [TCG_CACHE] Cache expired for ${pokemonName}, removing...`);
-      await supabase
-        .from('tcg_cards_cache')
-        .delete()
-        .eq('pokemon_name', pokemonName.toLowerCase());
       return { firstCard: null, secondCard: null };
     }
     
