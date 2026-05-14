@@ -14,6 +14,11 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
+  esbuild: {
+    // Strip console.log/debug/info in production builds; keep warn/error for diagnostics.
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+    pure: mode === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
