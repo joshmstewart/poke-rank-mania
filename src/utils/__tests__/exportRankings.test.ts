@@ -28,7 +28,9 @@ describe("exportRankingsAsJson", () => {
     URL.createObjectURL = vi.fn(() => "blob:mock");
     URL.revokeObjectURL = vi.fn();
     clickSpy = vi.fn();
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(clickSpy);
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+      clickSpy as unknown as () => void
+    );
   });
 
   afterEach(() => {
