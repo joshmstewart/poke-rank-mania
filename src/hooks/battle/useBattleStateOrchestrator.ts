@@ -14,10 +14,6 @@ export const useBattleStateOrchestrator = (
   coordination: any,
   refinementQueue: any
 ) => {
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] Starting orchestration...`);
-
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] About to call milestoneHandlers...`);
-
   // Initialize milestone handlers FIRST to get generateRankings function
   const milestoneHandlers = useBattleStateMilestones(
     stateData.finalRankings,
@@ -31,12 +27,6 @@ export const useBattleStateOrchestrator = (
     coordination.startNewBattle
   );
 
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] milestoneHandlers created with generateRankings function`);
-
-  // MILESTONE INVESTIGATION: Log before passing to milestone events
-  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] About to pass milestones to useBattleStateMilestoneEvents:`, stateData.milestones);
-  console.log(`🔍🔍🔍 [MILESTONE_INVESTIGATION] Passing generateRankings function:`, !!milestoneHandlers.generateRankings);
-  
   // Use milestone events hook - CRITICAL FIX: Pass generateRankings function
   const milestoneEvents = useBattleStateMilestoneEvents({
     battlesCompleted: stateData.battlesCompleted,
@@ -70,8 +60,6 @@ export const useBattleStateOrchestrator = (
     eventHandlers.startNewBattleWrapper
   );
 
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] About to call handlers...`);
-
   // Create handlers with proper generateRankings - CRITICAL FIX: use synchronous startNewBattle and add setFinalRankings
   const handlers = useBattleStateHandlers(
     allPokemon,
@@ -104,8 +92,6 @@ export const useBattleStateOrchestrator = (
     stateData.setFinalRankings
   );
 
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] handlers created, about to call processingHandlers...`);
-
   const processingHandlers = useBattleStateProcessing(
     stateData.selectedPokemon,
     stateData.currentBattle,
@@ -118,8 +104,6 @@ export const useBattleStateOrchestrator = (
     stateData.setIsAnyProcessing,
     eventHandlers.startNewBattleWrapper
   );
-
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] processingHandlers created, about to call effects...`);
 
   // Initialize effects - CRITICAL FIX: use synchronous startNewBattle
   const { processingRef } = useBattleStateEffects(
@@ -138,8 +122,6 @@ export const useBattleStateOrchestrator = (
     processingHandlers.handleTripletSelectionComplete,
     processors.setFinalRankingsWithLogging
   );
-
-  console.log(`🚨🚨🚨 [BATTLE_STATE_ORCHESTRATOR] All hooks completed, preparing return object...`);
 
   return {
     milestoneHandlers,
