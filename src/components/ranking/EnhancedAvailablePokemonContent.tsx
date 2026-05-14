@@ -18,7 +18,7 @@ interface EnhancedAvailablePokemonContentProps {
 
 // Simple loading placeholder component
 const PokemonLoadingPlaceholder = () => (
-  <div className="animate-pulse bg-gray-200 rounded-lg h-32 w-full"></div>
+  <div className="animate-pulse bg-muted rounded-lg h-32 w-full"></div>
 );
 
 export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
@@ -37,7 +37,7 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   const renderContent = () => {
     if (items.length === 0 && !isLoading) {
       return (
-        <div className="flex items-center justify-center h-full text-gray-500">
+        <div className="flex items-center justify-center h-full text-muted-foreground">
           <div className="text-center">
             <p className="text-lg mb-2">No Pokémon available</p>
             <p className="text-sm">Try adjusting your filters</p>
