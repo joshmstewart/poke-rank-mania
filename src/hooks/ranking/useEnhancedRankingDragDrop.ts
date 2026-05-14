@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { DragEndEvent, DragStartEvent, useSensors, useSensor, PointerSensor, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { usePokemonMovement } from './usePokemonMovement';
@@ -27,6 +27,23 @@ export const useEnhancedRankingDragDrop = (
     setAvailablePokemon,
     handleEnhancedManualReorder
   );
+
+  // Tap-to-add support: cards in the Available list dispatch an
+  // "add-pokemon-to-rankings" CustomEvent. We handle it here so the same code
+  // path as drag-drop is used (single source of truth for ranking insertion).
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ pokemonId: number }>).detail;
+      const pokemonId = detail?.pokemonId;
+      if (typeof pokemonId !== 'number') return;
+      const pokemonToAdd = enhancedAvailablePokemon.find((p) => p.id === pokemonId);
+      if (!pokemonToAdd) return;
+      if (localRankings.some((p) => p.id === pokemonId)) return;
+      moveFromAvailableToRankings(pokemonId, localRankings.length, pokemonToAdd);
+    };
+    document.addEventListener('add-pokemon-to-rankings', handler);
+    return () => document.removeEventListener('add-pokemon-to-rankings', handler);
+  }, [enhancedAvailablePokemon, localRankings, moveFromAvailableToRankings]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
