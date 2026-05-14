@@ -42,18 +42,23 @@ const BattleContentMilestone: React.FC<BattleContentMilestoneProps> = ({
 }) => {
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] ===== BattleContentMilestone RENDER =====`);
 
-  // Fetch rankings directly from the source of truth to avoid stale props
+  // Fetch rankings directly from the TrueSkill store (source of truth).
+  // We do NOT gate on `rankingGenerated` — that flag lives in a separate UI
+  // state machine and may stay false even when the store is fully populated
+  // (e.g. after 25 battles), which previously caused the milestone screen to
+  // render an empty state despite valid ratings being available.
   const { generateRankingsFromStore } = useBattleRankings();
-  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>([]);
+  const [finalRankings, setFinalRankings] = useState<RankedPokemon[]>(
+    () => generateRankingsFromStore()
+  );
 
   useEffect(() => {
-    if (rankingGenerated) {
-      console.log('🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] `rankingGenerated` is true. Fetching fresh rankings from TrueSkill store.');
-      const freshRankings = generateRankingsFromStore();
-      setFinalRankings(freshRankings);
-      console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Fetched ${freshRankings.length} rankings.`);
-    }
-  }, [rankingGenerated, generateRankingsFromStore]);
+    const freshRankings = generateRankingsFromStore();
+    setFinalRankings(freshRankings);
+    console.log(
+      `🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] Fetched ${freshRankings.length} rankings (rankingGenerated=${rankingGenerated}, battlesCompleted=${battlesCompleted}).`
+    );
+  }, [rankingGenerated, battlesCompleted, generateRankingsFromStore]);
   
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] finalRankings length: ${finalRankings?.length || 0}`);
   console.log(`🏆 [MILESTONE_COMPONENT_TRUESKILL_SYNC] battlesCompleted: ${battlesCompleted}`);
