@@ -65,34 +65,16 @@ export const usePreviewImageCache = () => {
   };
 
   const cacheImage = async (mode: 'tcg' | 'pokemon', imageUrl: string) => {
+    const cacheKey = getCacheKey(mode);
     try {
-      const cacheKey = getCacheKey(mode);
-      
-      // Store in cloud cache
-      const { error } = await supabase
-        .from('preview_image_cache')
-        .upsert([
-          {
-            cache_key: cacheKey,
-            image_url: imageUrl,
-            content_type: 'image/png',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-          }
-        ], {
-          onConflict: 'cache_key'
-        });
-
-      if (error) {
-        console.error('Error caching image:', error);
-        return;
-      }
-
-      // Store in memory cache
+      // Writes go through the edge function (RLS only allows service role).
+      const { error } = await supabase.functions.invoke('cache-tcg-image', {
+        body: { imageUrl, cacheKey, metadataOnly: true },
+      });
+      if (error && import.meta.env.DEV) console.warn('cacheImage failed', error);
       setCachedImages(prev => ({ ...prev, [cacheKey]: imageUrl }));
-      
-      console.log(`🖼️ [CLOUD_CACHE] Cached ${mode} preview image in cloud for 30 days`);
-    } catch (error) {
-      console.error('Error caching image:', error);
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('cacheImage threw', err);
     }
   };
 
