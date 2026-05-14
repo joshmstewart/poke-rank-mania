@@ -25,5 +25,18 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    // PokeRank DnD contract: rankings cards must use useSortable, not useDraggable.
+    files: ["src/components/ranking/**/*.{ts,tsx}", "src/components/rankings/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        paths: [{
+          name: "@dnd-kit/core",
+          importNames: ["useDraggable"],
+          message: "Rankings cards must use useSortable from @dnd-kit/sortable, not useDraggable.",
+        }],
+      }],
+    },
   }
 );
