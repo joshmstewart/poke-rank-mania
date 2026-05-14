@@ -85,23 +85,25 @@ const BattleGrid: React.FC<BattleGridProps> = ({
     );
   }
   
-  // Determine grid columns based on battle size
-  const gridCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
-  
+  // Mobile: stack vertically for 2-3 cards so each gets a real touch target.
+  // Desktop (sm+): show side-by-side up to 4 columns.
+  const desktopCols = validatedBattle.length <= 3 ? validatedBattle.length : Math.min(validatedBattle.length, 4);
+  const desktopColsClass =
+    desktopCols === 2 ? "sm:grid-cols-2" :
+    desktopCols === 3 ? "sm:grid-cols-3" :
+    "sm:grid-cols-4";
+
   return (
-    <div 
+    <div
       key={animationKey}
       data-battletype={battleType}
       data-processing={combinedProcessing ? "true" : "false"}
       data-loading-circles={combinedProcessing ? "visible" : "hidden"}
       data-battle-count={currentBattleCount + 1}
-      className="grid gap-4 mt-8 mx-auto" 
-      style={{ 
-        display: 'grid',
-        gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-        width: '100%',
+      className={`grid gap-4 mt-8 mx-auto w-full grid-cols-1 ${desktopColsClass}`}
+      style={{
         maxWidth: validatedBattle.length <= 2 ? '560px' : '100%',
-        visibility: 'visible'
+        visibility: 'visible',
       }}
     >
       {validatedBattle.map(pokemon => {

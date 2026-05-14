@@ -138,7 +138,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
   }, [previewImageUrl, updateImageState]);
 
   return (
-    <div className="flex items-center gap-4 bg-gray-100 rounded-xl p-2 shadow-md border-2 border-gray-400">
+    <div className="inline-flex items-center gap-2 sm:gap-4 bg-muted rounded-xl p-2 shadow-sm border border-border">
       {/* Mode Switcher */}
       <TooltipProvider>
         <Tooltip>
@@ -154,7 +154,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
       </TooltipProvider>
       
       {/* Vertical Divider */}
-      <div className="h-8 w-px bg-gray-300"></div>
+      <div className="h-8 w-px bg-border"></div>
       
       {/* Image Style Button */}
       <TooltipProvider>
@@ -162,7 +162,7 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
           <Dialog open={imageSettingsOpen} onOpenChange={setImageSettingsOpen}>
             <TooltipTrigger asChild>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-4 hover:bg-white/70 transition-colors">
+                <Button variant="ghost" size="sm" className="flex gap-2 items-center h-9 px-3 sm:px-4 hover:bg-background/70 transition-colors">
                   <div className="flex items-center justify-center w-5 h-5 relative">
                     {imageDisplayState.shouldShowPreviewImage && (
                       <img 
@@ -176,11 +176,11 @@ const ModeStyleControls: React.FC<ModeStyleControlsProps> = ({
                       />
                     )}
                     {imageDisplayState.shouldShowFallbackIcon && (
-                      <modeDisplay.IconComponent className="w-4 h-4 text-gray-600" />
+                      <modeDisplay.IconComponent className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
                   <span className="text-sm font-medium">{modeDisplay.text}</span>
-                  <ChevronDown className="w-3 h-3 text-gray-500" />
+                  <ChevronDown className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </DialogTrigger>
             </TooltipTrigger>
