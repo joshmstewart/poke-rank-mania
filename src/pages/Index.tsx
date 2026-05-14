@@ -22,7 +22,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <AppHeader mode={mode} onModeChange={handleModeChange} />
       <main className="container max-w-7xl mx-auto py-6 relative z-10">
         {mode === "rank" ? <PokemonRanker /> : <BattleMode />}

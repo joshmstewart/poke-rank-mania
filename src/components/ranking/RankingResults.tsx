@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { RankedPokemon, TopNOption } from "@/services/pokemon";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Download } from "lucide-react";
 import TierSelector from "@/components/battle/TierSelector";
 import { RankingGrid } from "./RankingGrid";
+import { exportRankingsAsJson } from "@/utils/exportRankings";
 
 interface RankingResultsProps {
   confidentRankedPokemon: RankedPokemon[];
@@ -39,6 +40,18 @@ export const RankingResults: React.FC<RankingResultsProps> = ({
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Ranking Results</h2>
         <div className="flex items-center gap-2">
+          {confidentRankedPokemon.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportRankingsAsJson(confidentRankedPokemon)}
+              className="flex items-center gap-1"
+              title="Download rankings as JSON"
+            >
+              <Download className="h-3 w-3" />
+              Export JSON
+            </Button>
+          )}
           {onClearSuggestions && (
             <Button 
               variant="outline" 
