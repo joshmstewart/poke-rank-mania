@@ -59,10 +59,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
             {displayRankings.map((pokemon, index) => (
               <React.Fragment key={(pokemon as any).id}>
                 {insertionPreviewIndex === index && (
-                  <div
-                    aria-hidden
-                    className="rounded-lg border-2 border-dashed border-primary/50 bg-primary/5 min-h-[140px]"
-                  />
+                  <div aria-hidden className="min-h-[140px] opacity-0" />
                 )}
                 <SortablePokemonCard
                   id={`ranked-${(pokemon as any).id}`}
@@ -74,10 +71,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
               </React.Fragment>
             ))}
             {insertionPreviewIndex === displayRankings.length && (
-              <div
-                aria-hidden
-                className="rounded-lg border-2 border-dashed border-primary/50 bg-primary/5 min-h-[140px]"
-              />
+              <div aria-hidden className="min-h-[140px] opacity-0" />
             )}
           </div>
         </SortableContext>
