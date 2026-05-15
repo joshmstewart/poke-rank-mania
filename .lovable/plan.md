@@ -1,82 +1,70 @@
-## Context Log
+# Why DnD on /manual is laggy — full breakdown
 
-Reviewed `src/hooks/battle/useBattleGeneration.ts` — the scheduler currently picks a strategy from a flat probability roll:
+**Context Log (project memory consulted)**
+- `mem://architecture/dnd-system` — single DndContext, strict `ranked-{id}` / `available-{id}` IDs, helpers in `@/utils/id`.
+- `mem://performance/grid-virtualization` — CSS-based virtualization is required for large lists and must preserve dnd-kit collision detection. **The Available grid currently violates this rule.**
+- `mem://style/design-tokens-and-layout` — semantic tokens only.
+- Previous turn removed the per-render console.log loops from `usePokemonGrouping` (real win, but only one of many issues).
 
-- Warm-up: while `ratedCount < N`, force Unranked battles.
-- Ramp (N ≤ ratedCount < 2N): Unranked 40%, Top-N Refinement 30%, Bubble 15%, Bottom 15%.
-- Steady state (ratedCount ≥ 2N): Unranked 15%, Top-N Refinement 50%, Bubble 20%, Bottom 15%.
+## Root causes, ranked by impact
 
-Two issues match what you're seeing:
-1. The unranked share is fixed by `ratedCount` vs `N`, not by **coverage of the filtered pool**. With a big filter (say 600 Pokémon) and only ~30 rated, we leave warm-up at 25 and immediately start spending 50% of battles refining the same Top N — even though 95% of the user's potential favourites have never appeared.
-2. Nothing ever **retires** a Pokémon. The "back-burner" rule (`isBackBurnered`) only suppresses *primary* picks deep in the bottom (rank > N+50, σ low). It doesn't downweight refinement of someone we're already confident will never crack the Top N, and it doesn't free those slots for new blood.
+### 1. Available list mounts ~1,100 fully-interactive cards (no real virtualization)
+`EnhancedAvailablePokemonContent` renders every Pokémon in every expanded generation as a `<DraggablePokemonMilestoneCard>`. The wrapper uses `content-visibility: auto`, which skips paint/layout when offscreen but **does not skip React work**. So every card still:
+- calls `useDraggable` → registers itself in dnd-kit's draggable registry
+- calls `useTrueSkillStore()` (whole-store subscription, see #2)
+- calls `useLongPress`, `useCloudPendingBattles`, plus 4 `useState` + refs
+- pays for `closestCenter` collision detection on every pointer move
 
-## Proposal
+This is the single biggest source of lag and the direct violation of `mem://performance/grid-virtualization`.
 
-### 1. Coverage-driven strategy mix
-
-Replace the fixed warm-up/ramp/steady tiers with a continuous coverage ratio:
-
-```text
-coverage = ratedCount / filteredPoolSize        // 0.0 → 1.0
-unrankedShare = clamp(1 - coverage, 0.15, 0.85) // explore-heavy when coverage low
+### 2. `useCloudPendingBattles` subscribes to the **entire** TrueSkill store
+```ts
+const { ... } = useTrueSkillStore();   // no selector
 ```
+Zustand without a selector re-renders the consumer on **any** store change. With ~1,100 cards each subscribed to the whole store, a single TrueSkill update fans out to 1,100 re-renders. During drag, the store gets touched (insertion, score recompute) and the whole grid thrashes.
 
-Then split the remainder across the existing refinement strategies in their current ratio (Top-N : Bubble : Bottom ≈ 50 : 20 : 15 → ~59 : 24 : 17 of the non-unranked share). Concretely:
+### 3. `usePokemonGrouping`'s memo is invalidated on every render
+`EnhancedAvailablePokemonSection` passes `isGenerationExpandedForDisplay` — a **fresh function every render** — into the hook. It's in the `useMemo` deps, so the 1,100-item grouping loop re-runs on every parent render, including every drag-over tick. Same problem with `loadingRef={React.createRef()}` (new ref per render).
 
-| Coverage | Unranked | Top-N Refine | Bubble | Bottom |
-|---------:|---------:|-------------:|-------:|-------:|
-| 5%       | 85%      | 9%           | 4%     | 2%     |
-| 25%      | 75%      | 15%          | 6%     | 4%     |
-| 50%      | 50%      | 30%          | 12%    | 8%     |
-| 80%      | 20%      | 47%          | 19%    | 14%    |
-| 100%     | 15%      | 50%          | 20%    | 15%    |
+### 4. `allRankedPokemon` prop identity changes during drag, busting `React.memo`
+`DraggablePokemonMilestoneCard` is `React.memo`'d, but `EnhancedAvailablePokemonContent` passes `allRankedPokemon={allRankedPokemon}` (= `displayRankings`). The reference changes whenever rankings update, so all 1,100 memoized available cards re-render together.
 
-This naturally collapses to today's behaviour once the user has actually seen most of their pool, and stops over-refining when there are still huge unseen swaths.
+### 5. `closestCenter` runs over ~1,150 draggables every pointer move
+With every available + ranked card registered as a draggable, dnd-kit's default collision detection is O(n) per `mousemove`. We don't need available cards to be drop targets at all — they should be draggable-only with no droppable footprint, and collision detection should be scoped to the rankings panel.
 
-If `unrankedPool.length === 0`, redistribute that share into Top-N Refinement (current fallback already does this implicitly).
+### 6. `handleDragOver` fires on every pointer move and calls `setState` directly
+There's a `rafRef` declared in `useEnhancedRankingDragDrop` but it's never used. Every pointer tick:
+- runs the snapshot-rect loop (fine, snapshot is stable)
+- calls `setInsertionPreviewIndex(...)` — even when memoized to same value, the call still triggers React's reconciliation pass on the whole `EnhancedRankingLayout` subtree (which then re-renders `EnhancedAvailablePokemonSection` for reasons #3 and #4).
 
-### 2. "Locked-out" pruning
+### 7. Per-card hook overhead that should be lifted or lazy
+Every available card eagerly mounts `useLongPress`, `usePokemonFlavorText` (gated by `isOpen` so cheap, OK), `usePokemonTCGCard` (also gated, OK), plus dialog state. The Dialog tree is built but only opens on click — fine, but the long-press handler attaches pointer listeners to every card.
 
-Add a helper:
+### 8. Minor extras
+- `getPokemonBackgroundColor(pokemon)` and `pokemon.id.toString().padStart(...)` recompute every render — trivial individually, multiplied by 1,100.
+- `dragProps = { ...attributes, ...listeners }` builds new objects every render (fine for a single card, but ×1,100 adds up during reconciliation).
+- The cards-by-generation grids are re-created in a single inline loop in `renderContent()` (no useMemo). Whenever the parent re-renders, all generation `<div className="grid">` JSX is rebuilt.
 
-```text
-isLockedOutOfTopN(pokemon, rank, N, ratings):
-  rating = ratings[pokemon.id]
-  // 99% confident floor (mu - 2σ) is already worse than current Top-N cutoff
-  topNFloorMu = ratings[rankedPokemon[N-1].id].mu
-  return rank > N
-      && rating.battleCount >= 5
-      && rating.mu + 2 * rating.sigma < topNFloorMu
-```
+---
 
-Apply it in three places:
+## Fix plan (in order of impact / effort)
 
-- **Top-N refinement**: never picked (already restricted to Top N — no change, just makes the threshold meaningful).
-- **Bubble Challenge**: exclude locked-out Pokémon from the inner/outer bubble challenger pool. Currently any rank N+1..N+50 with σ > 2.5 is fair game — that includes Pokémon we're already sure won't make it.
-- **Bottom Confirmation**: skip entirely if the Pokémon is locked out of Top N *and* outside, say, the user's "interesting zone" (Top N×2). Reduces wasted battles deep in the tail.
+1. **Real virtualization for the Available list.** Use a windowed renderer (e.g. `@tanstack/react-virtual` per-generation row group, or a CSS row-virtualization variant per `mem://performance/grid-virtualization`) so only ~50–100 cards mount at a time. This single change should eliminate most of the lag.
+2. **Replace whole-store subscriptions with selectors.** In `useCloudPendingBattles`, subscribe with `useTrueSkillStore(state => state.isPokemonPending(id))` etc., and accept `pokemonId` as an argument. Cards then only re-render when *their own* pending status flips.
+3. **Stabilize props into `usePokemonGrouping`.**
+   - Wrap `isGenerationExpandedForDisplay` in `useCallback` keyed on `expandedGenerations` + `generationsWithMatches` + `searchTerm`.
+   - Drop `loadingRef={React.createRef()}` — use a stable `useRef` or remove if unused.
+4. **Stop passing `allRankedPokemon` down to every card.** It isn't used inside the card at all (verify) — remove the prop. If it is used, replace with a selector hook reading from the store on demand.
+5. **Scope dnd-kit collision detection.** Use a custom collision strategy (or `pointerWithin` + a filter on `droppableContainers`) that only considers ranked cards + the rankings-drop-zone. Available cards don't need to be droppables.
+6. **Throttle `handleDragOver`** through the existing `rafRef` so we run at most once per animation frame.
+7. **Memoize per-generation grid blocks** inside `EnhancedAvailablePokemonContent` so unrelated generations don't rebuild when one of them changes expansion.
+8. **Drop the remaining heavy `[PURE_DND_*]` console.logs** in the drag hook; they fire every drag and serialize objects.
 
-Also stop generating "Upset vs Top N" inside Bottom Confirmation when the bottom Pokémon is locked out — it's pure noise.
+## Technical notes
 
-### 3. Soft cap on consecutive refinement
+- Touching the dnd-kit collision strategy must respect the `mem://architecture/dnd-system` ID prefix contract — we filter droppables by `id.startsWith('ranked-')` plus the `rankings-drop-zone` id. No data-shape changes.
+- Switching `useCloudPendingBattles` to selectors is a contained refactor: the public API (`isPokemonPending`, `addPendingPokemon`, etc.) stays the same; only the internal subscription changes. Components that need *all* pending IDs (e.g. `ModeSwitcher`) keep a separate selector.
+- Virtualization must keep `data-ranked-id` / dnd-kit IDs intact for cards that *are* mounted; offscreen cards being absent is fine because we only collide against the rankings panel after fix #5.
+- No schema or backend changes; all fixes are client-side React/Zustand/dnd-kit.
 
-Add a tiny memory in `useBattleGeneration` (a counter incremented when strategy ∈ {Top-N Refine, Bubble} and reset on Unranked). If it exceeds, e.g., 4 in a row while `coverage < 0.5`, force the next battle to Unranked. Cheap insurance against bad RNG streaks complaining users actually feel.
-
-### 4. UI / config touch (optional, no behaviour change)
-
-Surface coverage in the battle log line we already emit (`[TOP_N_SCHEDULER]`) so this is debuggable — `coverage=0.06, unrankedShare=0.84`.
-
-## Files to change
-
-- `src/hooks/battle/useBattleGeneration.ts`
-  - Add `getFilteredPoolSize` (just `allPokemon.length`, since `allPokemon` is already filter-respecting upstream).
-  - Replace the `forceUnranked` / `inRampWindow` / threshold block with the coverage formula.
-  - Add `isLockedOutOfTopN` and use it to filter `challengerPool` in `generateBubbleChallengeBattle` and `eligibleBottom` in `generateBottomConfirmationBattle`.
-  - Add the consecutive-refinement counter + override.
-
-No other files need to change; `N` and `ratings` already flow through `useBattleProcessorGeneration` → `generateNewBattle`.
-
-## Open questions
-
-1. Should "locked-out" be tunable per user (e.g., a "focus depth" slider for Top N vs Top N×2 vs full), or just hard-coded at `2N`?
-2. For coverage, should the denominator be the entire filtered `allPokemon`, or `allPokemon` minus Pokémon the user has explicitly frozen/excluded? Today freezeList isn't reaching this hook — easy to wire if you want.
-3. Are you OK with Bottom Confirmation effectively going to ~0 at low coverage, or do you want a small floor (e.g. 5%) so we still occasionally sanity-check the tail?
+Want me to implement these in this order, or jump straight to #1 + #2 (highest impact) first?
