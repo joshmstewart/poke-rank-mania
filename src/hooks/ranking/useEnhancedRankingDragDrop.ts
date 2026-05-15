@@ -87,11 +87,10 @@ export const useEnhancedRankingDragDrop = (
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        // Slightly longer than before so a brief still touch (during the
-        // long-press menu wait) doesn't accidentally start a drag. Movement
-        // within this window still cancels and starts a drag.
-        delay: 250,
-        tolerance: 8,
+        // Distance-based activation: a still finger NEVER starts a drag,
+        // so the 500ms long-press menu can fire reliably. Drag begins only
+        // once the finger moves more than 8px.
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor)
