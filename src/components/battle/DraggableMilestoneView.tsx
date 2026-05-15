@@ -88,23 +88,23 @@ const DraggableMilestoneView: React.FC<DraggableMilestoneViewProps> = ({
   };
 
   return (
-    <div className="bg-white p-6 w-full max-w-7xl mx-auto">
-      {/* Header - exactly matching the image */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🏆</span>
-          <h1 className="text-xl font-bold text-gray-800">
+    <div className="bg-card text-card-foreground rounded-lg border border-border p-3 sm:p-6 w-full max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+          <span className="text-2xl shrink-0">🏆</span>
+          <h1 className="text-lg sm:text-xl font-bold truncate">
             Milestone: {battlesCompleted} Battles
           </h1>
-          <span className="text-gray-500 text-sm">
+          <span className="text-muted-foreground text-xs sm:text-sm whitespace-nowrap">
             (Showing {displayRankings.length} of {activeTier === "All" ? maxItems : Math.min(Number(activeTier), maxItems)})
           </span>
           <AutoBattleLogsModal />
         </div>
-        
-        <Button 
+
+        <Button
           onClick={onContinueBattles}
-          className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-2 rounded-lg font-medium"
+          className="ml-auto shrink-0 px-4 sm:px-6"
         >
           Continue Battles
         </Button>
