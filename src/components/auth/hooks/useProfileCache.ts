@@ -12,10 +12,19 @@ interface ProfileCache {
 
 export const useProfileCache = () => {
   const [cache, setCache] = useState<ProfileCache>({});
+  const cacheRef = useRef<ProfileCache>({});
   const fetchingRef = useRef<Set<string>>(new Set());
 
+  const updateCache = useCallback((updater: (previous: ProfileCache) => ProfileCache) => {
+    setCache(prev => {
+      const next = updater(prev);
+      cacheRef.current = next;
+      return next;
+    });
+  }, []);
+
   const getCachedProfile = useCallback((userId: string): Profile | null => {
-    const cached = cache[userId];
+    const cached = cacheRef.current[userId];
     if (!cached) {
       console.log('🎯 [PROFILE_CACHE] No cache entry for user:', userId);
       return null;
@@ -30,18 +39,18 @@ export const useProfileCache = () => {
     
     console.log('🎯 [PROFILE_CACHE] Returning cached profile for user:', userId, 'with avatar:', cached.profile?.avatar_url);
     return cached.profile;
-  }, [cache]);
+  }, []);
 
-  const prefetchProfile = useCallback(async (userId: string, forceRefresh: boolean = false): Promise<void> => {
+  const prefetchProfile = useCallback(async (userId: string, forceRefresh: boolean = false): Promise<Profile | null> => {
     if (!userId) {
       console.log('🎯 [PROFILE_CACHE] No userId provided for prefetch');
-      return;
+      return null;
     }
 
     // Prevent multiple simultaneous fetches for the same user
     if (fetchingRef.current.has(userId)) {
       console.log('🎯 [PROFILE_CACHE] Already fetching profile for:', userId, '- skipping duplicate request');
-      return;
+      return getCachedProfile(userId);
     }
 
     // If not forcing refresh and we have valid cached data, skip fetch
@@ -49,7 +58,7 @@ export const useProfileCache = () => {
       const cachedProfile = getCachedProfile(userId);
       if (cachedProfile) {
         console.log('🎯 [PROFILE_CACHE] Valid cached profile exists, skipping fetch');
-        return;
+        return cachedProfile;
       }
     }
     
@@ -57,7 +66,7 @@ export const useProfileCache = () => {
     console.log('🎯 [PROFILE_CACHE] Starting prefetch for user:', userId, 'forceRefresh:', forceRefresh);
     
     // Set loading state
-    setCache(prev => ({
+    updateCache(prev => ({
       ...prev,
       [userId]: {
         profile: prev[userId]?.profile || null,
@@ -72,7 +81,7 @@ export const useProfileCache = () => {
       
       console.log('🎯 [PROFILE_CACHE] Fresh profile received for:', userId, 'with avatar:', profile?.avatar_url);
       
-      setCache(prev => ({
+      updateCache(prev => ({
         ...prev,
         [userId]: {
           profile,
@@ -80,9 +89,10 @@ export const useProfileCache = () => {
           loading: false
         }
       }));
+      return profile;
     } catch (error) {
       console.error('❌ [PROFILE_CACHE] Profile prefetch error for user:', userId, error);
-      setCache(prev => ({
+      updateCache(prev => ({
         ...prev,
         [userId]: {
           profile: prev[userId]?.profile || null,
@@ -90,11 +100,12 @@ export const useProfileCache = () => {
           loading: false
         }
       }));
+      return getCachedProfile(userId);
     } finally {
       fetchingRef.current.delete(userId);
       console.log('🎯 [PROFILE_CACHE] Prefetch completed for user:', userId);
     }
-  }, [getCachedProfile]);
+  }, [getCachedProfile, updateCache]);
 
   const getProfileFromCache = useCallback((userId: string): Profile | null => {
     const cachedProfile = getCachedProfile(userId);
@@ -104,7 +115,7 @@ export const useProfileCache = () => {
 
   const invalidateCache = useCallback((userId: string) => {
     console.log('🎯 [PROFILE_CACHE] 🔥 INVALIDATING CACHE for user:', userId);
-    setCache(prev => {
+    updateCache(prev => {
       const newCache = { ...prev };
       delete newCache[userId];
       return newCache;
@@ -117,6 +128,7 @@ export const useProfileCache = () => {
 
   const clearAllCache = useCallback(() => {
     console.log('🎯 [PROFILE_CACHE] 🔥 CLEARING ALL CACHE');
+    cacheRef.current = {};
     setCache({});
     fetchingRef.current.clear();
   }, []);
