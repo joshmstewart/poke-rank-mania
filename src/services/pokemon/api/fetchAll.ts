@@ -1,6 +1,7 @@
 import { Pokemon, PokemonAPIResponse } from "../types";
 import { trackFetchCall, logFetchParameters } from "./fetchCallTracker";
 import { processPokemonData } from "./pokemonProcessor";
+import { staticPokemonData } from "../staticPokemonData";
 
 const POKEMON_API_BASE = "https://pokeapi.co/api/v2";
 
@@ -12,6 +13,11 @@ export const fetchAllPokemon = async (
 ): Promise<Pokemon[]> => {
   const currentCallId = trackFetchCall();
   logFetchParameters(currentCallId, generationId, fullRankingMode, initialBatchOnly, batchSize);
+
+  if (staticPokemonData.length > 0) {
+    console.log(`✅ [FETCH_ALL] Call #${currentCallId}: Using bundled Pokemon dataset (${staticPokemonData.length})`);
+    return staticPokemonData.map((pokemon) => ({ ...pokemon })).sort((a, b) => a.id - b.id);
+  }
 
   try {
     // FULL LOADING RESTORED: Load complete Pokemon dataset for accurate rankings

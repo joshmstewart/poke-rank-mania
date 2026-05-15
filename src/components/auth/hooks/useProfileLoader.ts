@@ -48,8 +48,7 @@ export const useProfileLoader = (userId: string | undefined) => {
     }
     
     // No cached data, fetch fresh
-    prefetchProfile(userId, false).then(() => {
-      const freshProfile = getProfileFromCache(userId);
+    prefetchProfile(userId, false).then((freshProfile) => {
       
       if (freshProfile) {
         console.log('🔄 [PROFILE_LOADER] ✅ Setting fresh profile with avatar:', freshProfile.avatar_url);

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { AuthMethodsView } from './AuthMethodsView';
 import { PhoneInputView } from './PhoneInputView';
 import { PhoneOtpView } from './PhoneOtpView';
@@ -22,7 +22,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({
   open: controlledOpen, 
   onOpenChange: controlledOnOpenChange 
 }) => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [internalOpen, setInternalOpen] = useState(false);
   const [currentView, setCurrentView] = useState<AuthView>('methods');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -53,14 +53,6 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({
   const handleBackToPhone = () => {
     setCurrentView('phone-input');
   };
-
-  if (loading) {
-    return (
-      <Button variant="outline" size="sm" disabled>
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </Button>
-    );
-  }
 
   if (user) {
     return <AuthenticatedUserDisplay />;

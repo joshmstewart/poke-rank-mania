@@ -80,6 +80,7 @@ export const usePreviewImageCache = () => {
 
   const getPreviewImage = async (mode: 'tcg' | 'pokemon'): Promise<string> => {
     setIsLoading(true);
+    const fallbackUrl = mode === 'tcg' ? PIKACHU_TCG_URL : PIKACHU_POKEMON_URL;
     
     try {
       // Try to get from cache first
@@ -89,17 +90,14 @@ export const usePreviewImageCache = () => {
         return cachedUrl;
       }
 
-      // If not cached, use the appropriate URL and cache it
-      const imageUrl = mode === 'tcg' ? PIKACHU_TCG_URL : PIKACHU_POKEMON_URL;
-      
-      // Cache the image immediately without validation
-      await cacheImage(mode, imageUrl);
+      // If not cached, show the known preview immediately and cache it in the background.
+      void cacheImage(mode, fallbackUrl);
       setIsLoading(false);
-      return imageUrl;
+      return fallbackUrl;
     } catch (error) {
       console.error('Error getting preview image:', error);
       setIsLoading(false);
-      return mode === 'tcg' ? PIKACHU_TCG_URL : PIKACHU_POKEMON_URL;
+      return fallbackUrl;
     }
   };
 
