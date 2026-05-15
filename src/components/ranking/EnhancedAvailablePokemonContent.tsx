@@ -166,10 +166,14 @@ const EnhancedAvailablePokemonContentImpl: React.FC<EnhancedAvailablePokemonCont
   );
 };
 
+EnhancedAvailablePokemonContentImpl.displayName = "EnhancedAvailablePokemonContentImpl";
+
 // PERF: memoize so the available grid doesn't reconcile on every drag-over
 // tick (parent re-renders due to insertionPreviewIndex state in the layout
 // owner). Only meaningful prop changes will re-render it.
-export const EnhancedAvailablePokemonContent = React.memo(EnhancedAvailablePokemonContentImpl);
+const EnhancedAvailablePokemonContentMemo = React.memo(EnhancedAvailablePokemonContentImpl);
+EnhancedAvailablePokemonContentMemo.displayName = "EnhancedAvailablePokemonContent";
+export { EnhancedAvailablePokemonContentMemo as EnhancedAvailablePokemonContent };
 
 // Helper functions for generation data
 const getRegionForGeneration = (gen: number): string => {
