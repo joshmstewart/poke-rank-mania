@@ -10,7 +10,6 @@ interface SortablePokemonCardProps {
   pokemon: Pokemon | RankedPokemon;
   index: number;
   isPending: boolean;
-  allRankedPokemon: (Pokemon | RankedPokemon)[];
 }
 
 const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
@@ -18,7 +17,6 @@ const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
   pokemon,
   index,
   isPending,
-  allRankedPokemon
 }) => {
   const {
     attributes,
@@ -60,10 +58,20 @@ const SortablePokemonCard: React.FC<SortablePokemonCardProps> = ({
         isDraggable={true}
         context="ranked"
         isPending={isPending}
-        allRankedPokemon={allRankedPokemon}
       />
     </div>
   );
 };
 
-export default SortablePokemonCard;
+// Memoize: the parent re-renders on every onDragOver tick because the
+// insertion-preview index lives in the DndContext owner. Without memo the
+// whole grid (every heavy milestone card) re-renders on every mouse move.
+export default React.memo(SortablePokemonCard, (prev, next) => {
+  return (
+    prev.id === next.id &&
+    prev.index === next.index &&
+    prev.isPending === next.isPending &&
+    (prev.pokemon as any).id === (next.pokemon as any).id &&
+    (prev.pokemon as any).score === (next.pokemon as any).score
+  );
+});

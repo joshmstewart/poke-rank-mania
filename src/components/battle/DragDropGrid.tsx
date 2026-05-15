@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
@@ -35,6 +35,14 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
     data: { type: "rankings-container" },
   });
 
+  // Stabilize the items array reference so SortableContext doesn't see a
+  // new array identity on every parent render (which would invalidate
+  // dnd-kit memoization downstream).
+  const sortableItems = useMemo(
+    () => displayRankings.map((p) => `ranked-${(p as any).id}`),
+    [displayRankings]
+  );
+
   return (
     <div className="w-full">
       {/* IMPORTANT: the droppable ref must be on a real element that covers the grid */}
@@ -45,7 +53,7 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
       >
         {/* Sorted / reorderable ranked cards */}
         <SortableContext
-          items={displayRankings.map((p) => `ranked-${(p as any).id}`)}
+          items={sortableItems}
           strategy={rectSortingStrategy}
         >
           <div
@@ -66,7 +74,6 @@ const DragDropGrid: React.FC<DragDropGridProps> = ({
                   pokemon={pokemon}
                   index={index}
                   isPending={localPendingRefinements.has((pokemon as any).id)}
-                  allRankedPokemon={displayRankings}
                 />
               </React.Fragment>
             ))}
