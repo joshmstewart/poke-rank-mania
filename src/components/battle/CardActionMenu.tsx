@@ -71,7 +71,8 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-50 select-none"
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
       onPointerDown={(event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -83,7 +84,7 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
         ref={menuRef}
         role="menu"
         aria-orientation="vertical"
-        className="fixed w-48 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+        className="fixed w-48 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg select-none"
         style={{ left: menuPosition.left, top: menuPosition.top }}
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}

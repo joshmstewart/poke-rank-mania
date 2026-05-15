@@ -100,6 +100,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1000 : 'auto',
     cursor: isDraggable && !isOpen ? 'grab' : 'default',
+    // Disable iOS text-selection callout ("Copy / Look Up / Translate") on long press.
+    WebkitTouchCallout: 'none' as const,
+    WebkitUserSelect: 'none' as const,
+    userSelect: 'none' as const,
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
