@@ -215,6 +215,10 @@ export const useEnhancedRankingDragDrop = (
     setInsertionPreviewIndex(null);
     insertionPreviewIndexRef.current = null;
     rankedRectsRef.current = [];
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     const { active, over } = event;
     
     console.log(`[PURE_DND_END] Active ID: ${active.id}, Over ID: ${over?.id || 'none'}`);
