@@ -1,70 +1,82 @@
+## Context Log
 
-## Scope: touch devices only
-Desktop hover behavior stays exactly as it is today. The long-press menu, the removal of always-visible buttons, and the persistent star indicator only kick in on coarse pointers (touch).
+Reviewed `src/hooks/battle/useBattleGeneration.ts` — the scheduler currently picks a strategy from a flat probability roll:
 
-Detection: CSS media query `(pointer: coarse)` — Tailwind arbitrary variant `[@media(pointer:coarse)]:` — and a matching JS check (`window.matchMedia('(pointer: coarse)').matches`) for the long-press hook so we don't even attach pointer listeners on desktop.
+- Warm-up: while `ratedCount < N`, force Unranked battles.
+- Ramp (N ≤ ratedCount < 2N): Unranked 40%, Top-N Refinement 30%, Bubble 15%, Bottom 15%.
+- Steady state (ratedCount ≥ 2N): Unranked 15%, Top-N Refinement 50%, Bubble 20%, Bottom 15%.
 
-## Interaction model
+Two issues match what you're seeing:
+1. The unranked share is fixed by `ratedCount` vs `N`, not by **coverage of the filtered pool**. With a big filter (say 600 Pokémon) and only ~30 rated, we leave warm-up at 25 and immediately start spending 50% of battles refining the same Top N — even though 95% of the user's potential favourites have never appeared.
+2. Nothing ever **retires** a Pokémon. The "back-burner" rule (`isBackBurnered`) only suppresses *primary* picks deep in the bottom (rank > N+50, σ low). It doesn't downweight refinement of someone we're already confident will never crack the Top N, and it doesn't free those slots for new blood.
 
-### Desktop (fine pointer) — unchanged
-- Hover a card → star, info `i`, and `+` buttons appear in the corners (current behavior).
-- Click each to act. Drag works as today.
+## Proposal
 
-### Touch (coarse pointer) — new
-| Context           | Tap                          | Long-press (~500 ms)            | Drag                          |
-|-------------------|------------------------------|---------------------------------|-------------------------------|
-| Available (manual)| Add to rankings              | Menu: Info, Star/Unstar         | Drag to insert in rankings    |
-| Ranked (manual)   | Open Info modal              | Menu: Info, Star/Unstar, Remove | Drag to reorder               |
-| Battle Mode       | Pick as winner *(unchanged)* | n/a (skip in this pass)         | n/a                           |
+### 1. Coverage-driven strategy mix
 
-Persistent visual on touch only: small filled yellow ★ in the **top-left corner only when starred**. Unstarred cards show no chrome.
+Replace the fixed warm-up/ramp/steady tiers with a continuous coverage ratio:
 
-First-visit hint on touch only: one dismissible toast — "Long-press a card for more options" — remembered in `localStorage`.
+```text
+coverage = ratedCount / filteredPoolSize        // 0.0 → 1.0
+unrankedShare = clamp(1 - coverage, 0.15, 0.85) // explore-heavy when coverage low
+```
 
-## Plan
+Then split the remainder across the existing refinement strategies in their current ratio (Top-N : Bubble : Bottom ≈ 50 : 20 : 15 → ~59 : 24 : 17 of the non-unranked share). Concretely:
 
-### 1. New `useLongPress` hook (`src/hooks/useLongPress.ts`)
-- Args: `{ onLongPress, onTap, threshold = 500, moveTolerance = 8 }`.
-- Internally: `if (!matchMedia('(pointer: coarse)').matches) return {}` → returns no handlers on desktop, so desktop click/hover is untouched.
-- On touch: pointer-down starts a timer; movement > tolerance or pointer-up before threshold cancels and fires `onTap`; threshold reached fires `onLongPress` and suppresses the trailing synthetic click.
+| Coverage | Unranked | Top-N Refine | Bubble | Bottom |
+|---------:|---------:|-------------:|-------:|-------:|
+| 5%       | 85%      | 9%           | 4%     | 2%     |
+| 25%      | 75%      | 15%          | 6%     | 4%     |
+| 50%      | 50%      | 30%          | 12%    | 8%     |
+| 80%      | 20%      | 47%          | 19%    | 14%    |
+| 100%     | 15%      | 50%          | 20%    | 15%    |
 
-### 2. New `<CardActionMenu />` (`src/components/battle/CardActionMenu.tsx`)
-- shadcn `DropdownMenu`, controlled open state, anchored over the card.
-- Items: **Info**, **Star** / **Unstar**, and in `ranked` context **Remove from rankings**.
-- Only mounted when open, so memoized cards don't pay for it at rest.
+This naturally collapses to today's behaviour once the user has actually seen most of their pool, and stops over-refining when there are still huge unseen swaths.
 
-### 3. Edit `DraggablePokemonMilestoneCard.tsx`
-- Keep the existing hover-revealed star, info `i`, and `+` buttons exactly as they are — but wrap each in `[@media(pointer:hover)]:` so they only render/show on devices that hover. Practical pattern: leave the buttons in place but add `[@media(pointer:coarse)]:hidden` so they vanish on touch.
-- Add `useLongPress` on the card root. On coarse pointers only, `onTap` = dispatch `add-pokemon-to-rankings` (available) or open info dialog (ranked); `onLongPress` = open `<CardActionMenu />`.
-- Add the persistent ★ corner indicator gated by `[@media(pointer:coarse)]:` — invisible on desktop, visible-when-starred on touch.
-- Use semantic tokens for all new styling (`bg-background/80`, `text-muted-foreground`, `border-border`).
+If `unrankedPool.length === 0`, redistribute that share into Top-N Refinement (current fallback already does this implicitly).
 
-### 4. Reconcile drag with long-press (touch only)
-- `TouchSensor.activationConstraint.delay`: 100 → **250 ms**, `tolerance: 8`.
-- `PointerSensor`: leave as is (desktop drag stays snappy).
-- Long-press timer (500 ms) is longer than the touch drag delay (250 ms), so a moving finger starts a drag and cancels the long-press; a still hold for 500 ms fires the menu.
-- If the menu opens, set a ref flag and bail out of `handleDragStart` for that gesture.
+### 2. "Locked-out" pruning
 
-### 5. First-visit hint
-- A toast on first manual-mode visit when `matchMedia('(pointer: coarse)').matches`. Persisted via `localStorage.setItem('long-press-hint-seen', '1')`. Desktop never sees it.
+Add a helper:
 
-### 6. Verify
-- Mobile preview (440×798): no buttons by default, ★ appears when starred, tap = add/info, long-press = menu, drag still works.
-- Desktop preview: unchanged — hover still reveals the same star/info/+ buttons.
+```text
+isLockedOutOfTopN(pokemon, rank, N, ratings):
+  rating = ratings[pokemon.id]
+  // 99% confident floor (mu - 2σ) is already worse than current Top-N cutoff
+  topNFloorMu = ratings[rankedPokemon[N-1].id].mu
+  return rank > N
+      && rating.battleCount >= 5
+      && rating.mu + 2 * rating.sigma < topNFloorMu
+```
 
-## Out of scope
-- Long-press menu on the Battle Mode pick-winner card (different component path; happy to add as a follow-up).
-- Swipe gestures, multi-select, bulk star.
-- Any change to refinement queue logic, dnd math, or scoring.
-- Any desktop visual change.
+Apply it in three places:
+
+- **Top-N refinement**: never picked (already restricted to Top N — no change, just makes the threshold meaningful).
+- **Bubble Challenge**: exclude locked-out Pokémon from the inner/outer bubble challenger pool. Currently any rank N+1..N+50 with σ > 2.5 is fair game — that includes Pokémon we're already sure won't make it.
+- **Bottom Confirmation**: skip entirely if the Pokémon is locked out of Top N *and* outside, say, the user's "interesting zone" (Top N×2). Reduces wasted battles deep in the tail.
+
+Also stop generating "Upset vs Top N" inside Bottom Confirmation when the bottom Pokémon is locked out — it's pure noise.
+
+### 3. Soft cap on consecutive refinement
+
+Add a tiny memory in `useBattleGeneration` (a counter incremented when strategy ∈ {Top-N Refine, Bubble} and reset on Unranked). If it exceeds, e.g., 4 in a row while `coverage < 0.5`, force the next battle to Unranked. Cheap insurance against bad RNG streaks complaining users actually feel.
+
+### 4. UI / config touch (optional, no behaviour change)
+
+Surface coverage in the battle log line we already emit (`[TOP_N_SCHEDULER]`) so this is debuggable — `coverage=0.06, unrankedShare=0.84`.
 
 ## Files to change
-- `src/hooks/useLongPress.ts` *(new)*
-- `src/components/battle/CardActionMenu.tsx` *(new)*
-- `src/components/battle/DraggablePokemonMilestoneCard.tsx`
-- `src/hooks/ranking/useEnhancedRankingDragDrop.ts` *(touch-sensor delay only)*
 
-## Technical notes
-- `[@media(pointer:coarse)]:` is Tailwind v3 arbitrary-variant syntax already supported.
-- `DraggablePokemonMilestoneCard` stays `React.memo`'d; menu open state lives in the card so only the open card re-renders.
-- The existing `add-pokemon-to-rankings` CustomEvent stays the single insertion path.
+- `src/hooks/battle/useBattleGeneration.ts`
+  - Add `getFilteredPoolSize` (just `allPokemon.length`, since `allPokemon` is already filter-respecting upstream).
+  - Replace the `forceUnranked` / `inRampWindow` / threshold block with the coverage formula.
+  - Add `isLockedOutOfTopN` and use it to filter `challengerPool` in `generateBubbleChallengeBattle` and `eligibleBottom` in `generateBottomConfirmationBattle`.
+  - Add the consecutive-refinement counter + override.
+
+No other files need to change; `N` and `ratings` already flow through `useBattleProcessorGeneration` → `generateNewBattle`.
+
+## Open questions
+
+1. Should "locked-out" be tunable per user (e.g., a "focus depth" slider for Top N vs Top N×2 vs full), or just hard-coded at `2N`?
+2. For coverage, should the denominator be the entire filtered `allPokemon`, or `allPokemon` minus Pokémon the user has explicitly frozen/excluded? Today freezeList isn't reaching this hook — easy to wire if you want.
+3. Are you OK with Bottom Confirmation effectively going to ~0 at low coverage, or do you want a small floor (e.g. 5%) so we still occasionally sanity-check the tail?
