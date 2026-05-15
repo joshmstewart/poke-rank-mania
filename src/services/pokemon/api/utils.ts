@@ -119,7 +119,7 @@ export const fetchPokemonDetails = async (pokemonId: number): Promise<Pokemon> =
       acc[stat.stat.name] = stat.base_stat;
       return acc;
     }, {}),
-    generation: Math.ceil(pokemonData.id / 151) || 1
+    generation: determineGenerationFromId(pokemonData.id)
   };
   
   return pokemon;
