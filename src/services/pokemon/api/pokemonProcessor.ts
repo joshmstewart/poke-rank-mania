@@ -3,6 +3,7 @@ import { Pokemon } from "../types";
 import { getPokemonImageUrl } from "./utils";
 import { isCramorantFormToExclude } from "./pokemonFilters";
 import { formatPokemonName } from "@/utils/pokemon";
+import { determineGenerationFromId } from "@/hooks/pokemon/generationUtils";
 
 export const processPokemonData = async (
   pokemonResults: any[],
@@ -77,7 +78,7 @@ export const processPokemonData = async (
           acc[stat.stat.name] = stat.base_stat;
           return acc;
         }, {}),
-        generation: Math.ceil(pokemonData.id / 151) || 1
+        generation: determineGenerationFromId(pokemonData.id)
       };
 
       return pokemon;

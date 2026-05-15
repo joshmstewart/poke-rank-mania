@@ -1,5 +1,6 @@
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
+import { determineGenerationFromId } from "@/hooks/pokemon/generationUtils";
 import { getPreferredImageType } from "@/components/settings/imagePreferenceHelpers";
 import { PokemonImageType } from "@/components/settings/types";
 
@@ -119,7 +120,7 @@ export const fetchPokemonDetails = async (pokemonId: number): Promise<Pokemon> =
       acc[stat.stat.name] = stat.base_stat;
       return acc;
     }, {}),
-    generation: Math.ceil(pokemonData.id / 151) || 1
+    generation: determineGenerationFromId(pokemonData.id)
   };
   
   return pokemon;
