@@ -36,6 +36,8 @@ export const useEnhancedRankingDragDrop = (
   // Mirror of insertionPreviewIndex so handleDragEnd can read the latest value
   // synchronously (state updates from handleDragOver may not have flushed).
   const insertionPreviewIndexRef = useRef<number | null>(null);
+  // rAF handle for coalescing setInsertionPreviewIndex calls during drag.
+  const rafRef = useRef<number | null>(null);
 
   // Use the atomic Pokemon movement hook
   const { moveFromAvailableToRankings } = usePokemonMovement(
@@ -213,6 +215,10 @@ export const useEnhancedRankingDragDrop = (
     setInsertionPreviewIndex(null);
     insertionPreviewIndexRef.current = null;
     rankedRectsRef.current = [];
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     const { active, over } = event;
     
     console.log(`[PURE_DND_END] Active ID: ${active.id}, Over ID: ${over?.id || 'none'}`);
