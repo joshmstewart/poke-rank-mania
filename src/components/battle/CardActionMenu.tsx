@@ -53,7 +53,13 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
       <DropdownMenuTrigger asChild>
         <span aria-hidden style={triggerStyle} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-48">
+      <DropdownMenuContent
+        align="center"
+        side="top"
+        sideOffset={8}
+        collisionPadding={12}
+        className="w-48"
+      >
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();

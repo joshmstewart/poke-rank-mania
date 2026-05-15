@@ -159,8 +159,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   }, [pokemon.id]);
 
   // Touch-only long-press handlers (no-ops on desktop / fine pointer).
-  const openMenu = React.useCallback(() => {
-    if (cardRef.current) setAnchorRect(cardRef.current.getBoundingClientRect());
+  // Anchor the menu at the touch point (not card center) so it appears next
+  // to the user's finger instead of drifting toward/below the card edge.
+  const openMenu = React.useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const x = e.clientX;
+    const y = e.clientY;
+    setAnchorRect(new DOMRect(x, y, 1, 1));
     setMenuOpen(true);
   }, []);
 
