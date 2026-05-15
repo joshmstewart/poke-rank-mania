@@ -1,5 +1,6 @@
 import { Pokemon } from "../types";
 import { formatPokemonName } from "@/utils/pokemon";
+import { determineGenerationFromId } from "@/hooks/pokemon/generationUtils";
 import { getPreferredImageType } from "@/components/settings/imagePreferenceHelpers";
 import { PokemonImageType } from "@/components/settings/types";
 
