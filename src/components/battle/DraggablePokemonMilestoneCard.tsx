@@ -187,7 +187,11 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     onTap: handleTouchTap,
     threshold: 500,
     moveTolerance: 8,
-    disabled: !isDraggable,
+    // CRITICAL: disable while dialog/menu is open. React bubbles portal
+    // events through the React tree, so taps inside the dialog (e.g. the X
+    // close button) would otherwise re-trigger card pointer handlers and
+    // suppress the close click.
+    disabled: !isDraggable || isOpen || menuOpen,
   });
 
   return (
