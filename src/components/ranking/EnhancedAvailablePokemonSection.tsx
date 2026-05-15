@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useDeferredValue } from "react";
+import React, { useState, useEffect, useDeferredValue, useCallback, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,18 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
     }
   }, [searchTerm, generationsWithMatches, expandGenerations]);
 
-  const isGenerationExpandedForDisplay = (genId: number) => {
-    if (searchTerm.trim() && generationsWithMatches.includes(genId)) {
-      return true;
-    }
-    return isGenerationExpanded(genId);
-  };
+  // PERF: stable callback so usePokemonGrouping's useMemo doesn't invalidate
+  // every parent render (and therefore every drag-over tick).
+  const isGenerationExpandedForDisplay = useCallback(
+    (genId: number) => {
+      if (searchTerm.trim() && generationsWithMatches.includes(genId)) return true;
+      return expandedGenerations.has(genId);
+    },
+    [searchTerm, generationsWithMatches, expandedGenerations]
+  );
+
+  // PERF: stable ref instead of React.createRef() on every render.
+  const loadingRef = useRef<HTMLDivElement>(null);
 
   const { items, showGenerationHeaders } = usePokemonGrouping(
     availablePokemon,
@@ -92,10 +98,9 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
           isGenerationExpanded={isGenerationExpandedForDisplay}
           onToggleGeneration={toggleGeneration}
           isLoading={false}
-          loadingRef={React.createRef()}
+          loadingRef={loadingRef}
           currentPage={1}
           totalPages={1}
-          allRankedPokemon={rankedPokemon}
           searchTerm={searchTerm}
           onClearSearch={() => setSearchInput("")}
         />
