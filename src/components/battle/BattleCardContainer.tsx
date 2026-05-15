@@ -13,6 +13,8 @@ import { Star } from "lucide-react";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 import { useTrueSkillStore } from "@/stores/trueskillStore";
 import { usePokemonContext } from "@/contexts/PokemonContext";
+import { useLongPress } from "@/hooks/useLongPress";
+import CardActionMenu from "./CardActionMenu";
 
 interface BattleCardContainerProps {
   pokemon: Pokemon;
@@ -35,6 +37,8 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClickTimeRef = useRef(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   // Use cloud pending battles and Zustand store for queue operations
   const { isPokemonPending, addPendingPokemon, removePendingPokemon } = useCloudPendingBattles();
@@ -42,6 +46,31 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
   const { allPokemon } = usePokemonContext();
   
   const isPendingRefinement = isPokemonPending(pokemon.id);
+
+  const toggleStar = useCallback(() => {
+    if (isPendingRefinement) {
+      removePendingPokemon(pokemon.id);
+    } else {
+      addPendingPokemon(pokemon.id);
+    }
+  }, [isPendingRefinement, addPendingPokemon, removePendingPokemon, pokemon.id]);
+
+  const openMenu = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    setAnchorRect(new DOMRect(e.clientX, e.clientY, 1, 1));
+    setMenuOpen(true);
+  }, []);
+
+  const handleTouchTap = useCallback(() => {
+    if (!isProcessing) onSelect(pokemon.id);
+  }, [isProcessing, onSelect, pokemon.id]);
+
+  const longPressHandlers = useLongPress<HTMLDivElement>({
+    onLongPress: openMenu,
+    onTap: handleTouchTap,
+    threshold: 500,
+    moveTolerance: 8,
+    disabled: isProcessing || isOpen || menuOpen,
+  });
 
   const hadRefinementBattlesRef = useRef(false);
 
@@ -171,6 +200,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
       data-pokemon-name={displayName}
       data-processing={isProcessing ? "true" : "false"}
       data-hovered={shouldShowHover ? "true" : "false"}
+      {...longPressHandlers}
     >
       <CardContent className="p-4 text-center relative">
         {/* Prioritize button - only visible on card hover */}
@@ -275,6 +305,16 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
           <LoadingOverlay isVisible={isProcessing} />
         </div>
       </CardContent>
+      <CardActionMenu
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        context="ranked"
+        isStarred={isPendingRefinement}
+        canStar={true}
+        onInfo={() => setIsOpen(true)}
+        onToggleStar={toggleStar}
+        anchorRect={anchorRect}
+      />
     </Card>
   );
 };
