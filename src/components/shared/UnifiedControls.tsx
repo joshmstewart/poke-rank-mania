@@ -127,10 +127,10 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between bg-card text-card-foreground p-4 rounded-lg shadow border border-border w-full">
-      <div className="flex items-center gap-8">
+    <div className="flex flex-wrap items-center justify-between gap-2 bg-card text-card-foreground p-3 sm:p-4 rounded-lg shadow border border-border w-full">
+      <div className="flex items-center gap-2 min-w-0">
         {/* Generation Selector */}
-        <div className="flex items-center">
+        <div className="flex items-center min-w-0">
           <span className="text-sm font-medium whitespace-nowrap mr-2">Gen:</span>
           <Select 
             value={safeSelectedGeneration.toString()} 
@@ -139,7 +139,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
               onGenerationChange(value);
             }}
           >
-            <SelectTrigger className="w-[180px] h-8 text-sm">
+            <SelectTrigger className="w-[140px] sm:w-[180px] h-8 text-sm">
               <SelectValue placeholder="Generation" />
             </SelectTrigger>
             <SelectContent align="start" className="min-w-[200px]">
@@ -153,7 +153,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2 ml-auto">
         {/* Rankings Button */}
         <CombinedRankingsModal 
           open={rankingsOpen} 
@@ -163,7 +163,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-1 h-8 text-sm px-4 min-w-[100px]"
+            className="flex items-center gap-1 h-8 text-sm px-3"
           >
             <Trophy className="h-4 w-4" /> Rankings
           </Button>
@@ -175,7 +175,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-1 h-8 text-sm px-4 min-w-[90px]"
+              className="flex items-center gap-1 h-8 text-sm px-3"
             >
               <Settings className="h-4 w-4" /> Forms
             </Button>
@@ -206,7 +206,7 @@ const UnifiedControls: React.FC<UnifiedControlsProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-1 h-8 text-sm px-4"
+            className="flex items-center gap-1 h-8 text-sm px-3"
             onClick={() => {
               console.log(`🔍 Restart button clicked in ${mode} mode`);
               setRestartDialogOpen(true);
