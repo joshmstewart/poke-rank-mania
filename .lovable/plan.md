@@ -1,53 +1,65 @@
-## Why you saw only 12 Pokémon after 25 battles
 
-The battle scheduler in `src/hooks/battle/useBattleGeneration.ts` rolls a strategy on every battle:
+## Why it's laggy with <20 cards
 
-- 15% — introduce a brand-new (unranked) Pokémon
-- 50% — refine the current Top N
-- 20% — bubble challenge (still draws from already-ranked Pokémon)
-- 15% — bottom confirmation (also already-ranked)
+The list is tiny, so this is not an algorithmic problem — it's a render/log-spam problem triggered every time `onDragMove` / `onDragOver` fires (which is on every mouse move, ~60×/sec).
 
-That distribution is fine once you have a healthy rated pool, but at the very start every "Top N refinement / bubble / bottom" roll just recycles the small group that has battled at least once. With only a 15% chance to introduce someone new, after ~25 battles you end up with roughly 10–12 unique Pokémon battling each other repeatedly — exactly what you saw.
+Two specific findings from the code and logs:
 
-The "recently used" filter (last 20) doesn't help because the entire rated pool fits inside that window, so the scheduler keeps falling back to the same faces.
+1. **368 `console.*` statements** in `src/components/ranking`, `src/components/battle`, `src/hooks/ranking`, and `src/stores/trueskillStore.ts`. Console output in DevTools is genuinely slow, and several of them stringify large objects (e.g. the full 15-item rankings array on every reorder, `[GMAX_ULTRA_DEBUG]` per-Pokémon, `[SYNC_AUDIT]` 🚨🚨🚨 emojis). The `[PURE_DND_START]` / `[PURE_DND_END]` logs alone aren't the problem, but the per-render and per-Pokémon ones are.
+2. **Every `setInsertionPreviewIndex` call re-renders the whole layout**, which re-renders `EnhancedAvailablePokemonSection` *and* `RankingsSection`, which re-render every `DraggablePokemonMilestoneCard` (a heavy card with TCG image lookups). `SortablePokemonCard` and the milestone card are not memoized, and they receive fresh array props (`allRankedPokemon={displayRankings}`) on every render.
 
-## The fix
+Combine those and a single drag generates dozens of re-renders × ~30 cards × heavy card body × hundreds of console writes per second.
 
-Make the scheduler "warm up" the rated pool before it starts refining it.
+## Plan
 
-### Change 1 — Force unranked battles until the Top N is full
+### 1. Confirm with a quick profile (no code changes yet)
+- Run `browser--start_profiling`, perform one drag-over from Available → Rankings, `browser--stop_profiling`.
+- Look for top self-time: expect to see `console.log`, `DraggablePokemonMilestoneCard` render, and `setInsertionPreviewIndex` reconcile work dominate.
 
-In `useBattleGeneration.ts`, before rolling `battleStrategyRoll`:
+This validates the hypothesis before we refactor.
 
-- Count rated Pokémon: `ratedCount = Object.keys(ratings).length`
-- If `unrankedPool.length > 0 AND ratedCount < N` (default N = 25), skip the strategy roll and call `generateUnrankedBattle` directly.
-- This guarantees the first ~25 battles introduce new Pokémon (each pair adds up to 2), so by the time refinement strategies kick in there's an actual Top 25 to refine.
+### 2. Silence the hot-path logs
+Strip / gate logs in the files hit on every drag move and every render:
+- `src/hooks/ranking/useEnhancedRankingDragDrop.ts` (`[PURE_DND_START]`, `[PURE_DND_END]`)
+- `src/hooks/ranking/usePokemonMovement.ts` (`[Move]`)
+- `src/components/ranking/RankingUICore.tsx` and `EnhancedRankingLayout.tsx` (`[ENHANCED_RANKING_UI]`)
+- `src/stores/trueskillStore.ts` (`[SYNC_AUDIT]` 🚨)
+- `src/components/pokemon/*` (`[GMAX_ULTRA_DEBUG]`)
+- `[REORDER_DEBUG]` chain in the reorder hook
 
-### Change 2 — Soft ramp after the Top N is filled
+Use a small `debug()` helper gated on `import.meta.env.DEV && localStorage.getItem('debug:dnd')` so we keep the ability to turn them back on without ripping them out, but they're off by default.
 
-Once `ratedCount >= N` but `ratedCount < N * 2` (e.g. 25–50 rated), bias the roll toward unranked:
+### 3. Memoize the card render path
+- Wrap `SortablePokemonCard` and `DraggablePokemonMilestoneCard` in `React.memo` with a custom comparator that only checks `pokemon.id`, `index`, `isPending`, and `insertionPreviewIndex`-relevant props.
+- Replace the `allRankedPokemon={displayRankings}` prop drilling on every card with a context (or just remove it from the cards that don't read it). That single prop is the main reason memo fails today — it's a fresh array reference on every parent render.
+- In `DragDropGrid`, memoize the `items` array passed to `SortableContext`.
 
-- Bump unranked probability from 15% → 40% in this window
-- Reduce Top-N refinement to 30% in this window
-- Leave bubble/bottom at their current shares
+### 4. Make `onDragOver` cheap
+- Keep the current snapshot-rect math (it's already O(n) over ≤20 rects — fine).
+- Move the `setInsertionPreviewIndex` call behind `requestAnimationFrame` coalescing so multiple mousemove events in a frame produce at most one render.
+- Keep the existing "skip set if equal" guard.
 
-After `ratedCount >= 50` the existing 15/50/20/15 distribution takes over.
+### 5. Re-profile
+- Same drag, compare top self-time. Target: drag frame work ≤ 4 ms, no `console.*` in the top 10.
 
-### Change 3 — Tighten the "recently used" window early on
+## Technical notes
 
-Right now `addToRecentlyUsed` keeps the last 20. While `ratedCount < 20`, cap the recent list at `Math.max(4, Math.floor(ratedCount / 2))` so we don't accidentally exclude every rated Pokémon and force the random fallback.
+- @dnd-kit fires `onDragOver` on every mousemove; React state updates inside it cascade to the whole `<DndContext>` subtree unless children are memoized.
+- `React.memo` only helps if props are referentially stable — that's why the array-prop cleanup in step 3 has to happen alongside memoization.
+- `console.log` in DevTools serializes its args synchronously on the main thread; with 15 cards × multiple render-time logs each, this alone can blow the 16 ms budget.
+- No changes to drop/insertion behavior — purely render/log work.
 
-## Files touched
+## Files likely to change
+- `src/hooks/ranking/useEnhancedRankingDragDrop.ts`
+- `src/hooks/ranking/usePokemonMovement.ts`
+- `src/components/ranking/RankingUICore.tsx`
+- `src/components/ranking/EnhancedRankingLayout.tsx`
+- `src/components/battle/SortablePokemonCard.tsx`
+- `src/components/battle/DraggablePokemonMilestoneCard.tsx`
+- `src/components/battle/DragDropGrid.tsx`
+- `src/stores/trueskillStore.ts` (log gating only)
+- new: `src/utils/debug.ts` (or extend the existing one) for the `debug()` gate
 
-- `src/hooks/battle/useBattleGeneration.ts` — add the warm-up gate before the strategy roll, adjust probabilities based on `ratedCount`, and pass `ratedCount` into `addToRecentlyUsed` (or read it inside) to size the recent-window dynamically.
-
-No other files, no schema, no DnD, no cache writes — pure battle-selection logic.
-
-## Expected result
-
-After 25 battles you should see roughly 25 unique Pokémon ranked (occasionally 23–27 due to unavoidable repeats from the unranked-vs-ranked fallback path), and the milestone screen will display a real Top 25 instead of "Showing 12 of 12".
-
-## Out of scope (ask if you want these too)
-
-- Backfilling your current session: the 12 already-rated Pokémon will stay rated; new battles will start expanding the pool from your next click. If you'd rather wipe and restart cleanly, say so and I'll add a one-time reset.
-- Changing N from 25 to something else.
+## Out of scope
+- Algorithm/collision-detection changes
+- Any change to drop targets, insertion math, or scoring
