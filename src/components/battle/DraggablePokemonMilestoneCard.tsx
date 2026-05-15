@@ -282,8 +282,19 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             <DialogTrigger asChild>
               <button 
                 className="w-4 h-4 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  e.stopPropagation();
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  setIsOpen(true);
                 }}
                 type="button"
               >
