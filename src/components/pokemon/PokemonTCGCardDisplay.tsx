@@ -59,7 +59,7 @@ const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, 
           </div>
           <Card className="p-3 w-full">
             <div className="text-center space-y-1">
-              <p className="text-sm font-medium text-gray-700">Loading...</p>
+            <p className="text-sm font-medium text-foreground">Loading...</p>
             </div>
           </Card>
         </div>
