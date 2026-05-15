@@ -305,35 +305,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </div>
       )}
 
-      {/* Touch-only: standalone Dialog for the long-press "Info" menu item.
-          The hover Dialog above is hidden on coarse pointers, so we mount a
-          headless one here that the menu can open via setIsOpen. */}
-      {!isDragging && (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent
-            className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto hidden [@media(pointer:coarse)]:block"
-            onClick={handleDialogClick}
-            data-radix-dialog-content="true"
-          >
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-center">
-                {pokemon.name}
-              </DialogTitle>
-            </DialogHeader>
-            <PokemonModalContent
-              pokemon={pokemon}
-              showLoading={showLoading}
-              showTCGCards={showTCGCards}
-              showFallbackInfo={showFallbackInfo}
-              tcgCard={tcgCard}
-              secondTcgCard={secondTcgCard}
-              flavorText={flavorText}
-              isLoadingFlavor={isLoadingFlavor}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
-
       {/* Touch-only: persistent star indicator (only when starred). */}
       {!isDragging && isPendingRefinement && (
         <div className="absolute bottom-1 left-1 z-20 hidden [@media(pointer:coarse)]:flex items-center justify-center w-5 h-5 rounded-full bg-background/80 shadow-sm">
