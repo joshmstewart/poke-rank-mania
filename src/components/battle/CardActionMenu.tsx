@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { createPortal } from "react-dom";
 import { Info, Star, Trash2 } from "lucide-react";
 
 interface CardActionMenuProps {
@@ -22,7 +17,8 @@ interface CardActionMenuProps {
 
 /**
  * Long-press action menu for a Pokémon card on touch devices.
- * Anchored to the card via a fixed-position invisible trigger.
+ * Uses a direct fixed-position portal so touch coordinates are never adjusted
+ * by the card/grid scroll position or dnd-kit transforms.
  */
 export const CardActionMenu: React.FC<CardActionMenuProps> = ({
   open,
@@ -35,70 +31,109 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
   onRemove,
   anchorRect,
 }) => {
-  if (!anchorRect && !open) return null;
+  const menuRef = React.useRef<HTMLDivElement | null>(null);
+  const menuPosition = React.useMemo(() => {
+    const menuWidth = 192;
+    const rowHeight = 44;
+    const itemCount = 1 + (canStar ? 1 : 0) + (context === "ranked" && onRemove ? 1 : 0);
+    const estimatedHeight = itemCount * rowHeight + 8;
 
-  const triggerStyle: React.CSSProperties = anchorRect
-    ? {
-        position: "fixed",
-        left: anchorRect.left + anchorRect.width / 2,
-        top: anchorRect.top + anchorRect.height / 2,
-        width: 1,
-        height: 1,
-        pointerEvents: "none",
-      }
-    : { position: "fixed", left: -9999, top: -9999 };
+    if (!anchorRect || typeof window === "undefined") {
+      return { left: -9999, top: -9999 };
+    }
 
-  return (
-    <DropdownMenu open={open} onOpenChange={onOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <span aria-hidden style={triggerStyle} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="center"
-        side="top"
-        sideOffset={8}
-        collisionPadding={12}
-        className="w-48"
+    const padding = 8;
+    const gap = 12;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const rawLeft = anchorRect.left - menuWidth / 2;
+    const left = Math.min(Math.max(rawLeft, padding), viewportWidth - menuWidth - padding);
+    const topAbove = anchorRect.top - estimatedHeight - gap;
+    const topBelow = anchorRect.top + gap;
+    const top = topAbove >= padding
+      ? topAbove
+      : Math.min(topBelow, viewportHeight - estimatedHeight - padding);
+
+    return { left, top: Math.max(padding, top) };
+  }, [anchorRect, canStar, context, onRemove]);
+
+  const runAction = React.useCallback((action: () => void) => {
+    onOpenChange(false);
+    action();
+  }, [onOpenChange]);
+
+  const stopMenuEvent = React.useCallback((event: React.SyntheticEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
+  if (!open || !anchorRect || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50"
+      onPointerDown={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onOpenChange(false);
+      }}
+      onClick={stopMenuEvent}
+    >
+      <div
+        ref={menuRef}
+        role="menu"
+        aria-orientation="vertical"
+        className="fixed w-48 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+        style={{ left: menuPosition.left, top: menuPosition.top }}
+        onPointerDownCapture={(event) => event.stopPropagation()}
+        onPointerUpCapture={stopMenuEvent}
+        onClickCapture={stopMenuEvent}
       >
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-            onOpenChange(false);
-            onInfo();
+        <button
+          type="button"
+          role="menuitem"
+          className="flex min-h-11 w-full items-center gap-3 rounded-sm px-3 text-left text-sm outline-none transition-colors hover:bg-accent focus:bg-accent focus:text-accent-foreground"
+          onPointerUp={(event) => {
+            stopMenuEvent(event);
+            runAction(onInfo);
           }}
-          className="gap-2"
         >
-          <Info className="h-4 w-4" /> Info
-        </DropdownMenuItem>
+          <Info className="h-4 w-4" />
+          <span>Info</span>
+        </button>
         {canStar && (
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              onOpenChange(false);
-              onToggleStar();
+          <button
+            type="button"
+            role="menuitem"
+            className="flex min-h-11 w-full items-center gap-3 rounded-sm px-3 text-left text-sm outline-none transition-colors hover:bg-accent focus:bg-accent focus:text-accent-foreground"
+            onPointerUp={(event) => {
+              stopMenuEvent(event);
+              runAction(onToggleStar);
             }}
-            className="gap-2"
           >
             <Star
-              className={`h-4 w-4 ${isStarred ? "fill-yellow-500 text-yellow-500" : ""}`}
+              className={`h-4 w-4 ${isStarred ? "fill-primary text-primary" : ""}`}
             />
-            {isStarred ? "Unstar" : "Star"}
-          </DropdownMenuItem>
+            <span>{isStarred ? "Unstar" : "Star"}</span>
+          </button>
         )}
         {context === "ranked" && onRemove && (
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              onOpenChange(false);
-              onRemove();
+          <button
+            type="button"
+            role="menuitem"
+            className="flex min-h-11 w-full items-center gap-3 rounded-sm px-3 text-left text-sm text-destructive outline-none transition-colors hover:bg-accent focus:bg-accent"
+            onPointerUp={(event) => {
+              stopMenuEvent(event);
+              runAction(onRemove);
             }}
-            className="gap-2 text-destructive focus:text-destructive"
           >
-            <Trash2 className="h-4 w-4" /> Remove from rankings
-          </DropdownMenuItem>
+            <Trash2 className="h-4 w-4" />
+            <span>Remove from rankings</span>
+          </button>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </div>
+    </div>,
+    document.body
   );
 };
 
