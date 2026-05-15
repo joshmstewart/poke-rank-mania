@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { PokemonProvider } from "@/contexts/PokemonContext";
 import { Pokemon } from "@/services/pokemon";
 import { usePokemonLoader } from "@/hooks/battle/usePokemonLoader";
+import { SplashPage } from "@/components/splash/SplashPage";
 
 interface PokemonRankerProviderProps {
   children: React.ReactNode;
@@ -101,6 +102,16 @@ const PokemonRankerProvider: React.FC<PokemonRankerProviderProps> = ({ children 
 
   // Enhanced loading state with retry information
   if (isLoading || isRetrying || (allPokemon.length === 0 && rawUnfilteredPokemon.length === 0)) {
+    // Keep the splash UI visible until Pokémon data is ready, so users don't
+    // see a second bare loading screen between splash and app.
+    if (!isRetrying && !errorDetails) {
+      return (
+        <SplashPage
+          loadingStatus="Loading Pokémon data..."
+          progress={95}
+        />
+      );
+    }
     return (
       <div className="flex justify-center items-center h-64 w-full">
         <div className="flex flex-col items-center max-w-md mx-auto text-center">
