@@ -44,8 +44,8 @@ export const PokemonRankerHeader: React.FC<PokemonRankerHeaderProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between bg-card p-3 rounded-lg shadow border mb-4">
-      <div className="flex-1">
+    <div className="flex flex-wrap items-center justify-between gap-2 bg-card p-3 rounded-lg shadow border mb-4">
+      <div className="flex-1 min-w-0">
         <UnifiedControls
           selectedGeneration={selectedGeneration}
           onGenerationChange={onGenerationChange}
@@ -55,8 +55,8 @@ export const PokemonRankerHeader: React.FC<PokemonRankerHeaderProps> = ({
           customResetAction={handleManualModeReset}
         />
       </div>
-      
-      <div className="flex gap-2 ml-4">
+
+      <div className="flex gap-2 ml-auto shrink-0">
         <Button
           variant="outline"
           size="sm"
