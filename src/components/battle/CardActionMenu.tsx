@@ -85,9 +85,9 @@ export const CardActionMenu: React.FC<CardActionMenuProps> = ({
         aria-orientation="vertical"
         className="fixed w-48 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
         style={{ left: menuPosition.left, top: menuPosition.top }}
-        onPointerDownCapture={(event) => event.stopPropagation()}
-        onPointerUpCapture={stopMenuEvent}
-        onClickCapture={stopMenuEvent}
+        onPointerDown={(event) => event.stopPropagation()}
+        onPointerUp={(event) => event.stopPropagation()}
+        onClick={stopMenuEvent}
       >
         <button
           type="button"
