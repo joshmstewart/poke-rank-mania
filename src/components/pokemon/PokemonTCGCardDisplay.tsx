@@ -72,6 +72,23 @@ const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, 
     
     return (
       <div className="flex flex-col items-center space-y-4">
+        {/* Pack, Generation, and Rarity information ABOVE the card image */}
+        <Card className="p-3 w-full bg-card text-card-foreground">
+          <div className="text-center space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              {card.set.name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {card.set.series}
+            </p>
+            {card.rarity && (
+              <p className="text-xs font-medium text-primary">
+                {card.rarity}
+              </p>
+            )}
+          </div>
+        </Card>
+
         <div className="relative">
           <img 
             src={imageUrl} 
@@ -87,23 +104,6 @@ const PokemonTCGCardDisplay: React.FC<PokemonTCGCardDisplayProps> = ({ tcgCard, 
             }}
           />
         </div>
-        
-        {/* Pack, Generation, and Rarity information at bottom */}
-        <Card className="p-3 w-full">
-          <div className="text-center space-y-1">
-            <p className="text-sm font-medium text-gray-700">
-              {card.set.name}
-            </p>
-            <p className="text-xs text-gray-500">
-              {card.set.series}
-            </p>
-            {card.rarity && (
-              <p className="text-xs font-medium text-blue-600">
-                {card.rarity}
-              </p>
-            )}
-          </div>
-        </Card>
       </div>
     );
   };
