@@ -24,6 +24,8 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
   const { isPairRecent } = useBattleStarterMemory();
   const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
   const { pendingPokemon, removePendingPokemon } = useCloudPendingBattles();
+  // Track consecutive refinement-style strategies so we can break streaks at low coverage
+  const [consecutiveRefinementCount, setConsecutiveRefinementCount] = useState(0);
 
   // Helper function to get unranked Pokemon
   const getUnrankedPokemon = useCallback((ratings: Ratings): Pokemon[] => {
@@ -55,6 +57,22 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     // Bottom Tier (> N+50): back-burnered if sigma < 3.5
     return rating.sigma < 3.5;
   }, []);
+
+  // NEW: Pokemon is "locked out" of Top N when we're statistically confident
+  // (mu + 2σ < current Top-N floor mu) and have enough battles to trust it.
+  const isLockedOutOfTopN = useCallback(
+    (pokemonId: number, rank: number, N: number, ratings: Ratings, rankedPokemon: Pokemon[]): boolean => {
+      if (rank <= N) return false;
+      const rating = ratings[pokemonId];
+      if (!rating || rating.battleCount < 5) return false;
+      const floor = rankedPokemon[N - 1];
+      if (!floor) return false;
+      const floorMu = ratings[floor.id]?.mu;
+      if (floorMu === undefined) return false;
+      return rating.mu + 2 * rating.sigma < floorMu;
+    },
+    []
+  );
 
   // NEW: Generate pending battle (Priority 1)
   const generatePendingBattle = useCallback((primaryPokemonId: number, ratings: Ratings): BattleGenerationResult => {
@@ -256,9 +274,14 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     // Create challenger pool: Inner Bubble (N+1 to N+20) + eligible Outer Bubble (N+21 to N+50)
     const innerBubble = rankedPokemon.slice(N, N + 20);
     const outerBubble = rankedPokemon.slice(N + 20, N + 50).filter(p => ratings[p.id].sigma > 2.5);
-    
-    // Filter out recently used Pokemon
-    let challengerPool = [...innerBubble, ...outerBubble].filter(p => !recentlyUsedPokemon.has(p.id));
+
+    // Filter out recently used + statistically locked-out Pokemon
+    let challengerPool = [...innerBubble, ...outerBubble].filter((p, idx) => {
+      if (recentlyUsedPokemon.has(p.id)) return false;
+      // rank within rankedPokemon list (innerBubble starts at rank N+1)
+      const rank = rankedPokemon.findIndex(rp => rp.id === p.id) + 1;
+      return !isLockedOutOfTopN(p.id, rank, N, ratings, rankedPokemon);
+    });
     
     if (challengerPool.length === 0) {
       console.log(`🎯 [BUBBLE_CHALLENGE] No non-recent challengers available, falling back to Top N battle`);
@@ -292,7 +315,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     
     console.log(`🎯 [BUBBLE_CHALLENGE] Challenger ${challenger.name} vs Gatekeeper ${gatekeeper.name}`);
     return { battle: [challenger, gatekeeper], strategy: "Bubble Challenge" };
-  }, [getRankedPokemon, generateTopNRefinementBattle, recentlyUsedPokemon]);
+  }, [getRankedPokemon, generateTopNRefinementBattle, recentlyUsedPokemon, isLockedOutOfTopN]);
 
   // Strategy 4: Generate bottom confirmation battle
   const generateBottomConfirmationBattle = useCallback((ratings: Ratings, N: number): BattleGenerationResult => {
@@ -300,9 +323,17 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     
     const rankedPokemon = getRankedPokemon(ratings);
     const bottomTier = rankedPokemon.slice(N + 50);
-    
-    // Only include Pokemon with sigma > 3.5 (not back-burnered) and not recently used
-    let eligibleBottom = bottomTier.filter(p => ratings[p.id].sigma > 3.5 && !recentlyUsedPokemon.has(p.id));
+
+    // Only include Pokemon with sigma > 3.5 (not back-burnered), not recently used,
+    // and inside the "interesting zone" (not yet locked out below Top N×2).
+    const interestingN = N * 2;
+    let eligibleBottom = bottomTier.filter(p => {
+      if (ratings[p.id].sigma <= 3.5) return false;
+      if (recentlyUsedPokemon.has(p.id)) return false;
+      const rank = rankedPokemon.findIndex(rp => rp.id === p.id) + 1;
+      // Skip if we're already confident it can't even crack Top N×2
+      return !isLockedOutOfTopN(p.id, rank, interestingN, ratings, rankedPokemon);
+    });
     
     if (eligibleBottom.length === 0) {
       // Fallback if no non-recent, use the original pool
@@ -319,8 +350,12 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const upsetRoll = Math.random();
     
     if (upsetRoll < 0.2) {
-      // Upset battle against Top N (filtered)
-      const topN = rankedPokemon.slice(0, N).filter(p => !recentlyUsedPokemon.has(p.id) && p.id !== primary.id);
+      // Upset battle against Top N — but skip if the bottom Pokémon is locked out of Top N
+      const primaryRank = rankedPokemon.findIndex(rp => rp.id === primary.id) + 1;
+      const primaryLocked = isLockedOutOfTopN(primary.id, primaryRank, N, ratings, rankedPokemon);
+      const topN = primaryLocked
+        ? []
+        : rankedPokemon.slice(0, N).filter(p => !recentlyUsedPokemon.has(p.id) && p.id !== primary.id);
       if (topN.length > 0) {
         const opponent = topN[Math.floor(Math.random() * topN.length)];
         console.log(`🎯 [BOTTOM_CONFIRMATION] UPSET! ${primary.name} vs Top N ${opponent.name}`);
@@ -339,7 +374,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     // Fallback if only one eligible bottom tier Pokemon
     console.log(`🎯 [BOTTOM_CONFIRMATION] Not enough opponents in bottom tier, falling back to bubble challenge.`);
     return generateBubbleChallengeBattle(ratings, N);
-  }, [getRankedPokemon, generateBubbleChallengeBattle, recentlyUsedPokemon]);
+  }, [getRankedPokemon, generateBubbleChallengeBattle, recentlyUsedPokemon, isLockedOutOfTopN]);
 
   // Main battle generation function with Top N logic and pending battles priority
   const generateNewBattle = useCallback((
@@ -446,34 +481,50 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
 
       let battleResult: BattleGenerationResult;
 
-      // WARM-UP: Until the rated pool reaches Top N, force unranked battles so the
-      // scheduler doesn't recycle the same handful of Pokémon. Once we're past N,
-      // ramp unranked probability down gradually instead of jumping to 15%.
+      // COVERAGE-DRIVEN MIX: explore-heavy when most of the filtered pool is still unseen.
+      // unrankedShare = clamp(1 - coverage, 0.15, 0.85), with the remainder split across
+      // refinement strategies in their original 50:20:15 ratio (~59 / 24 / 17).
       const ratedCount = Object.keys(ratings).length;
-      const forceUnranked = unrankedPool.length > 0 && ratedCount < N;
-      const inRampWindow = unrankedPool.length > 0 && ratedCount >= N && ratedCount < N * 2;
-      const unrankedThreshold = inRampWindow ? 0.40 : 0.15;
+      const filteredPoolSize = Math.max(allPokemon.length, 1);
+      const coverage = ratedCount / filteredPoolSize;
+      let unrankedShare = unrankedPool.length > 0 ? Math.min(0.85, Math.max(0.15, 1 - coverage)) : 0;
 
-      if (forceUnranked) {
-        console.log(`🎯 [TOP_N_SCHEDULER] WARM-UP: ratedCount=${ratedCount} < N=${N}, forcing UNRANKED BATTLE`);
+      // Soft cap: at low coverage, force exploration after a streak of refinement battles.
+      const forceExploreAfterStreak =
+        unrankedPool.length > 0 && coverage < 0.5 && consecutiveRefinementCount >= 4;
+
+      const refineShare = 1 - unrankedShare;
+      const topNCut = unrankedShare + refineShare * 0.59;
+      const bubbleCut = topNCut + refineShare * 0.24;
+      // bottom = remainder up to 1.0
+
+      console.log(
+        `🎯 [TOP_N_SCHEDULER] coverage=${coverage.toFixed(3)} unrankedShare=${unrankedShare.toFixed(2)} ` +
+        `streak=${consecutiveRefinementCount}${forceExploreAfterStreak ? ' (forcing explore)' : ''}`
+      );
+
+      if (forceExploreAfterStreak) {
+        console.log(`🎯 [TOP_N_SCHEDULER] STREAK BREAK: forcing UNRANKED BATTLE`);
         battleResult = generateUnrankedBattle(unrankedPool, ratings);
-      } else if (unrankedPool.length > 0 && battleStrategyRoll < unrankedThreshold) {
-        // Strategy 1: Introduce new Pokemon (15% chance, but only if unranked exist)
-        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE (${Math.round(unrankedThreshold * 100)}%)`);
+      } else if (unrankedPool.length > 0 && battleStrategyRoll < unrankedShare) {
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: UNRANKED BATTLE`);
         battleResult = generateUnrankedBattle(unrankedPool, ratings);
-      } else if (battleStrategyRoll < (inRampWindow ? 0.70 : 0.65)) {
-        // Strategy 2: Refine Top N (50% chance) - 0.15 to 0.65
-        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: TOP N REFINEMENT (50%)`);
+      } else if (battleStrategyRoll < topNCut) {
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: TOP N REFINEMENT`);
         battleResult = generateTopNRefinementBattle(ratings, N);
-      } else if (battleStrategyRoll < 0.85) {
-        // Strategy 3: Bubble challenge (20% chance) - 0.65 to 0.85
-        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BUBBLE CHALLENGE (20%)`);
+      } else if (battleStrategyRoll < bubbleCut) {
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BUBBLE CHALLENGE`);
         battleResult = generateBubbleChallengeBattle(ratings, N);
       } else {
-        // Strategy 4: Bottom confirmation (15% chance) - 0.85 to 1.0
-        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BOTTOM CONFIRMATION (15%)`);
+        console.log(`🎯 [TOP_N_SCHEDULER] Selected strategy: BOTTOM CONFIRMATION`);
         battleResult = generateBottomConfirmationBattle(ratings, N);
       }
+
+      // Update consecutive refinement counter based on the chosen strategy.
+      const isRefinement =
+        battleResult.strategy.startsWith("Top N Refinement") ||
+        battleResult.strategy.startsWith("Bubble Challenge");
+      setConsecutiveRefinementCount(prev => (isRefinement ? prev + 1 : 0));
 
       // Fallback to simple random selection if no battle was generated
       if (battleResult.battle.length === 0) {
@@ -547,7 +598,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const validated = validateBattlePokemon(lastGeneratedBattle.battle);
     return { battle: validated, strategy: `${lastGeneratedBattle.strategy} (Repeated)` };
 
-  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon, isPairRecent]);
+  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon, isPairRecent, consecutiveRefinementCount]);
 
   const addToRecentlyUsed = useCallback((pokemon: Pokemon[]) => {
     setRecentlyUsedPokemon(prev => {
