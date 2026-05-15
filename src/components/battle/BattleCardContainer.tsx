@@ -180,7 +180,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
             e.preventDefault();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-300 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-2 rounded-full transition-opacity duration-300 [@media(pointer:coarse)]:hidden ${
             isPendingRefinement 
               ? 'opacity-100' 
               : isHovered && !isProcessing 
@@ -200,7 +200,7 @@ const BattleCardContainer: React.FC<BattleCardContainerProps> = ({
         </button>
 
         {/* Info Button - only visible on card hover */}
-        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
+        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 [@media(pointer:coarse)]:hidden ${
           isHovered && !isProcessing ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
