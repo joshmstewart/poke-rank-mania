@@ -11,6 +11,8 @@ import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Plus, Star } from "lucide-react";
 import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
+import { useLongPress } from "@/hooks/useLongPress";
+import CardActionMenu from "./CardActionMenu";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -35,6 +37,9 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null);
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
   
   // Use the cloud-based pending state hook
   const { isPokemonPending, addPendingPokemon, removePendingPokemon, isHydrated } = useCloudPendingBattles();
@@ -59,6 +64,15 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   // Check if this Pokemon has pending state
   const isPendingRefinement = isPokemonPending(pokemon.id);
 
+  const toggleStar = React.useCallback(() => {
+    if (!isHydrated) return;
+    if (isPendingRefinement) {
+      removePendingPokemon(pokemon.id);
+    } else {
+      addPendingPokemon(pokemon.id);
+    }
+  }, [isHydrated, isPendingRefinement, addPendingPokemon, removePendingPokemon, pokemon.id]);
+
   // Use consistent drag ID strategy
   const id = `${context}-${pokemon.id}`;
   const data = {
@@ -78,7 +92,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   } = useDraggable({
     id,
     data,
-    disabled: !isDraggable || isOpen,
+    disabled: !isDraggable || isOpen || menuOpen,
   });
 
   const style = {
@@ -120,8 +134,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   const isRankedPokemon = context === 'available' && 'isRanked' in pokemon && pokemon.isRanked;
   const currentRank = isRankedPokemon && 'currentRank' in pokemon ? pokemon.currentRank : null;
 
-  // Apply drag props when draggable and not in modal
-  const dragProps = isDraggable && !isOpen ? { ...attributes, ...listeners } : {};
+  // Apply drag props when draggable and not in modal/menu
+  const dragProps = isDraggable && !isOpen && !menuOpen ? { ...attributes, ...listeners } : {};
+
+  // Compose card refs (dnd-kit + local).
+  const setCardRef = React.useCallback((node: HTMLDivElement | null) => {
+    cardRef.current = node;
+    setNodeRef(node);
+  }, [setNodeRef]);
 
   const canTapToAdd = context === 'available' && !isRankedPokemon;
   const handleTapToAdd = (e: React.MouseEvent) => {
@@ -132,9 +152,39 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
     );
   };
 
+  const dispatchRemove = React.useCallback(() => {
+    document.dispatchEvent(
+      new CustomEvent('remove-pokemon-from-rankings', { detail: { pokemonId: pokemon.id } })
+    );
+  }, [pokemon.id]);
+
+  // Touch-only long-press handlers (no-ops on desktop / fine pointer).
+  const openMenu = React.useCallback(() => {
+    if (cardRef.current) setAnchorRect(cardRef.current.getBoundingClientRect());
+    setMenuOpen(true);
+  }, []);
+
+  const handleTouchTap = React.useCallback(() => {
+    if (canTapToAdd) {
+      document.dispatchEvent(
+        new CustomEvent('add-pokemon-to-rankings', { detail: { pokemonId: pokemon.id } })
+      );
+    } else if (context === 'ranked') {
+      setIsOpen(true);
+    }
+  }, [canTapToAdd, context, pokemon.id]);
+
+  const longPressHandlers = useLongPress<HTMLDivElement>({
+    onLongPress: openMenu,
+    onTap: handleTouchTap,
+    threshold: 500,
+    moveTolerance: 8,
+    disabled: !isDraggable,
+  });
+
   return (
     <div
-      ref={setNodeRef}
+      ref={setCardRef}
       style={style}
       className={`${backgroundColorClass} rounded-lg border border-border relative overflow-hidden aspect-square flex flex-col group w-full ${
         isDraggable && !isOpen ? 'cursor-grab active:cursor-grabbing' : ''
@@ -145,13 +195,14 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       onMouseLeave={handleMouseLeave}
       data-pokemon-id={pokemon.id}
       {...dragProps}
+      {...longPressHandlers}
     >
       {/* Tap-to-add button (mobile-friendly, also works on desktop) */}
       {!isDragging && canTapToAdd && (
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleTapToAdd}
-          className="absolute bottom-1 right-1 z-30 w-7 h-7 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center opacity-90 hover:opacity-100 active:scale-95 transition-all"
+          className="absolute bottom-1 right-1 z-30 w-7 h-7 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center opacity-90 hover:opacity-100 active:scale-95 transition-all [@media(pointer:coarse)]:hidden"
           title="Add to rankings"
           aria-label={`Add ${pokemon.name} to rankings`}
           type="button"
