@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Pokemon } from "@/services/pokemon";
 import { BattleType } from "./types";
 import { validateBattlePokemon } from "@/services/pokemon/api/utils";
@@ -24,8 +24,9 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
   const { isPairRecent } = useBattleStarterMemory();
   const [recentlyUsedPokemon, setRecentlyUsedPokemon] = useState<Set<number>>(new Set());
   const { pendingPokemon, removePendingPokemon } = useCloudPendingBattles();
-  // Track consecutive refinement-style strategies so we can break streaks at low coverage
-  const [consecutiveRefinementCount, setConsecutiveRefinementCount] = useState(0);
+  // Track consecutive refinement-style strategies so we can break streaks at low coverage.
+  // Using a ref because this counter shouldn't trigger re-renders.
+  const consecutiveRefinementCountRef = useRef(0);
 
   // Helper function to get unranked Pokemon
   const getUnrankedPokemon = useCallback((ratings: Ratings): Pokemon[] => {
@@ -491,7 +492,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
 
       // Soft cap: at low coverage, force exploration after a streak of refinement battles.
       const forceExploreAfterStreak =
-        unrankedPool.length > 0 && coverage < 0.5 && consecutiveRefinementCount >= 4;
+        unrankedPool.length > 0 && coverage < 0.5 && consecutiveRefinementCountRef.current >= 4;
 
       const refineShare = 1 - unrankedShare;
       const topNCut = unrankedShare + refineShare * 0.59;
@@ -500,7 +501,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
 
       console.log(
         `🎯 [TOP_N_SCHEDULER] coverage=${coverage.toFixed(3)} unrankedShare=${unrankedShare.toFixed(2)} ` +
-        `streak=${consecutiveRefinementCount}${forceExploreAfterStreak ? ' (forcing explore)' : ''}`
+        `streak=${consecutiveRefinementCountRef.current}${forceExploreAfterStreak ? ' (forcing explore)' : ''}`
       );
 
       if (forceExploreAfterStreak) {
@@ -524,7 +525,9 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
       const isRefinement =
         battleResult.strategy.startsWith("Top N Refinement") ||
         battleResult.strategy.startsWith("Bubble Challenge");
-      setConsecutiveRefinementCount(prev => (isRefinement ? prev + 1 : 0));
+      consecutiveRefinementCountRef.current = isRefinement
+        ? consecutiveRefinementCountRef.current + 1
+        : 0;
 
       // Fallback to simple random selection if no battle was generated
       if (battleResult.battle.length === 0) {
@@ -598,7 +601,7 @@ export const useBattleGeneration = (allPokemon: Pokemon[]) => {
     const validated = validateBattlePokemon(lastGeneratedBattle.battle);
     return { battle: validated, strategy: `${lastGeneratedBattle.strategy} (Repeated)` };
 
-  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon, isPairRecent, consecutiveRefinementCount]);
+  }, [allPokemon, recentlyUsedPokemon, pendingPokemon, getUnrankedPokemon, generatePendingBattle, generateUnrankedBattle, generateTopNRefinementBattle, generateBubbleChallengeBattle, generateBottomConfirmationBattle, removePendingPokemon, isPairRecent]);
 
   const addToRecentlyUsed = useCallback((pokemon: Pokemon[]) => {
     setRecentlyUsedPokemon(prev => {
