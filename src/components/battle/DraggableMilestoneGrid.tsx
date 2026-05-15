@@ -114,7 +114,7 @@ const DraggableMilestoneGrid: React.FC<DraggableMilestoneGridProps> = ({
 
   const content = (
     <div 
-      className="grid grid-cols-2 gap-2 mb-6" 
+      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6"
       style={{ 
         // Hardware acceleration for the grid container
         transform: 'translateZ(0)',
