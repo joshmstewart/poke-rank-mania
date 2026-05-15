@@ -2,59 +2,53 @@
 import { useCallback, useEffect } from 'react';
 import { useTrueSkillStore } from '@/stores/trueskillStore';
 
+// PERF: use Zustand selectors so consumers only re-render when the slices
+// they actually care about change. The previous destructure subscribed to
+// the ENTIRE store, causing every mounted card (~1100 in manual mode) to
+// re-render on any TrueSkill update (scores, sync, etc).
 export const useCloudPendingBattles = () => {
-  const {
-    addPendingBattle,
-    removePendingBattle,
-    clearAllPendingBattles,
-    isPokemonPending,
-    getAllPendingBattles,
-    isHydrated
-  } = useTrueSkillStore();
+  const pendingBattles = useTrueSkillStore((s) => s.pendingBattles);
+  const isHydrated = useTrueSkillStore((s) => s.isHydrated);
 
   const addPendingPokemon = useCallback((pokemonId: number) => {
-    addPendingBattle(pokemonId);
-    
-    const eventDetail = { 
-      pokemonId,
-      source: 'cloud-pending-battles',
-      timestamp: Date.now()
-    };
-    
-    const event = new CustomEvent('pokemon-starred-for-battle', {
-      detail: eventDetail
-    });
-    document.dispatchEvent(event);
-  }, [addPendingBattle]);
+    useTrueSkillStore.getState().addPendingBattle(pokemonId);
+    document.dispatchEvent(
+      new CustomEvent('pokemon-starred-for-battle', {
+        detail: { pokemonId, source: 'cloud-pending-battles', timestamp: Date.now() },
+      })
+    );
+  }, []);
 
   const removePendingPokemon = useCallback((pokemonId: number) => {
-    removePendingBattle(pokemonId);
-  }, [removePendingBattle]);
+    useTrueSkillStore.getState().removePendingBattle(pokemonId);
+  }, []);
 
   const clearAllPending = useCallback(() => {
-    clearAllPendingBattles();
-  }, [clearAllPendingBattles]);
+    useTrueSkillStore.getState().clearAllPendingBattles();
+  }, []);
 
-  const getAllPendingIds = useCallback((): number[] => {
-    return getAllPendingBattles() || [];
-  }, [getAllPendingBattles]);
+  const isPokemonPending = useCallback(
+    (pokemonId: number) => pendingBattles.includes(pokemonId),
+    [pendingBattles]
+  );
 
-  const hasPendingPokemon = getAllPendingBattles().length > 0;
+  const getAllPendingIds = useCallback((): number[] => pendingBattles, [pendingBattles]);
+  const hasPendingPokemon = pendingBattles.length > 0;
 
   useEffect(() => {
-    if (getAllPendingBattles().length > 0 && !isHydrated) {
+    if (pendingBattles.length > 0 && !isHydrated) {
       useTrueSkillStore.setState({ isHydrated: true });
     }
-  }, [isHydrated, getAllPendingBattles]);
+  }, [pendingBattles, isHydrated]);
 
   return {
-    pendingPokemon: getAllPendingBattles(),
+    pendingPokemon: pendingBattles,
     addPendingPokemon,
     removePendingPokemon,
     clearAllPending,
     isPokemonPending,
     getAllPendingIds,
     hasPendingPokemon,
-    isHydrated
+    isHydrated,
   };
 };

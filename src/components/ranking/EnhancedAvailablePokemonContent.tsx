@@ -15,7 +15,6 @@ interface EnhancedAvailablePokemonContentProps {
   loadingRef: React.RefObject<HTMLDivElement>;
   currentPage: number;
   totalPages: number;
-  allRankedPokemon?: any[]; // Add this prop to pass ranked Pokemon list
   searchTerm?: string;
   onClearSearch?: () => void;
 }
@@ -25,7 +24,7 @@ const PokemonLoadingPlaceholder = () => (
   <div className="animate-pulse bg-muted rounded-lg h-32 w-full"></div>
 );
 
-export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonContentProps> = ({
+const EnhancedAvailablePokemonContentImpl: React.FC<EnhancedAvailablePokemonContentProps> = ({
   items,
   showGenerationHeaders,
   viewMode,
@@ -35,7 +34,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
   loadingRef,
   currentPage,
   totalPages,
-  allRankedPokemon = [], // Default to empty array
   searchTerm = "",
   onClearSearch,
 }) => {
@@ -96,7 +94,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                     isDraggable={true}
                     isAvailable={true}
                     context="available"
-                    allRankedPokemon={allRankedPokemon}
                   />
                 </div>
               ))}
@@ -142,7 +139,6 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
                 isDraggable={true}
                 isAvailable={true}
                 context="available"
-                allRankedPokemon={allRankedPokemon}
               />
             </div>
           ))}
@@ -169,6 +165,11 @@ export const EnhancedAvailablePokemonContent: React.FC<EnhancedAvailablePokemonC
     </div>
   );
 };
+
+// PERF: memoize so the available grid doesn't reconcile on every drag-over
+// tick (parent re-renders due to insertionPreviewIndex state in the layout
+// owner). Only meaningful prop changes will re-render it.
+export const EnhancedAvailablePokemonContent = React.memo(EnhancedAvailablePokemonContentImpl);
 
 // Helper functions for generation data
 const getRegionForGeneration = (gen: number): string => {
