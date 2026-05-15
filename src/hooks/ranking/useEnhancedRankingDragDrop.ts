@@ -63,6 +63,20 @@ export const useEnhancedRankingDragDrop = (
     return () => document.removeEventListener('add-pokemon-to-rankings', handler);
   }, [enhancedAvailablePokemon, localRankings, moveFromAvailableToRankings]);
 
+  // Mirror of add-pokemon-to-rankings: remove a Pokémon from the rankings
+  // list. Fired by the touch long-press action menu.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ pokemonId: number }>).detail;
+      const pokemonId = detail?.pokemonId;
+      if (typeof pokemonId !== 'number') return;
+      if (!localRankings.some((p) => p.id === pokemonId)) return;
+      updateLocalRankings(localRankings.filter((p) => p.id !== pokemonId));
+    };
+    document.addEventListener('remove-pokemon-from-rankings', handler);
+    return () => document.removeEventListener('remove-pokemon-from-rankings', handler);
+  }, [localRankings, updateLocalRankings]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -73,8 +87,11 @@ export const useEnhancedRankingDragDrop = (
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100,
-        tolerance: 5,
+        // Slightly longer than before so a brief still touch (during the
+        // long-press menu wait) doesn't accidentally start a drag. Movement
+        // within this window still cancels and starts a drag.
+        delay: 250,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor)
