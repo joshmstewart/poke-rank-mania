@@ -242,7 +242,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             e.stopPropagation();
           }}
           onClick={handlePrioritizeClick}
-          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-1 rounded-full transition-opacity duration-300 ${
+          className={`absolute top-1/2 right-2 -translate-y-1/2 z-30 p-1 rounded-full transition-opacity duration-300 [@media(pointer:coarse)]:hidden ${
             isPendingRefinement
               ? 'opacity-100'
               : isHovered
@@ -263,7 +263,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Info Button with Dialog - only visible on card hover */}
       {!isDragging && (
-        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 ${
+        <div className={`absolute top-1 right-1 z-30 transition-all duration-300 [@media(pointer:coarse)]:hidden ${
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -303,6 +303,57 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
             </DialogContent>
           </Dialog>
         </div>
+      )}
+
+      {/* Touch-only: standalone Dialog for the long-press "Info" menu item.
+          The hover Dialog above is hidden on coarse pointers, so we mount a
+          headless one here that the menu can open via setIsOpen. */}
+      {!isDragging && (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto hidden [@media(pointer:coarse)]:block"
+            onClick={handleDialogClick}
+            data-radix-dialog-content="true"
+          >
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">
+                {pokemon.name}
+              </DialogTitle>
+            </DialogHeader>
+            <PokemonModalContent
+              pokemon={pokemon}
+              showLoading={showLoading}
+              showTCGCards={showTCGCards}
+              showFallbackInfo={showFallbackInfo}
+              tcgCard={tcgCard}
+              secondTcgCard={secondTcgCard}
+              flavorText={flavorText}
+              isLoadingFlavor={isLoadingFlavor}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Touch-only: persistent star indicator (only when starred). */}
+      {!isDragging && isPendingRefinement && (
+        <div className="absolute bottom-1 left-1 z-20 hidden [@media(pointer:coarse)]:flex items-center justify-center w-5 h-5 rounded-full bg-background/80 shadow-sm">
+          <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+        </div>
+      )}
+
+      {/* Touch-only: long-press action menu. */}
+      {!isDragging && (
+        <CardActionMenu
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          context={context}
+          isStarred={isPendingRefinement}
+          canStar={isHydrated}
+          onInfo={() => setIsOpen(true)}
+          onToggleStar={toggleStar}
+          onRemove={context === 'ranked' ? dispatchRemove : undefined}
+          anchorRect={anchorRect}
+        />
       )}
 
       {/* Crown badge for ranked Pokemon in available section */}
