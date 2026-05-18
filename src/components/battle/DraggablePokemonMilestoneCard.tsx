@@ -429,4 +429,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   );
 };
 
-export default React.memo(DraggablePokemonMilestoneCard);
+export default React.memo(DraggablePokemonMilestoneCard, (prev, next) => {
+  const prevPokemon = prev.pokemon as Pokemon & { isRanked?: boolean; currentRank?: number | null; score?: number };
+  const nextPokemon = next.pokemon as Pokemon & { isRanked?: boolean; currentRank?: number | null; score?: number };
+  return (
+    prevPokemon.id === nextPokemon.id &&
+    prevPokemon.name === nextPokemon.name &&
+    prevPokemon.image === nextPokemon.image &&
+    prevPokemon.isRanked === nextPokemon.isRanked &&
+    prevPokemon.currentRank === nextPokemon.currentRank &&
+    prevPokemon.score === nextPokemon.score &&
+    prev.index === next.index &&
+    prev.isPending === next.isPending &&
+    prev.isStarred === next.isStarred &&
+    prev.canStar === next.canStar &&
+    prev.showRank === next.showRank &&
+    prev.isDraggable === next.isDraggable &&
+    prev.context === next.context
+  );
+});
