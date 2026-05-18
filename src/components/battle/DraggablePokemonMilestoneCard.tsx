@@ -4,15 +4,16 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Plus, Star } from "lucide-react";
-import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 import { useLongPress } from "@/hooks/useLongPress";
 import CardActionMenu from "./CardActionMenu";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { availableId, rankedId } from "@/utils/id";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -23,7 +24,45 @@ interface DraggablePokemonMilestoneCardProps {
   isAvailable?: boolean;
   context?: 'available' | 'ranked';
   allRankedPokemon?: (Pokemon | RankedPokemon)[];
+  isStarred?: boolean;
+  canStar?: boolean;
 }
+
+const PokemonCardDetailsDialog: React.FC<{
+  pokemon: Pokemon | RankedPokemon;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}> = ({ pokemon, open, onOpenChange }) => {
+  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, open);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, open);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
+        onClick={(event) => event.stopPropagation()}
+        data-radix-dialog-content="true"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-center">
+            {pokemon.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <PokemonModalContent
+          pokemon={pokemon}
+          showLoading={isLoadingTCG}
+          showTCGCards={!isLoadingTCG && hasTcgCard && tcgCard !== null}
+          showFallbackInfo={!isLoadingTCG && !hasTcgCard}
+          tcgCard={tcgCard}
+          secondTcgCard={secondTcgCard}
+          flavorText={flavorText}
+          isLoadingFlavor={isLoadingFlavor}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
   pokemon, 
