@@ -13,19 +13,20 @@ export const useEnhancedAvailablePokemon = ({
 }: UseEnhancedAvailablePokemonProps) => {
   
   const enhancedAvailablePokemon = useMemo(() => {
-    // Create a Set of ranked Pokemon IDs for fast lookup
-    const rankedPokemonIds = new Set(localRankings.map(p => p.id));
+    const rankedById = new Map(localRankings.map((p, index) => [p.id, index + 1]));
+    const formattedNameById = new Map<number, string>();
     
     const enhanced = filteredAvailablePokemon.map(pokemon => {
-      const isRanked = rankedPokemonIds.has(pokemon.id);
-      const currentRank = isRanked ? localRankings.findIndex(p => p.id === pokemon.id) + 1 : null;
+      const currentRank = rankedById.get(pokemon.id) ?? null;
+      const formattedName = formattedNameById.get(pokemon.id) ?? formatPokemonName(pokemon.name);
+      formattedNameById.set(pokemon.id, formattedName);
+      const nameChanged = pokemon.name !== formattedName;
       
-      return {
-        ...pokemon,
-        name: formatPokemonName(pokemon.name), // Format name here at the data source
-        isRanked,
-        currentRank
-      };
+      if (!currentRank && !nameChanged && !pokemon.isRanked && pokemon.currentRank == null) {
+        return pokemon;
+      }
+
+      return { ...pokemon, name: formattedName, isRanked: !!currentRank, currentRank };
     });
     
     return enhanced;
