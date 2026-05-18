@@ -72,16 +72,28 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   isDraggable = true,
   isAvailable = false,
   context = 'ranked',
-  allRankedPokemon = []
+  allRankedPokemon = [],
+  isStarred,
+  canStar,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
-  
-  // Use the cloud-based pending state hook
-  const { isPokemonPending, addPendingPokemon, removePendingPokemon, isHydrated } = useCloudPendingBattles();
+  const isHydrated = canStar ?? useTrueSkillStore.getState().isHydrated;
+  const isPendingRefinement = isStarred ?? isPending;
+  const addPendingPokemon = React.useCallback((pokemonId: number) => {
+    useTrueSkillStore.getState().addPendingBattle(pokemonId);
+    document.dispatchEvent(
+      new CustomEvent('pokemon-starred-for-battle', {
+        detail: { pokemonId, source: 'pokemon-card', timestamp: Date.now() },
+      })
+    );
+  }, []);
+  const removePendingPokemon = React.useCallback((pokemonId: number) => {
+    useTrueSkillStore.getState().removePendingBattle(pokemonId);
+  }, []);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,17 +103,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       return;
     }
     
-    const currentlyPending = isPokemonPending(pokemon.id);
-    
-    if (!currentlyPending) {
+    if (!isPendingRefinement) {
       addPendingPokemon(pokemon.id);
     } else {
       removePendingPokemon(pokemon.id);
     }
   };
-
-  // Check if this Pokemon has pending state
-  const isPendingRefinement = isPokemonPending(pokemon.id);
 
   const toggleStar = React.useCallback(() => {
     if (!isHydrated) return;
@@ -113,7 +120,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   }, [isHydrated, isPendingRefinement, addPendingPokemon, removePendingPokemon, pokemon.id]);
 
   // Use consistent drag ID strategy
-  const id = `${context}-${pokemon.id}`;
+  const id = context === 'available' ? availableId(pokemon.id) : rankedId(pokemon.id);
   const data = {
     type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
     pokemon: pokemon,
@@ -146,19 +153,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
-
-  // Hooks for modal content
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
-
-  // Determine what content to show
-  const showLoading = isLoadingTCG;
-  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
-  const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
-
-  const handleDialogClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
 
   const handleMouseEnter = () => {
     if (!isDragging) {
