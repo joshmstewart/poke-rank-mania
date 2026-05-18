@@ -170,9 +170,6 @@ export const RankingGrid: React.FC<RankingGridProps> = ({
   onReorder,
   isDraggable = true
 }) => {
-  console.log(`🎯 [RANKING_GRID_DEBUG] Rendering RankingGrid with ${rankedPokemon.length} Pokemon`);
-  console.log(`🎯 [RANKING_GRID_DEBUG] Passing allRankedPokemon array with length: ${rankedPokemon.length}`);
-
   if (!isDraggable) {
     // Simple grid without drag and drop
     return (
