@@ -306,59 +306,40 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         </button>
       )}
 
-      {/* Info Button with Dialog - only visible on card hover */}
+      {/* Info button. The heavy Dialog tree mounts only after opening. */}
       {!isDragging && (
         <div className={`absolute top-1 right-1 z-30 transition-all duration-300 [@media(pointer:coarse)]:hidden ${
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <button 
-                className="w-4 h-4 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                onPointerUp={(e) => {
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  e.stopPropagation();
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(true);
-                }}
-                type="button"
-              >
-                i
-              </button>
-            </DialogTrigger>
-            
-            <DialogContent 
-              className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
-              onClick={handleDialogClick}
-              data-radix-dialog-content="true"
-            >
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-center">
-                  {pokemon.name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <PokemonModalContent
-                pokemon={pokemon}
-                showLoading={showLoading}
-                showTCGCards={showTCGCards}
-                showFallbackInfo={showFallbackInfo}
-                tcgCard={tcgCard}
-                secondTcgCard={secondTcgCard}
-                flavorText={flavorText}
-                isLoadingFlavor={isLoadingFlavor}
-              />
-            </DialogContent>
-          </Dialog>
+          <button
+            className="w-4 h-4 rounded-full bg-background/90 hover:bg-background border border-border text-muted-foreground hover:text-foreground flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 cursor-pointer"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onPointerUp={(e) => {
+              e.stopPropagation();
+            }}
+            onMouseUp={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(true);
+            }}
+            type="button"
+          >
+            i
+          </button>
         </div>
+      )}
+
+      {isOpen && (
+        <PokemonCardDetailsDialog
+          pokemon={pokemon}
+          open={isOpen}
+          onOpenChange={setIsOpen}
+        />
       )}
 
       {/* Touch-only: persistent star indicator (only when starred). */}
