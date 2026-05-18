@@ -258,17 +258,17 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
-        <div className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"></div>
+        <div className="absolute inset-0 bg-primary/10 rounded-lg pointer-events-none"></div>
       )}
 
       {/* Dark overlay for already-ranked Pokemon in available section */}
       {context === 'available' && isRankedPokemon && (
-        <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg z-10"></div>
+        <div className="absolute inset-0 bg-foreground/40 rounded-lg z-10"></div>
       )}
 
       {/* Pending banner if needed */}
       {isPending && (
-        <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 px-2 z-20">
+        <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-xs py-1 px-2 z-20">
           Pending Battle
         </div>
       )}
@@ -300,7 +300,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         >
           <Star
             className={`w-4 h-4 transition-colors duration-300 ${
-              isPendingRefinement ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500 hover:text-yellow-500'
+              isPendingRefinement ? 'text-primary fill-primary' : 'text-muted-foreground hover:text-primary'
             }`}
           />
         </button>
@@ -369,7 +369,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <div className="absolute top-1 left-1 z-20">
           <Badge 
             variant="secondary" 
-            className="bg-yellow-500 text-white font-bold text-xs px-1 py-0.5 shadow-md flex items-center gap-1"
+            className="bg-primary text-primary-foreground font-bold text-xs px-1 py-0.5 shadow-md flex items-center gap-1"
           >
             <Crown size={8} />
             #{String(currentRank)}
@@ -379,10 +379,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Ranking number */}
       {context === 'ranked' && showRank && (
-        <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm border border-gray-200 ${
-          isDragging ? 'bg-blue-100 border-blue-300' : ''
+        <div className={`absolute top-1 left-1 w-5 h-5 bg-background rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm border border-border ${
+          isDragging ? 'bg-primary/10 border-primary/30' : ''
         }`}>
-          <span className="text-black">{index + 1}</span>
+          <span className="text-foreground">{index + 1}</span>
         </div>
       )}
       
@@ -410,17 +410,17 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
       
       {/* Pokemon info */}
-      <div className="bg-white text-center py-1 px-1 mt-auto border-t border-gray-100 flex-shrink-0">
-        <h3 className="font-bold text-gray-800 text-xs leading-tight mb-0.5 truncate">
+      <div className="bg-background text-center py-1 px-1 mt-auto border-t border-border flex-shrink-0">
+        <h3 className="font-bold text-foreground text-xs leading-tight mb-0.5 truncate">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600 mb-0.5">
+        <div className="text-xs text-muted-foreground mb-0.5">
           #{formattedId}
         </div>
         
         {/* Score display */}
         {context === 'ranked' && 'score' in pokemon && (
-          <div className="text-xs text-gray-700 font-medium truncate">
+          <div className="text-xs text-muted-foreground font-medium truncate">
             {pokemon.score.toFixed(5)}
           </div>
         )}
