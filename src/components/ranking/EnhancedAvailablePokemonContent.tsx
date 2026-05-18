@@ -17,6 +17,8 @@ interface EnhancedAvailablePokemonContentProps {
   totalPages: number;
   searchTerm?: string;
   onClearSearch?: () => void;
+  pendingIds?: Set<number>;
+  canStar?: boolean;
 }
 
 // Simple loading placeholder component
@@ -36,7 +38,91 @@ const EnhancedAvailablePokemonContentImpl: React.FC<EnhancedAvailablePokemonCont
   totalPages,
   searchTerm = "",
   onClearSearch,
+  pendingIds = new Set(),
+  canStar = true,
 }) => {
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const [scrollTop, setScrollTop] = React.useState(0);
+  const [viewportHeight, setViewportHeight] = React.useState(640);
+  const [containerWidth, setContainerWidth] = React.useState(0);
+
+  React.useLayoutEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const update = () => {
+      setViewportHeight(node.clientHeight || 640);
+      setContainerWidth(node.clientWidth || 0);
+    };
+    update();
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(node);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const columnCount = React.useMemo(() => {
+    if (!containerWidth) return 3;
+    return Math.max(1, Math.floor((containerWidth + 16) / 156));
+  }, [containerWidth]);
+
+  const cardHeight = React.useMemo(() => {
+    if (!containerWidth) return 156;
+    const gapTotal = (columnCount - 1) * 16;
+    return Math.max(140, Math.floor((containerWidth - gapTotal) / columnCount));
+  }, [columnCount, containerWidth]);
+
+  const virtualRows = React.useMemo(() => {
+    const rows: Array<
+      | { type: "header"; key: string; item: any; top: number; height: number }
+      | { type: "pokemon"; key: string; pokemon: any[]; startIndex: number; top: number; height: number }
+    > = [];
+    let top = 0;
+    let currentGenerationPokemon: any[] = [];
+    let currentGeneration: number | null = null;
+
+    const flushPokemon = () => {
+      for (let i = 0; i < currentGenerationPokemon.length; i += columnCount) {
+        const rowPokemon = currentGenerationPokemon.slice(i, i + columnCount);
+        rows.push({
+          type: "pokemon",
+          key: `gen-${currentGeneration}-pokemon-row-${i}`,
+          pokemon: rowPokemon,
+          startIndex: i,
+          top,
+          height: cardHeight + 16,
+        });
+        top += cardHeight + 16;
+      }
+      currentGenerationPokemon = [];
+    };
+
+    for (const item of items) {
+      if (item.type === "header") {
+        flushPokemon();
+        rows.push({
+          type: "header",
+          key: `gen-${item.generationId}`,
+          item,
+          top,
+          height: 76,
+        });
+        top += 76;
+        currentGeneration = item.generationId;
+      } else if (item.type === "pokemon") {
+        currentGenerationPokemon.push(item.data);
+      }
+    }
+    flushPokemon();
+
+    return { rows, totalHeight: top };
+  }, [cardHeight, columnCount, items]);
+
+  const visibleRows = React.useMemo(() => {
+    const overscan = viewportHeight * 2;
+    const start = Math.max(0, scrollTop - overscan);
+    const end = scrollTop + viewportHeight + overscan;
+    return virtualRows.rows.filter((row) => row.top + row.height >= start && row.top <= end);
+  }, [scrollTop, viewportHeight, virtualRows.rows]);
+
   // Group items by generation for display
   const renderContent = () => {
     if (items.length === 0 && !isLoading) {
@@ -71,87 +157,66 @@ const EnhancedAvailablePokemonContentImpl: React.FC<EnhancedAvailablePokemonCont
       );
     }
 
-    const result = [];
-    let currentGenerationPokemon = [];
-    let currentGeneration = null;
+    return (
+      <div className="relative" style={{ height: virtualRows.totalHeight }}>
+        {visibleRows.map((row) => {
+          if (row.type === "header") {
+            const item = row.item;
+            return (
+              <div key={row.key} className="absolute left-0 right-0" style={{ top: row.top, height: row.height }}>
+                <GenerationHeader
+                  generationId={item.generationId}
+                  name={item.data.name}
+                  region={item.data.region}
+                  games={item.data.games}
+                  viewMode={viewMode}
+                  isExpanded={isGenerationExpanded(item.generationId)}
+                  onToggle={() => onToggleGeneration(item.generationId)}
+                />
+              </div>
+            );
+          }
 
-    for (const item of items) {
-      if (item.type === 'header') {
-        // Render previous generation's Pokemon if any
-        if (currentGenerationPokemon.length > 0) {
-          result.push(
-            <div key={`gen-${currentGeneration}-pokemon`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', overflow: 'visible', contain: 'none' }}>
-              {currentGenerationPokemon.map((pokemon, index) => (
-                <div
+          return (
+            <div
+              key={row.key}
+              className="absolute left-0 right-0 grid gap-4"
+              style={{
+                top: row.top,
+                height: row.height,
+                gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                contentVisibility: "auto",
+                containIntrinsicSize: `${cardHeight}px ${cardHeight}px`,
+              } as React.CSSProperties}
+            >
+              {row.pokemon.map((pokemon, index) => (
+                <DraggablePokemonMilestoneCard
                   key={pokemon.id}
-                  style={{ contentVisibility: 'auto', containIntrinsicSize: '180px 180px' } as React.CSSProperties}
-                >
-                  <DraggablePokemonMilestoneCard
-                    pokemon={pokemon}
-                    index={index}
-                    isPending={false}
-                    showRank={false}
-                    isDraggable={true}
-                    isAvailable={true}
-                    context="available"
-                  />
-                </div>
+                  pokemon={pokemon}
+                  index={row.startIndex + index}
+                  isPending={pendingIds.has(pokemon.id)}
+                  isStarred={pendingIds.has(pokemon.id)}
+                  canStar={canStar}
+                  showRank={false}
+                  isDraggable={true}
+                  isAvailable={true}
+                  context="available"
+                />
               ))}
             </div>
           );
-          currentGenerationPokemon = [];
-        }
-
-        // Add generation header with proper data
-        result.push(
-          <GenerationHeader
-            key={`gen-${item.generationId}`}
-            generationId={item.generationId}
-            name={item.data.name}
-            region={item.data.region}
-            games={item.data.games}
-            viewMode={viewMode}
-            isExpanded={isGenerationExpanded(item.generationId)}
-            onToggle={() => onToggleGeneration(item.generationId)}
-          />
-        );
-        
-        currentGeneration = item.generationId;
-      } else if (item.type === 'pokemon') {
-        currentGenerationPokemon.push(item.data);
-      }
-    }
-
-    // Render remaining Pokemon
-    if (currentGenerationPokemon.length > 0) {
-      result.push(
-        <div key={`gen-${currentGeneration}-pokemon-final`} className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', overflow: 'visible', contain: 'none' }}>
-          {currentGenerationPokemon.map((pokemon, index) => (
-            <div
-              key={pokemon.id}
-              style={{ contentVisibility: 'auto', containIntrinsicSize: '180px 180px' } as React.CSSProperties}
-            >
-              <DraggablePokemonMilestoneCard
-                pokemon={pokemon}
-                index={index}
-                isPending={false}
-                showRank={false}
-                isDraggable={true}
-                isAvailable={true}
-                context="available"
-              />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    return result;
+        })}
+      </div>
+    );
   };
 
   return (
-    <div className="flex-1 p-4 transition-colors" style={{ overflow: 'visible', contain: 'none' }}>
-      <div className="space-y-4" style={{ overflow: 'visible', contain: 'none' }}>
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto p-4 transition-colors"
+      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+    >
+      <div>
         {renderContent()}
         
         {isLoading && (
