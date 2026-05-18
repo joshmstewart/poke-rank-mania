@@ -8,6 +8,7 @@ import { usePokemonGrouping } from "@/hooks/pokemon/usePokemonGrouping";
 import { useGenerationExpansion } from "@/hooks/pokemon/useGenerationExpansion";
 import { useAvailablePokemonGenerations } from "@/hooks/pokemon/useAvailablePokemonGenerations";
 import { useSearchMatches } from "@/hooks/pokemon/useSearchMatches";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
 
 interface EnhancedAvailablePokemonSectionProps {
   availablePokemon: any[];
@@ -21,6 +22,9 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
   const [searchInput, setSearchInput] = useState("");
   const searchTerm = useDeferredValue(searchInput);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const pendingBattles = useTrueSkillStore((state) => state.pendingBattles);
+  const isHydrated = useTrueSkillStore((state) => state.isHydrated);
+  const pendingIds = React.useMemo(() => new Set(pendingBattles), [pendingBattles]);
 
   const availableGenerations = useAvailablePokemonGenerations(availablePokemon);
 
@@ -103,6 +107,8 @@ const EnhancedAvailablePokemonSection: React.FC<EnhancedAvailablePokemonSectionP
           totalPages={1}
           searchTerm={searchTerm}
           onClearSearch={() => setSearchInput("")}
+          pendingIds={pendingIds}
+          canStar={isHydrated}
         />
       </div>
     </div>

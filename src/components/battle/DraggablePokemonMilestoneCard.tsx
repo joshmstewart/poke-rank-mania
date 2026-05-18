@@ -4,15 +4,16 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Pokemon, RankedPokemon } from "@/services/pokemon";
 import { getPokemonBackgroundColor } from "./utils/PokemonColorUtils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PokemonModalContent from "@/components/pokemon/PokemonModalContent";
 import { usePokemonFlavorText } from "@/hooks/pokemon/usePokemonFlavorText";
 import { usePokemonTCGCard } from "@/hooks/pokemon/usePokemonTCGCard";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Plus, Star } from "lucide-react";
-import { useCloudPendingBattles } from "@/hooks/battle/useCloudPendingBattles";
 import { useLongPress } from "@/hooks/useLongPress";
 import CardActionMenu from "./CardActionMenu";
+import { useTrueSkillStore } from "@/stores/trueskillStore";
+import { availableId, rankedId } from "@/utils/id";
 
 interface DraggablePokemonMilestoneCardProps {
   pokemon: Pokemon | RankedPokemon;
@@ -23,7 +24,45 @@ interface DraggablePokemonMilestoneCardProps {
   isAvailable?: boolean;
   context?: 'available' | 'ranked';
   allRankedPokemon?: (Pokemon | RankedPokemon)[];
+  isStarred?: boolean;
+  canStar?: boolean;
 }
+
+const PokemonCardDetailsDialog: React.FC<{
+  pokemon: Pokemon | RankedPokemon;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}> = ({ pokemon, open, onOpenChange }) => {
+  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, open);
+  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, hasTcgCard } = usePokemonTCGCard(pokemon.name, open);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
+        onClick={(event) => event.stopPropagation()}
+        data-radix-dialog-content="true"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-center">
+            {pokemon.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <PokemonModalContent
+          pokemon={pokemon}
+          showLoading={isLoadingTCG}
+          showTCGCards={!isLoadingTCG && hasTcgCard && tcgCard !== null}
+          showFallbackInfo={!isLoadingTCG && !hasTcgCard}
+          tcgCard={tcgCard}
+          secondTcgCard={secondTcgCard}
+          flavorText={flavorText}
+          isLoadingFlavor={isLoadingFlavor}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps> = ({ 
   pokemon, 
@@ -33,16 +72,28 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   isDraggable = true,
   isAvailable = false,
   context = 'ranked',
-  allRankedPokemon = []
+  allRankedPokemon = [],
+  isStarred,
+  canStar,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null);
   const cardRef = React.useRef<HTMLDivElement | null>(null);
-  
-  // Use the cloud-based pending state hook
-  const { isPokemonPending, addPendingPokemon, removePendingPokemon, isHydrated } = useCloudPendingBattles();
+  const isHydrated = canStar ?? useTrueSkillStore.getState().isHydrated;
+  const isPendingRefinement = isStarred ?? isPending;
+  const addPendingPokemon = React.useCallback((pokemonId: number) => {
+    useTrueSkillStore.getState().addPendingBattle(pokemonId);
+    document.dispatchEvent(
+      new CustomEvent('pokemon-starred-for-battle', {
+        detail: { pokemonId, source: 'pokemon-card', timestamp: Date.now() },
+      })
+    );
+  }, []);
+  const removePendingPokemon = React.useCallback((pokemonId: number) => {
+    useTrueSkillStore.getState().removePendingBattle(pokemonId);
+  }, []);
   
   const handlePrioritizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,17 +103,12 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       return;
     }
     
-    const currentlyPending = isPokemonPending(pokemon.id);
-    
-    if (!currentlyPending) {
+    if (!isPendingRefinement) {
       addPendingPokemon(pokemon.id);
     } else {
       removePendingPokemon(pokemon.id);
     }
   };
-
-  // Check if this Pokemon has pending state
-  const isPendingRefinement = isPokemonPending(pokemon.id);
 
   const toggleStar = React.useCallback(() => {
     if (!isHydrated) return;
@@ -74,7 +120,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   }, [isHydrated, isPendingRefinement, addPendingPokemon, removePendingPokemon, pokemon.id]);
 
   // Use consistent drag ID strategy
-  const id = `${context}-${pokemon.id}`;
+  const id = context === 'available' ? availableId(pokemon.id) : rankedId(pokemon.id);
   const data = {
     type: context === 'available' ? 'available-pokemon' : 'ranked-pokemon',
     pokemon: pokemon,
@@ -107,19 +153,6 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   };
 
   const backgroundColorClass = getPokemonBackgroundColor(pokemon);
-
-  // Hooks for modal content
-  const { flavorText, isLoadingFlavor } = usePokemonFlavorText(pokemon.id, isOpen);
-  const { tcgCard, secondTcgCard, isLoading: isLoadingTCG, error: tcgError, hasTcgCard } = usePokemonTCGCard(pokemon.name, isOpen);
-
-  // Determine what content to show
-  const showLoading = isLoadingTCG;
-  const showTCGCards = !isLoadingTCG && hasTcgCard && tcgCard !== null;
-  const showFallbackInfo = !isLoadingTCG && !hasTcgCard;
-
-  const handleDialogClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
 
   const handleMouseEnter = () => {
     if (!isDragging) {
@@ -225,17 +258,17 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Enhanced drag overlay for better visual feedback */}
       {isDragging && (
-        <div className="absolute inset-0 bg-blue-100 bg-opacity-30 rounded-lg pointer-events-none"></div>
+        <div className="absolute inset-0 bg-primary/10 rounded-lg pointer-events-none"></div>
       )}
 
       {/* Dark overlay for already-ranked Pokemon in available section */}
       {context === 'available' && isRankedPokemon && (
-        <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg z-10"></div>
+        <div className="absolute inset-0 bg-foreground/40 rounded-lg z-10"></div>
       )}
 
       {/* Pending banner if needed */}
       {isPending && (
-        <div className="absolute top-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 px-2 z-20">
+        <div className="absolute top-0 left-0 right-0 bg-primary text-primary-foreground text-xs py-1 px-2 z-20">
           Pending Battle
         </div>
       )}
@@ -267,65 +300,46 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         >
           <Star
             className={`w-4 h-4 transition-colors duration-300 ${
-              isPendingRefinement ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500 hover:text-yellow-500'
+              isPendingRefinement ? 'text-primary fill-primary' : 'text-muted-foreground hover:text-primary'
             }`}
           />
         </button>
       )}
 
-      {/* Info Button with Dialog - only visible on card hover */}
+      {/* Info button. The heavy Dialog tree mounts only after opening. */}
       {!isDragging && (
         <div className={`absolute top-1 right-1 z-30 transition-all duration-300 [@media(pointer:coarse)]:hidden ${
           isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <button 
-                className="w-4 h-4 rounded-full bg-white/80 hover:bg-white border border-gray-300 text-gray-600 hover:text-gray-800 flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer"
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                onPointerUp={(e) => {
-                  e.stopPropagation();
-                }}
-                onMouseUp={(e) => {
-                  e.stopPropagation();
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(true);
-                }}
-                type="button"
-              >
-                i
-              </button>
-            </DialogTrigger>
-            
-            <DialogContent 
-              className="max-w-4xl max-h-[90vh] overflow-y-auto pointer-events-auto"
-              onClick={handleDialogClick}
-              data-radix-dialog-content="true"
-            >
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold text-center">
-                  {pokemon.name}
-                </DialogTitle>
-              </DialogHeader>
-
-              <PokemonModalContent
-                pokemon={pokemon}
-                showLoading={showLoading}
-                showTCGCards={showTCGCards}
-                showFallbackInfo={showFallbackInfo}
-                tcgCard={tcgCard}
-                secondTcgCard={secondTcgCard}
-                flavorText={flavorText}
-                isLoadingFlavor={isLoadingFlavor}
-              />
-            </DialogContent>
-          </Dialog>
+          <button
+            className="w-4 h-4 rounded-full bg-background/90 hover:bg-background border border-border text-muted-foreground hover:text-foreground flex items-center justify-center text-xs font-medium shadow-sm transition-all duration-200 cursor-pointer"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onPointerUp={(e) => {
+              e.stopPropagation();
+            }}
+            onMouseUp={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(true);
+            }}
+            type="button"
+          >
+            i
+          </button>
         </div>
+      )}
+
+      {isOpen && (
+        <PokemonCardDetailsDialog
+          pokemon={pokemon}
+          open={isOpen}
+          onOpenChange={setIsOpen}
+        />
       )}
 
       {/* Touch-only: persistent star indicator (only when starred). */}
@@ -355,7 +369,7 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
         <div className="absolute top-1 left-1 z-20">
           <Badge 
             variant="secondary" 
-            className="bg-yellow-500 text-white font-bold text-xs px-1 py-0.5 shadow-md flex items-center gap-1"
+            className="bg-primary text-primary-foreground font-bold text-xs px-1 py-0.5 shadow-md flex items-center gap-1"
           >
             <Crown size={8} />
             #{String(currentRank)}
@@ -365,10 +379,10 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
 
       {/* Ranking number */}
       {context === 'ranked' && showRank && (
-        <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm border border-gray-200 ${
-          isDragging ? 'bg-blue-100 border-blue-300' : ''
+        <div className={`absolute top-1 left-1 w-5 h-5 bg-background rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm border border-border ${
+          isDragging ? 'bg-primary/10 border-primary/30' : ''
         }`}>
-          <span className="text-black">{index + 1}</span>
+          <span className="text-foreground">{index + 1}</span>
         </div>
       )}
       
@@ -396,17 +410,17 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
       </div>
       
       {/* Pokemon info */}
-      <div className="bg-white text-center py-1 px-1 mt-auto border-t border-gray-100 flex-shrink-0">
-        <h3 className="font-bold text-gray-800 text-xs leading-tight mb-0.5 truncate">
+      <div className="bg-background text-center py-1 px-1 mt-auto border-t border-border flex-shrink-0">
+        <h3 className="font-bold text-foreground text-xs leading-tight mb-0.5 truncate">
           {pokemon.name}
         </h3>
-        <div className="text-xs text-gray-600 mb-0.5">
+        <div className="text-xs text-muted-foreground mb-0.5">
           #{formattedId}
         </div>
         
         {/* Score display */}
         {context === 'ranked' && 'score' in pokemon && (
-          <div className="text-xs text-gray-700 font-medium truncate">
+          <div className="text-xs text-muted-foreground font-medium truncate">
             {pokemon.score.toFixed(5)}
           </div>
         )}
@@ -415,4 +429,22 @@ const DraggablePokemonMilestoneCard: React.FC<DraggablePokemonMilestoneCardProps
   );
 };
 
-export default React.memo(DraggablePokemonMilestoneCard);
+export default React.memo(DraggablePokemonMilestoneCard, (prev, next) => {
+  const prevPokemon = prev.pokemon as Pokemon & { isRanked?: boolean; currentRank?: number | null; score?: number };
+  const nextPokemon = next.pokemon as Pokemon & { isRanked?: boolean; currentRank?: number | null; score?: number };
+  return (
+    prevPokemon.id === nextPokemon.id &&
+    prevPokemon.name === nextPokemon.name &&
+    prevPokemon.image === nextPokemon.image &&
+    prevPokemon.isRanked === nextPokemon.isRanked &&
+    prevPokemon.currentRank === nextPokemon.currentRank &&
+    prevPokemon.score === nextPokemon.score &&
+    prev.index === next.index &&
+    prev.isPending === next.isPending &&
+    prev.isStarred === next.isStarred &&
+    prev.canStar === next.canStar &&
+    prev.showRank === next.showRank &&
+    prev.isDraggable === next.isDraggable &&
+    prev.context === next.context
+  );
+});
